@@ -110,6 +110,18 @@ class Vtx2HalfFacetMap:
         else:
             pass
 
+    def Append(self, vi, hf=NULL_HalfFacet):
+        """append a <vertex, half-facet> pair."""
+        # XXX
+
+    def Append(self, vi, vhf=NULL_VtxHalfFacet):
+        """append a <vertex, half-facet> pair."""
+        # XXX
+
+    def Append(self, vhf=NULL_VtxHalfFacet):
+        """append a <vertex, half-facet> pair."""
+        # XXX
+
 
 
 #
