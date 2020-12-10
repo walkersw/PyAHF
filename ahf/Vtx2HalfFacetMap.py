@@ -14,6 +14,7 @@ Copyright (c) 12-10-2020,  Shawn W. Walker
 #from typing import Dict, Optional, Sequence, Tuple, TypeVar
 
 import numpy as np  # type: ignore
+import ahf
 
 # define data types
 
@@ -78,37 +79,37 @@ class Vtx2HalfFacetMap:
     Ei (the local edge index) define the particular half-edge.
     """
 
-    def __init__(self)
+    def __init__(self):
 
-        if data_price_ord[0]['price'] == 0:
-            raise ValueError('invalid price of 0 in supply data')
+        self._reserve_buffer = 0.2
+        self.VtxMap = None
+        self._size = 0
 
-        for n, e in enumerate(data_price_ord[1:]):
-            current_point = e['supply']
-            previous_point = data_price_ord[n]['supply']
-            if current_point < previous_point:
-                raise SupplyMonotonicityError
+    def __str__(self):
+        return "The size of the Vertex-to-Half-Facet Map is: " + str(self._size)
 
-        self._price = np.array([d['price'] for d in data_price_ord])
-        self._quantity = np.array([d['supply'] for d in data_price_ord])
-        self._min_price = self._price.min()
+    def Clear(self):
+        self.VtxMap = None
+        self._size = 0
 
-    def __eq__(self, other):
-        
+    def Size(self):
+        return self._size
 
-    def quantity(self, price: float):
-        """Return supply quantity for a given price.
-        :param price: Price.
-        :type price: float
-        :return: Quantity.
-        :rtype: float
-        """
-
-        if price < self._min_price:
-            quantity_at_price = 0.
+    def Reserve(self, num_VM):
+        """This just pre-allocates, or re-sizes.
+         The _size attribute is unchanged."""
+        # compute the space needed (with extra) to allocate
+        Desired_Size = np.ceil((1.0 + self._reserve_buffer) * num_VM);
+        if not self.VtxMap:
+            self.VtxMap = np.full(Desired_Size, NULL_VtxHalfFacet, dtype=VtxHalfFacetType)
+        elif self.VtxMap.size < Desired_Size:
+            old_size = self.VtxMap.size
+            self.VtxMap = np.resize(self.VtxMap,Desired_Size)
+            # put in NULL values
+            self.VtxMap[old_size:Desired_Size] = NULL_VtxHalfFacet
         else:
-            quantity_at_price = self._quantity[self._price <= price][-1]
-        return quantity_at_price
+            pass
+
 
 
 #
