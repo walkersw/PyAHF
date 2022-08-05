@@ -18,7 +18,9 @@ import ahf as AHF
 
 import ahf.Vtx2HalfFacetMap
 
-V2HF = AHF.Vtx2HalfFacetMap()
+print(ahf.Vtx2HalfFacetMap)
+
+V2HF = AHF.Vtx2HalfFacetMap.Vtx2HalfFacetMap()
 
 V2HF.Reserve(10)
 
