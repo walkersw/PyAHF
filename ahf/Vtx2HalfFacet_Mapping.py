@@ -148,14 +148,14 @@ class Vtx2HalfFacetMap:
     # before they will work correctly.  Make sure to run 'Sort()' first!
     def Get_Half_Facets(self, vi):
         """Find *all* half-facets attached to the given vertex.
-        returns the first and last indices of the sorted VtxMap.
+        Returns the first index of the sorted VtxMap, and the total number
+        half-facets.
         Requires 'Sort()' to have been run to work correctly."""
-        self.VtxMap = np.sort(self.VtxMap, order=['vtx', 'ci', 'fi'])
-        first = np.searchsorted(self.VtxMap['vtx'], vi)
-        last  = np.searchsorted(self.VtxMap['vtx'], vi, side='right')
-        return first, last
-
-
+        #self.VtxMap = np.sort(self.VtxMap, order=['vtx', 'ci', 'fi'])
+        first_index       = np.searchsorted(self.VtxMap['vtx'], vi)
+        last_index_plus_1 = np.searchsorted(self.VtxMap['vtx'], vi, side='right')
+        total = last_index_plus_1 - first_index
+        return first_index, total
 
 
 #

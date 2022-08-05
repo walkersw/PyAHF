@@ -33,12 +33,14 @@ hf['fi'] = 1
 
 V2HF.Append(10, hf)
 
-hf0, hf1 = V2HF.Get_Half_Facets(10)
-
-print(hf0)
-print(hf1)
-
 print(V2HF)
+
+hf_ind0, hf_total = V2HF.Get_Half_Facets(10)
+
+for kk in range(hf_total):
+    print("This is the attached vertex/half-facet: " + str(V2HF.VtxMap[hf_ind0 + kk]))
+
+
 
 # HalfFacetType  hf;
 # hf.Set(12,2);
