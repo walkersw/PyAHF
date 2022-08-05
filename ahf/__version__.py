@@ -1,7 +1,7 @@
 """
 __version__.py
 ~~~~~~~~~~~~~~
-Information about the current version of the ahf package.
+Information about the current version of the PyAHF package.
 """
 
 __title__ = 'PyAHF'
