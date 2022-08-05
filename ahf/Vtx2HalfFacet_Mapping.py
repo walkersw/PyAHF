@@ -1,5 +1,5 @@
 """
-ahf.Vtx2HalfFacetMap.py
+ahf.Vtx2HalfFacet_Mapping.py
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Class for storing arrays of mappings from vertex indices to (several)
 incident half-facets.
