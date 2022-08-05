@@ -3,10 +3,10 @@
 import os
 import setuptools
 
-# get key package details from ahf/__version__.py
+# get key package details from src/__version__.py
 about = {}  # type: ignore
 here = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(here, 'ahf', '__version__.py')) as f:
+with open(os.path.join(here, 'src', '__version__.py')) as f:
     exec(f.read(), about)
 
 # load the README file and use it as the long_description for PyPI
