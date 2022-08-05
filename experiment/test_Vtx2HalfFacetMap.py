@@ -16,11 +16,11 @@ import numpy as np
 #from ahf import *
 import ahf as AHF
 
-import ahf.Vtx2HalfFacetMap
+import ahf.Vtx2HalfFacet_Mapping
 
-print(ahf.Vtx2HalfFacetMap)
+print(ahf.Vtx2HalfFacet_Mapping)
 
-V2HF = AHF.Vtx2HalfFacetMap.Vtx2HalfFacetMap()
+V2HF = AHF.Vtx2HalfFacet_Mapping.Vtx2HalfFacetMap()
 
 V2HF.Reserve(10)
 
