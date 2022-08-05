@@ -25,7 +25,7 @@ setuptools.setup(
     author_email=about['__author_email__'],
     url=about['__url__'],
     packages=['ahf'],
-    package_dir = {'ahf' : ['src']},
+    package_dir = {'ahf' : 'src'},
     package_data = {'ahf' :  ['../LICENSE']},
     #package_data = {'ahf' :  ['../LICENSE', '../examples/*.py']},
     project_urls={
