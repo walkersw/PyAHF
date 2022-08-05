@@ -14,13 +14,15 @@ import numpy as np
 # END: imports
 
 #from ahf import *
-import "ahf-walkersw" as AHF
+import ahf as AHF
+
+import ahf.Vtx2HalfFacetMap
 
 V2HF = AHF.Vtx2HalfFacetMap()
 
 V2HF.Reserve(10)
 
-print(VSHF.Size())
+print(V2HF.Size())
 
 
 

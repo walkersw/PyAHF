@@ -3,10 +3,10 @@
 import os
 import setuptools
 
-# get key package details from src/__version__.py
+# get key package details from ahf/__version__.py
 about = {}  # type: ignore
 here = os.path.abspath(os.path.dirname(__file__))
-with open(os.path.join(here, 'src', '__version__.py')) as f:
+with open(os.path.join(here, 'ahf', '__version__.py')) as f:
     exec(f.read(), about)
 
 # load the README file and use it as the long_description for PyPI
@@ -24,10 +24,10 @@ setuptools.setup(
     author=about['__author__'],
     author_email=about['__author_email__'],
     url=about['__url__'],
-    packages=['ahf'],
-    package_dir = {'ahf' : 'src'},
-    package_data = {'ahf' :  ['../LICENSE']},
-    #package_data = {'ahf' :  ['../LICENSE', '../examples/*.py']},
+    packages=['PyAHF'],
+    package_dir = {'PyAHF' : 'ahf'},
+    package_data = {'PyAHF' :  ['../LICENSE']},
+    #package_data = {'PyAHF' :  ['../LICENSE', '../examples/*.py']},
     project_urls={
         "Bug Tracker": "https://github.com/walkersw/PyAHF",
         "Documentation": "https://github.com/walkersw/PyAHF",
