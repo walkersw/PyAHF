@@ -11,14 +11,14 @@ import numpy as np
 
 # define various types
 
-# type for "small" indices (i.e. 0 through ~255)
-SmallIndType = np.dtype('uint8');
-# type for "medium" indices (i.e. 0 through ~65,535)
-MedIndType = np.dtype('uint16');
+# type for "small" indices (i.e. 0 through 255)
+SmallIndType = np.dtype('uint8')
+# type for "medium" indices (i.e. 0 through 65,535)
+MedIndType = np.dtype('uint16')
 # vertex indices ("large")
-VtxIndType = np.dtype('uint64');
+VtxIndType = np.dtype('uint64')
 # cell indices ("large"), e.g. triangles, tetrahedrons
-CellIndType = np.dtype('uint64');
+CellIndType = np.dtype('uint64')
 
 # define NULL constants
 NULL_Small = np.iinfo(SmallIndType).max
@@ -28,9 +28,9 @@ NULL_Cell  = np.iinfo(CellIndType).max
 # note: we can never have an index of the max size (should not be a problem)
 
 # define type for "real number"
-RealType = np.dtype('float64');
+RealType = np.dtype('float64')
 
 # define type for vertex point coordinates
-PointType = np.dtype('float64');
+PointType = np.dtype('float64')
 
 #

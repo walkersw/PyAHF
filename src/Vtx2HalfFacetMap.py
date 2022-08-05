@@ -20,14 +20,14 @@ import ahf
 
 # half-facet
 HalfFacetType = np.dtype({'names': ['ci', 'fi'],
-                       'formats': [ahf.CellIndType, ahf.SmallIndType],
-                       'titles': ['cell index', 'local facet (entity) index']})
+                          'formats': [ahf.CellIndType, ahf.SmallIndType],
+                          'titles': ['cell index', 'local facet (entity) index']})
 NULL_HalfFacet = np.array((ahf.NULL_Cell, ahf.NULL_Small), dtype=HalfFacetType)
 
 # vertex half-facet
 VtxHalfFacetType = np.dtype({'names': ['vtx', 'ci', 'fi'],
-                         'formats': [ahf.VtxIndType, ahf.CellIndType, ahf.SmallIndType],
-                         'titles': ['global vertex index', 'cell index', 'local facet (entity) index']})
+                             'formats': [ahf.VtxIndType, ahf.CellIndType, ahf.SmallIndType],
+                             'titles': ['global vertex index', 'cell index', 'local facet (entity) index']})
 NULL_VtxHalfFacet = np.array((ahf.NULL_Vtx, ahf.NULL_Cell, ahf.NULL_Small), dtype=VtxHalfFacetType)
 
 
@@ -86,7 +86,10 @@ class Vtx2HalfFacetMap:
         self._size = 0
 
     def __str__(self):
-        return "The size of the Vertex-to-Half-Facet Map is: " + str(self._size)
+        OUT_STR = ("The size of the Vertex-to-Half-Facet Map is: " + str(self._size) + "\n"
+                + "The *reserved* size of the Vertex-to-Half-Facet Map is: " + str(len(self.VtxMap)) )
+        return OUT_STR
+        
 
     def Clear(self):
         self.VtxMap = None
@@ -99,9 +102,9 @@ class Vtx2HalfFacetMap:
         """This just pre-allocates, or re-sizes.
          The _size attribute is unchanged."""
         # compute the space needed (with extra) to allocate
-        Desired_Size = np.ceil((1.0 + self._reserve_buffer) * num_VM);
-        if not self.VtxMap:
-            self.VtxMap = np.full(Desired_Size, NULL_VtxHalfFacet, dtype=VtxHalfFacetType)
+        Desired_Size = np.rint(np.ceil((1.0 + self._reserve_buffer) * num_VM))
+        if self.VtxMap is None:
+            self.VtxMap = np.full(Desired_Size.astype(ahf.VtxIndType), NULL_VtxHalfFacet, dtype=VtxHalfFacetType)
         elif self.VtxMap.size < Desired_Size:
             old_size = self.VtxMap.size
             self.VtxMap = np.resize(self.VtxMap,Desired_Size)
@@ -110,17 +113,39 @@ class Vtx2HalfFacetMap:
         else:
             pass
 
-    def Append(self, vi, hf=NULL_HalfFacet):
-        """append a <vertex, half-facet> pair."""
-        # XXX
+    def Append(self, *args):
+        """Append a (vertex, half-facet) pair; half-facet = (cell index, local facet index)
+        if one argument is given, it should be a VtxHalfFacetType;
+        else three arguments are given, (vtx index, cell index, local facet index)
+        """
+        
+        if (self.VtxMap is None) or (self.VtxMap.size==self._size):
+            # need to reserve space
+            Reserve(self, self._size+10)
+        
+        if len(args)==1:
+            if args[0].dtype!=VtxHalfFacetType:
+                print("Error: input is not a VtxHalfFacetType!")
+            self.VtxMap[self._size] = args[0]
+            self._size += 1
+        elif len(args)==3:
+            self.VtxMap[self._size] = (args[0], args[1], args[2])
+            self._size += 1
+        else:
+            print("incorrect number of arguments!")
 
-    def Append(self, vi, vhf=NULL_VtxHalfFacet):
-        """append a <vertex, half-facet> pair."""
-        # XXX
+    def Sort(self):
+        """Sort the Vtx2Half-Facet map."""
+        self.VtxMap = np.sort(self.VtxMap, order=['vtx', 'ci', 'fi'])
 
-    def Append(self, vhf=NULL_VtxHalfFacet):
-        """append a <vertex, half-facet> pair."""
-        # XXX
+    def Get_Half_Facets(self, vi):
+        """Find *all* half-facets attached to the given vertex.
+        returns the first and last indices of the sorted VtxMap."""
+        self.VtxMap = np.sort(self.VtxMap, order=['vtx', 'ci', 'fi'])
+        first = np.searchsorted(self.VtxMap['vtx'], vi)
+        last  = np.searchsorted(self.VtxMap['vtx'], vi, side='right')
+        return first, last
+
 
 
 
