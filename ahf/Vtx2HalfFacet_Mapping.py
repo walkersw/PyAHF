@@ -116,7 +116,8 @@ class Vtx2HalfFacetMap:
     def Append(self, *args):
         """Append a (vertex, half-facet) pair; half-facet = (cell index, local facet index)
         if one argument is given, it should be a VtxHalfFacetType;
-        else three arguments are given, (vtx index, cell index, local facet index)
+        elif two arguments are given, it should be a vertex index, followed by a HalfFacetType;
+        else three arguments are given, (vtx index, cell index, local facet index).
         """
         
         if (self.VtxMap is None) or (self.VtxMap.size==self._size):
@@ -128,6 +129,11 @@ class Vtx2HalfFacetMap:
                 print("Error: input is not a VtxHalfFacetType!")
             self.VtxMap[self._size] = args[0]
             self._size += 1
+        elif len(args)==2:
+            if args[1].dtype!=HalfFacetType:
+                print("Error: second input should be a HalfFacetType!")
+            self.VtxMap[self._size] = (args[0], args[1]['ci'], args[1]['fi'])
+            self._size += 1
         elif len(args)==3:
             self.VtxMap[self._size] = (args[0], args[1], args[2])
             self._size += 1
@@ -135,12 +141,15 @@ class Vtx2HalfFacetMap:
             print("incorrect number of arguments!")
 
     def Sort(self):
-        """Sort the Vtx2Half-Facet map."""
+        """Sort the VtxMap so it is useable."""
         self.VtxMap = np.sort(self.VtxMap, order=['vtx', 'ci', 'fi'])
 
+    # Note: all methods below this line require VtxMap to be sorted
+    # before they will work correctly.  Make sure to run 'Sort()' first!
     def Get_Half_Facets(self, vi):
         """Find *all* half-facets attached to the given vertex.
-        returns the first and last indices of the sorted VtxMap."""
+        returns the first and last indices of the sorted VtxMap.
+        Requires 'Sort()' to have been run to work correctly."""
         self.VtxMap = np.sort(self.VtxMap, order=['vtx', 'ci', 'fi'])
         first = np.searchsorted(self.VtxMap['vtx'], vi)
         last  = np.searchsorted(self.VtxMap['vtx'], vi, side='right')
@@ -150,3 +159,16 @@ class Vtx2HalfFacetMap:
 
 
 #
+
+
+# bool VtxMap_vtx_equal(const VtxHalfFacetType& Va, const VtxHalfFacetType& Vb) { return (Va.vtx < Vb.vtx); }
+# // note: consider the "VtxHalfFacetType"'s to be equal if the vertex indices match.
+# unsigned int V2HF::Get_Half_Facets(const VtxIndType& vi, std::pair <std::vector<VtxHalfFacetType>::const_iterator,
+                                                                    # std::vector<VtxHalfFacetType>::const_iterator>& range) const
+# {
+    # VtxHalfFacetType  TEMP;
+    # TEMP.vtx = vi;
+    # range = std::equal_range(VtxMap.begin(), VtxMap.end(), TEMP, VtxMap_vtx_equal);
+    # const unsigned int Num_HF = (unsigned int) std::distance(range.first,range.second);
+    # return Num_HF;
+# }

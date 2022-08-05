@@ -14,18 +14,40 @@ import numpy as np
 # END: imports
 
 #from ahf import *
-import ahf as AHF
+#import ahf as AHF
 
-import ahf.Vtx2HalfFacet_Mapping
+import ahf.Vtx2HalfFacet_Mapping as V2HF_Mapping
 
-print(ahf.Vtx2HalfFacet_Mapping)
+V2HF = V2HF_Mapping.Vtx2HalfFacetMap()
 
-V2HF = AHF.Vtx2HalfFacet_Mapping.Vtx2HalfFacetMap()
-
-V2HF.Reserve(10)
+V2HF.Reserve(5)
 
 print(V2HF.Size())
 
+hf = np.array((12, 2), dtype=V2HF_Mapping.HalfFacetType)
+
+V2HF.Append(10, hf)
+hf['ci'] = 8
+hf['fi'] = 1
+# hf = (8,1)
+
+V2HF.Append(10, hf)
+
+hf0, hf1 = V2HF.Get_Half_Facets(10)
+
+print(hf0)
+print(hf1)
+
+print(V2HF)
+
+# HalfFacetType  hf;
+# hf.Set(12,2);
+# V2HF.Append(10, hf);
+# hf.Set(8,1);
+# V2HF.Append(10, hf);
+# V2HF.Get_Half_Facet(10, hf);
+# cout << "This is the retrieved half-facet: <" << hf.ci << ", " << hf.fi << ">." << endl;
+# cout << endl;
 
 
 # // unit test
