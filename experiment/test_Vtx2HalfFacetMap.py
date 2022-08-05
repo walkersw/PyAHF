@@ -14,7 +14,7 @@ import numpy as np
 # END: imports
 
 #from ahf import *
-import ahf as AHF
+import "ahf-walkersw" as AHF
 
 V2HF = AHF.Vtx2HalfFacetMap()
 
