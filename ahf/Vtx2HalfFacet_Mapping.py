@@ -6,29 +6,28 @@ incident half-facets.
 
 Also, see "BaseMesh.py" for more explanation.
 
-Copyright (c) 12-10-2020,  Shawn W. Walker
+Copyright (c) 08-06-2022,  Shawn W. Walker
 """
 
-#import abc
-#from dataclasses import dataclass
-#from typing import Dict, Optional, Sequence, Tuple, TypeVar
-
-import numpy as np  # type: ignore
-import ahf
+import numpy as np
+# from ahf import SmallIndType, MedIndType, VtxIndType, CellIndType
+# from ahf import NULL_Small, NULL_Med, NULL_Vtx, NULL_Cell
+# from ahf import RealType, PointType
+from ahf import *
 
 # define data types
 
 # half-facet
 HalfFacetType = np.dtype({'names': ['ci', 'fi'],
-                          'formats': [ahf.CellIndType, ahf.SmallIndType],
+                          'formats': [CellIndType, SmallIndType],
                           'titles': ['cell index', 'local facet (entity) index']})
-NULL_HalfFacet = np.array((ahf.NULL_Cell, ahf.NULL_Small), dtype=HalfFacetType)
+NULL_HalfFacet = np.array((NULL_Cell, NULL_Small), dtype=HalfFacetType)
 
 # vertex half-facet
 VtxHalfFacetType = np.dtype({'names': ['vtx', 'ci', 'fi'],
-                             'formats': [ahf.VtxIndType, ahf.CellIndType, ahf.SmallIndType],
+                             'formats': [VtxIndType, CellIndType, SmallIndType],
                              'titles': ['global vertex index', 'cell index', 'local facet (entity) index']})
-NULL_VtxHalfFacet = np.array((ahf.NULL_Vtx, ahf.NULL_Cell, ahf.NULL_Small), dtype=VtxHalfFacetType)
+NULL_VtxHalfFacet = np.array((NULL_Vtx, NULL_Cell, NULL_Small), dtype=VtxHalfFacetType)
 
 
 class Vtx2HalfFacetMap:
@@ -36,7 +35,7 @@ class Vtx2HalfFacetMap:
     Class for mapping from a given vertex index to (several) incident
     half-facets.  This class stores an array of these mappings.
     Note: this is generic, meaning this can be used for half-facets in
-          0-D, 1-D, 2-D, and 3-D meshes (or higher dimensions!).
+          0-D, 1-D, 2-D, 3-D meshes, or even higher dimensions.
 
     EXAMPLE:
 
@@ -89,14 +88,17 @@ class Vtx2HalfFacetMap:
         OUT_STR = ("The size of the Vertex-to-Half-Facet Map is: " + str(self._size) + "\n"
                 + "The *reserved* size of the Vertex-to-Half-Facet Map is: " + str(len(self.VtxMap)) )
         return OUT_STR
-        
 
     def Clear(self):
+        del(self.VtxMap)
         self.VtxMap = None
         self._size = 0
 
     def Size(self):
         return self._size
+
+    # // return non-const reference to internal data
+    # std::vector<VtxHalfFacetType>& Get_VtxMap() { return VtxMap; };
 
     def Reserve(self, num_VM):
         """This just pre-allocates, or re-sizes.
@@ -104,7 +106,8 @@ class Vtx2HalfFacetMap:
         # compute the space needed (with extra) to allocate
         Desired_Size = np.rint(np.ceil((1.0 + self._reserve_buffer) * num_VM))
         if self.VtxMap is None:
-            self.VtxMap = np.full(Desired_Size.astype(ahf.VtxIndType), NULL_VtxHalfFacet, dtype=VtxHalfFacetType)
+            # fill the array with null values to start
+            self.VtxMap = np.full(Desired_Size.astype(VtxIndType), NULL_VtxHalfFacet, dtype=VtxHalfFacetType)
         elif self.VtxMap.size < Desired_Size:
             old_size = self.VtxMap.size
             self.VtxMap = np.resize(self.VtxMap,Desired_Size)
@@ -146,29 +149,103 @@ class Vtx2HalfFacetMap:
 
     # Note: all methods below this line require VtxMap to be sorted
     # before they will work correctly.  Make sure to run 'Sort()' first!
-    def Get_Half_Facets(self, vi):
+
+    def Get_Half_Facets(self, vi, return_array=""):
         """Find *all* half-facets attached to the given vertex.
-        Returns the first index of the sorted VtxMap, and the total number
-        half-facets.
-        Requires 'Sort()' to have been run to work correctly."""
+        Requires 'Sort()' to have been run to work correctly.
+        
+        If only the vertex index is given, then returns the first index into the
+        VtxMap and the total number of half-facets.
+        If a second argument is given as "array", then an array of
+        type HalfFacetType is returned instead, that contains the half-facets.
+        This second option is mainly for testing.
+        """
         #self.VtxMap = np.sort(self.VtxMap, order=['vtx', 'ci', 'fi'])
         first_index       = np.searchsorted(self.VtxMap['vtx'], vi)
         last_index_plus_1 = np.searchsorted(self.VtxMap['vtx'], vi, side='right')
         total = last_index_plus_1 - first_index
-        return first_index, total
+        
+        if return_array.lower() == "array":
+            HFs = np.full(total.astype(VtxIndType), NULL_HalfFacet, dtype=HalfFacetType)
+            # copy it over
+            for kk in range(total):
+                HFs[kk] = self.VtxMap[first_index + kk][['ci','fi']]
+            return HFs
+        else:
+            return first_index, total
 
+    def Get_Half_Facet(self, vi):
+        """Return a single half-facet attached to the given vertex.
+        Requires 'Sort()' to have been run to work correctly.
+        Note: if you only want the index (into VtxMap) of the vertex/half-facet,
+        then use 'Get_Half_Facets'.
+        """
+        first_index, total = self.Get_Half_Facets(vi)
+        hf = np.array(self.VtxMap[first_index][['ci','fi']], dtype=HalfFacetType)
+        return hf
+
+    def Display_Half_Facets(self, vi=NULL_Vtx):
+        """Print out half-facets attached to a given vertex.
+        If no argument is given, or NULL_Vtx is given,
+        then all half-facets for all stored vertices will be displayed.
+        Requires 'Sort()' to have been run to work correctly.
+        """
+        
+        if (vi==NULL_Vtx):
+            # we want all the half-facet(s) for all the stored vertices
+            Prev_Vtx    = NULL_Vtx
+            Current_Vtx = NULL_Vtx
+            print("Vertex and attached half-facets, (cell index, local facet index):")
+            for kk in range(self._size):
+                # get the current vertex
+                vhf = self.VtxMap[kk]
+                Current_Vtx = vhf['vtx']
+                if (Current_Vtx!=Prev_Vtx):
+                    # found a new vertex
+                    print("")
+                    print(str(Current_Vtx) + ": (" + str(vhf['ci']) + ", " + str(vhf['fi']) + ")", end="")
+                    Prev_Vtx = Current_Vtx # update
+                elif (Current_Vtx==Prev_Vtx):
+                    # still with the same vertex, so print the current half-facet
+                    print(", ", end="")
+                    print("(" + str(vhf['ci']) + ", " + str(vhf['fi']) + ")", end="")
+            print("")
+        else:
+            # print out half-facets for one particular vertex
+            first_index, total = self.Get_Half_Facets(vi)
+            print("Half-facets (cell index, local facet index) attached to Vtx# " + str(vi) + ":")
+            for kk in range(total-1):
+                print("(" + str(self.VtxMap[first_index + kk]['ci']) + ", " + \
+                            str(self.VtxMap[first_index + kk]['fi']) + "), ", end="")
+            # print the last one
+            print("(" + str(self.VtxMap[total-1]['ci']) + ", " + \
+                            str(self.VtxMap[total-1]['fi']) + ")")
+    # 
+
+    def Get_Unique_Vertices(self):
+        """Get unique list of vertices.
+        Does not require 'Sort()' to have been run.
+        """
+        
+        all_vertices = np.zeros(self._size, dtype=VtxIndType)
+        for kk in range(self._size):
+            # extract out the vertex indices
+            all_vertices[kk] = self.VtxMap[kk]['vtx']
+
+        unique_vertices = np.unique(all_vertices)
+        return unique_vertices
+
+    def Display_Unique_Vertices(self):
+        """Print unique list of vertices to the screen.
+        Does not require 'Sort()' to have been run.
+        """
+        
+        unique_vertices = self.Get_Unique_Vertices()
+        
+        print("Unique list of vertex indices:")
+        print(str(unique_vertices[0]), end="")
+        for kk in range(1, unique_vertices.size):
+            print(", " + str(unique_vertices[kk]), end="")
+        print("")
 
 #
-
-
-# bool VtxMap_vtx_equal(const VtxHalfFacetType& Va, const VtxHalfFacetType& Vb) { return (Va.vtx < Vb.vtx); }
-# // note: consider the "VtxHalfFacetType"'s to be equal if the vertex indices match.
-# unsigned int V2HF::Get_Half_Facets(const VtxIndType& vi, std::pair <std::vector<VtxHalfFacetType>::const_iterator,
-                                                                    # std::vector<VtxHalfFacetType>::const_iterator>& range) const
-# {
-    # VtxHalfFacetType  TEMP;
-    # TEMP.vtx = vi;
-    # range = std::equal_range(VtxMap.begin(), VtxMap.end(), TEMP, VtxMap_vtx_equal);
-    # const unsigned int Num_HF = (unsigned int) std::distance(range.first,range.second);
-    # return Num_HF;
-# }

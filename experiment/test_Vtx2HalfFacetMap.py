@@ -16,15 +16,15 @@ import numpy as np
 #from ahf import *
 #import ahf as AHF
 
-import ahf.Vtx2HalfFacet_Mapping as V2HF_Mapping
+from ahf.Vtx2HalfFacet_Mapping import *
 
-V2HF = V2HF_Mapping.Vtx2HalfFacetMap()
+V2HF = Vtx2HalfFacetMap()
 
 V2HF.Reserve(5)
 
 print(V2HF.Size())
 
-hf = np.array((12, 2), dtype=V2HF_Mapping.HalfFacetType)
+hf = np.array((12, 2), dtype=HalfFacetType)
 
 V2HF.Append(10, hf)
 hf['ci'] = 8
@@ -40,6 +40,22 @@ hf_ind0, hf_total = V2HF.Get_Half_Facets(10)
 for kk in range(hf_total):
     print("This is the attached vertex/half-facet: " + str(V2HF.VtxMap[hf_ind0 + kk]))
 
+VM = V2HF.Get_Half_Facets(10,"array")
+
+for vhf in VM:
+    print("This is the attached vertex/half-facet: " + str(vhf))
+
+hf = V2HF.Get_Half_Facet(10)
+
+print(hf)
+
+V2HF.Display_Half_Facets()
+
+
+TF = V2HF.VtxMap[1]==NULL_VtxHalfFacet
+print(TF)
+
+V2HF.Display_Unique_Vertices()
 
 
 # HalfFacetType  hf;
