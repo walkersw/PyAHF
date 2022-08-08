@@ -41,20 +41,20 @@ class Vtx2HalfFacetMap:
 
       Diagram depicting half-edges (half-facets for 2-D meshes):
 
-                   <1,0>
+                   (1,0)
         V3 +-------------------+ V2
            |\                  |
            |  \          T1    |
            |    \              |
-           |      \  <1,1>     |
-     <0,1> |        \          | <1,2>
-           |    <0,0> \        |
+           |      \  (1,1)     |
+     (0,1) |        \          | (1,2)
+           |    (0,0) \        |
            |            \      |
            |              \    |
            |     T0         \  |
            |                  \|
         V0 +-------------------+ V1
-                   <0,2>
+                   (0,2)
 
     Triangle Connectivity:
 
@@ -66,15 +66,15 @@ class Vtx2HalfFacetMap:
 
     Half-Edges attached to vertices:
 
-       Vertex V0:  V0--><0,1>
-                   V0--><0,2>
-       Vertex V1:  V1--><0,2>
-                   V1--><0,0>
-                   V1--><1,1>
-                   V1--><1,2>
+       Vertex V0:  V0-->(0,1)
+                   V0-->(0,2)
+       Vertex V1:  V1-->(0,2)
+                   V1-->(0,0)
+                   V1-->(1,1)
+                   V1-->(1,2)
        etc...
 
-    where <Ti,Ei> is a half-edge attached to Vi, where Ti (the cell index) and
+    where (Ti,Ei) is a half-edge attached to Vi, where Ti (the cell index) and
     Ei (the local edge index) define the particular half-edge.
     """
 
@@ -86,7 +86,7 @@ class Vtx2HalfFacetMap:
 
     def __str__(self):
         OUT_STR = ("The size of the Vertex-to-Half-Facet Map is: " + str(self._size) + "\n"
-                + "The *reserved* size of the Vertex-to-Half-Facet Map is: " + str(len(self.VtxMap)) )
+                 + "The *reserved* size of the Vertex-to-Half-Facet Map is: " + str(len(self.VtxMap)) )
         return OUT_STR
 
     def Clear(self):
