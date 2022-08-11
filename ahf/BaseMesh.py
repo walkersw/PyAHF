@@ -1,12 +1,12 @@
 """
-ahf.Vtx2HalfFacet_Mapping.py
+ahf.BaseMesh.py
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Class for storing an array of mappings from global vertex indices to (several)
-incident half-facets.
+Base class for array based half-facet (AHF) data structure to store and
+process meshes.
 
-Also, see "BaseMesh.py" for more explanation.
+Also, see "Vtx2HalfFacet_Mapping.py" for more explanation.
 
-Copyright (c) 08-11-2022,  Shawn W. Walker
+Copyright (c) 08-12-2022,  Shawn W. Walker
 """
 
 import numpy as np
@@ -29,53 +29,15 @@ VtxHalfFacetType = np.dtype({'names': ['vtx', 'ci', 'fi'],
                              'titles': ['global vertex index', 'cell index', 'local facet (entity) index']})
 NULL_VtxHalfFacet = np.array((NULL_Vtx, NULL_Cell, NULL_Small), dtype=VtxHalfFacetType)
 
+FIX!!!!
 
-class Vtx2HalfFacetMap:
+
+class BaseMesh:
     """
     Class for mapping from a given vertex index to (several) incident
-    half-facets.  This class stores an array of these mappings.
-    Note: this is generic, meaning this can be used for half-facets in
-          0-D, 1-D, 2-D, 3-D meshes, or even higher dimensions.
+    
+    
 
-    EXAMPLE:
-
-      Diagram depicting half-edges (half-facets for 2-D meshes):
-
-                   (1,0)
-        V3 +-------------------+ V2
-           |\                  |
-           |  \          T1    |
-           |    \              |
-           |      \  (1,1)     |
-     (0,1) |        \          | (1,2)
-           |    (0,0) \        |
-           |            \      |
-           |              \    |
-           |     T0         \  |
-           |                  \|
-        V0 +-------------------+ V1
-                   (0,2)
-
-    Triangle Connectivity:
-
-    triangle |   vertices
-    indices  |  V0, V1, V2
-    ---------+--------------
-       0     |   0,  1,  3
-       1     |   1,  2,  3
-
-    Half-Edges attached to vertices:
-
-       Vertex V0:  V0-->(0,1)
-                   V0-->(0,2)
-       Vertex V1:  V1-->(0,2)
-                   V1-->(0,0)
-                   V1-->(1,1)
-                   V1-->(1,2)
-       etc...
-
-    where (Ti,Ei) is a half-edge attached to Vi, where Ti (the cell index) and
-    Ei (the local edge index) define the particular half-edge.
     """
 
     def __init__(self):
