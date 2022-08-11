@@ -1,12 +1,12 @@
 """
 ahf.Vtx2HalfFacet_Mapping.py
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Class for storing arrays of mappings from vertex indices to (several)
+Class for storing for an array of mappings from vertex indices to (several)
 incident half-facets.
 
 Also, see "BaseMesh.py" for more explanation.
 
-Copyright (c) 08-06-2022,  Shawn W. Walker
+Copyright (c) 08-08-2022,  Shawn W. Walker
 """
 
 import numpy as np
@@ -143,6 +143,32 @@ class Vtx2HalfFacetMap:
         else:
             print("incorrect number of arguments!")
 
+    def Get_Unique_Vertices(self):
+        """Get unique list of vertices.
+        Does not require 'Sort()' to have been run.
+        """
+        
+        all_vertices = np.zeros(self._size, dtype=VtxIndType)
+        for kk in range(self._size):
+            # extract out the vertex indices
+            all_vertices[kk] = self.VtxMap[kk]['vtx']
+
+        unique_vertices = np.unique(all_vertices)
+        return unique_vertices
+
+    def Display_Unique_Vertices(self):
+        """Print unique list of vertices to the screen.
+        Does not require 'Sort()' to have been run.
+        """
+        
+        unique_vertices = self.Get_Unique_Vertices()
+        
+        print("Unique list of vertex indices:")
+        print(str(unique_vertices[0]), end="")
+        for kk in range(1, unique_vertices.size):
+            print(", " + str(unique_vertices[kk]), end="")
+        print("")
+
     def Sort(self):
         """Sort the VtxMap so it is useable."""
         self.VtxMap = np.sort(self.VtxMap, order=['vtx', 'ci', 'fi'])
@@ -221,31 +247,3 @@ class Vtx2HalfFacetMap:
             print("(" + str(self.VtxMap[total-1]['ci']) + ", " + \
                             str(self.VtxMap[total-1]['fi']) + ")")
     # 
-
-    def Get_Unique_Vertices(self):
-        """Get unique list of vertices.
-        Does not require 'Sort()' to have been run.
-        """
-        
-        all_vertices = np.zeros(self._size, dtype=VtxIndType)
-        for kk in range(self._size):
-            # extract out the vertex indices
-            all_vertices[kk] = self.VtxMap[kk]['vtx']
-
-        unique_vertices = np.unique(all_vertices)
-        return unique_vertices
-
-    def Display_Unique_Vertices(self):
-        """Print unique list of vertices to the screen.
-        Does not require 'Sort()' to have been run.
-        """
-        
-        unique_vertices = self.Get_Unique_Vertices()
-        
-        print("Unique list of vertex indices:")
-        print(str(unique_vertices[0]), end="")
-        for kk in range(1, unique_vertices.size):
-            print(", " + str(unique_vertices[kk]), end="")
-        print("")
-
-#

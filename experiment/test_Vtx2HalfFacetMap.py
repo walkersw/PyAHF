@@ -1,7 +1,7 @@
 # BEGIN: imports
 
-import os
-import sys
+#import os
+#import sys
 # insert at 1, 0 is the script path (or '' in REPL)
 #sys.path.insert(1, '../Newton_Methods')
 #sys.path.insert(1, '../VTK')
@@ -18,18 +18,27 @@ import numpy as np
 
 from ahf.Vtx2HalfFacet_Mapping import *
 
+# init output code
+OUTPUT_CODE = 0 # 0 indicates success, > 0 is failure
+
+# create an object
 V2HF = Vtx2HalfFacetMap()
 
+# reserve enough room for 5 vtx2half-facets
 V2HF.Reserve(5)
+
+if (V2HF.Size()!=0):
+    print("Size of V2HF should still be zero.")
+    OUTPUT_CODE = 1
 
 print(V2HF.Size())
 
 hf = np.array((12, 2), dtype=HalfFacetType)
 
 V2HF.Append(10, hf)
-hf['ci'] = 8
-hf['fi'] = 1
-# hf = (8,1)
+hf[['ci', 'fi']] = (8, 1)
+
+print(hf)
 
 V2HF.Append(10, hf)
 
