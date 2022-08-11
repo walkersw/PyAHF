@@ -1,8 +1,8 @@
 """
-ahf.BaseMesh.py
+ahf.BaseSimplexMesh.py
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Base class for array based half-facet (AHF) data structure to store and
-process meshes.
+process simplex meshes.
 
 Also, see "Vtx2HalfFacet_Mapping.py" for more explanation.
 
@@ -32,11 +32,126 @@ NULL_VtxHalfFacet = np.array((NULL_Vtx, NULL_Cell, NULL_Small), dtype=VtxHalfFac
 FIX!!!!
 
 
-class BaseMesh:
+class BaseSimplexMesh:
     """
-    Class for mapping from a given vertex index to (several) incident
+    Base class for array based half-facet (AHF) data structure to store and process meshes.
+    This base class is used in deriving the 0-D, 1-D, 2-D, and 3-D mesh classes,
+    as well as arbitrarily higher dimensions (all *simplex* meshes).
     
-    
+    Note: no vertex coordinates are stored in this class; this is purely topological.
+
+   Scheme for ordering *local* topological entities
+   ------------------------------------------------
+
+   RULE: local "facet" Fi is always *opposite* local vertex Vi.
+
+   DIM=1. Interval: facets are vertices (points)
+
+        V0 +-------------------+ V1
+
+   i.e. "facet" F0 = V1 (which is opposite V0), and "facet" F1 = V0 (which is opposite V1)
+
+   DIM=2. Triangle: facets are edges (line segments)
+
+        V2 +
+           |\
+           |  \
+           |    \
+           |      \
+           |        \  E0
+        E1 |          \
+           |            \
+           |              \
+           |                \
+           |                  \
+        V0 +-------------------+ V1
+                    E2
+
+   i.e. "facet" F0 = E0 (which is opposite V0), "facet" F1 = E1 (which is opposite V1), etc...
+
+   DIM=3: Tetrahedron: facets are faces (triangles)
+
+                 V3 +
+                   /|\
+                  / | \
+                 |  |  \
+                |   |   \
+               |    |    \
+               |    |  F1 \               F0 (opposite V0)
+              | F2  |      \
+              |     |       \
+             |   V0 +--------+ V2
+             |     /      __/
+            |    /  F3 __/
+            |  /    __/
+           | /   __/
+          |/  __/
+       V1 +--/
+
+   i.e. facet F0 = [V1, V2, V3] (which is opposite V0),
+        facet F1 = [V0, V3, V2] (which is opposite V1),
+        facet F2 = [V0, V1, V3] (which is opposite V2),
+        facet F3 = [V0, V2, V1] (which is opposite V3).
+
+   Higher DIM: the pattern continues...
+
+   EXAMPLE:  Mesh of two triangles.  In this case, a half-facet == half-edge.
+
+        V3 +-------------------+ V2
+           |\                  |
+           |  \                |
+           |    \        T1    |
+           |      \            |
+           |        \          |
+           |          \        |
+           |            \      |
+           |     T0       \    |
+           |                \  |
+           |                  \|
+        V0 +-------------------+ V1
+
+   Triangle Connectivity and Sibling Half-Facet (Half-Edge) Data Struct:
+
+   triangle |   vertices   |     sibling half-edges
+    indices |  V0, V1, V2  |     E0,     E1,      E2
+   ---------+--------------+-------------------------
+       0    |   0,  1,  3  |  <1,1>, <NULL>,  <NULL>
+       1    |   1,  2,  3  | <NULL>,  <0,0>,  <NULL>
+
+   where <Ti,Ei> is a half-edge, where Ti is the *neighbor* triangle index, and
+   Ei is the local edge index of Ti that correponds to the half-edge. <NULL> means
+   there is no neighbor triangle.
+
+   Vertex-to-Half-Edge Data Struct:
+
+     vertex |  adjacent
+    indices | half-edge
+   ---------+------------
+       0    |   <0,2>
+       1    |   <1,2>
+       2    |   <1,0>
+       3    |   <0,1>
+
+   Diagram depicting half-edges:
+
+                   <1,0>
+        V3 +-------------------+ V2
+           |\                  |
+           |  \          T1    |
+           |    \              |
+           |      \  <1,1>     |
+     <0,1> |        \          | <1,2>
+           |    <0,0> \        |
+           |            \      |
+           |              \    |
+           |     T0         \  |
+           |                  \|
+        V0 +-------------------+ V1
+                   <0,2>
+
+   Note: in this example, only need one adjacent half-edge because there are no
+         non-manifold vertices.  But we do allow for non-manifold vertices!
+
 
     """
 
