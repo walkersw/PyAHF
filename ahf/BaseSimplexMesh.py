@@ -15,6 +15,8 @@ import numpy as np
 # from ahf import RealType, PointType
 from ahf import *
 
+from ahf.Vtx2HalfFacet_Mapping import *
+
 # define data types
 
 # half-facet
@@ -40,18 +42,24 @@ class BaseSimplexMesh:
     
     Note: no vertex coordinates are stored in this class; this is purely topological.
 
-   Scheme for ordering *local* topological entities
-   ------------------------------------------------
+    Scheme for ordering *local* topological entities
+    ------------------------------------------------
 
-   RULE: local "facet" Fi is always *opposite* local vertex Vi.
+    RULE: local "facet" Fi is always *opposite* local vertex Vi.
 
-   DIM=1. Interval: facets are vertices (points)
+    DIM=0. Point: (SPECIAL CASE) facets do not exist,
+                  so we identify the vertex with itself as a facet.
+        V0 +
+
+    i.e. "facet" F0 = V0
+
+    DIM=1. Interval: facets are vertices (points)
 
         V0 +-------------------+ V1
 
-   i.e. "facet" F0 = V1 (which is opposite V0), and "facet" F1 = V0 (which is opposite V1)
+    i.e. "facet" F0 = V1 (which is opposite V0), and "facet" F1 = V0 (which is opposite V1)
 
-   DIM=2. Triangle: facets are edges (line segments)
+    DIM=2. Triangle: facets are edges (line segments)
 
         V2 +
            |\
@@ -67,9 +75,11 @@ class BaseSimplexMesh:
         V0 +-------------------+ V1
                     E2
 
-   i.e. "facet" F0 = E0 (which is opposite V0), "facet" F1 = E1 (which is opposite V1), etc...
+    i.e. "facet" F0 = E0 := [V1, V2] (which is opposite V0),
+         "facet" F1 = E1 := [V2, V0] (which is opposite V1),
+         "facet" F2 = E2 := [V0, V1] (which is opposite V1).
 
-   DIM=3: Tetrahedron: facets are faces (triangles)
+    DIM=3: Tetrahedron: facets are faces (triangles)
 
                  V3 +
                    /|\
@@ -88,14 +98,14 @@ class BaseSimplexMesh:
           |/  __/
        V1 +--/
 
-   i.e. facet F0 = [V1, V2, V3] (which is opposite V0),
-        facet F1 = [V0, V3, V2] (which is opposite V1),
-        facet F2 = [V0, V1, V3] (which is opposite V2),
-        facet F3 = [V0, V2, V1] (which is opposite V3).
+    i.e. facet F0 = [V1, V2, V3] (which is opposite V0),
+         facet F1 = [V0, V3, V2] (which is opposite V1),
+         facet F2 = [V0, V1, V3] (which is opposite V2),
+         facet F3 = [V0, V2, V1] (which is opposite V3).
 
-   Higher DIM: the pattern continues...
+    Higher DIM: the pattern continues...
 
-   EXAMPLE:  Mesh of two triangles.  In this case, a half-facet == half-edge.
+    EXAMPLE:  Mesh of two triangles.  In this case, a half-facet == half-edge.
 
         V3 +-------------------+ V2
            |\                  |
@@ -110,56 +120,89 @@ class BaseSimplexMesh:
            |                  \|
         V0 +-------------------+ V1
 
-   Triangle Connectivity and Sibling Half-Facet (Half-Edge) Data Struct:
+    Triangle Connectivity and Sibling Half-Facet (Half-Edge) Data Struct:
 
-   triangle |   vertices   |     sibling half-edges
-    indices |  V0, V1, V2  |     E0,     E1,      E2
-   ---------+--------------+-------------------------
-       0    |   0,  1,  3  |  <1,1>, <NULL>,  <NULL>
-       1    |   1,  2,  3  | <NULL>,  <0,0>,  <NULL>
+    triangle |   vertices   |     sibling half-edges
+     indices |  V0, V1, V2  |     E0,     E1,      E2
+    ---------+--------------+-------------------------
+        0    |   0,  1,  3  |  (1,1), (NULL),  (NULL)
+        1    |   1,  2,  3  | (NULL),  (0,0),  (NULL)
 
-   where <Ti,Ei> is a half-edge, where Ti is the *neighbor* triangle index, and
-   Ei is the local edge index of Ti that correponds to the half-edge. <NULL> means
-   there is no neighbor triangle.
+    where (Ti,Ei) is a half-edge, where Ti is the *neighbor* triangle index, and
+    Ei is the local edge index of Ti that correponds to the half-edge. (NULL) means
+    there is no neighbor triangle.
 
-   Vertex-to-Half-Edge Data Struct:
+    Vertex-to-Half-Edge Data Struct:
 
-     vertex |  adjacent
-    indices | half-edge
-   ---------+------------
-       0    |   <0,2>
-       1    |   <1,2>
-       2    |   <1,0>
-       3    |   <0,1>
+      vertex |  adjacent
+     indices | half-edge
+    ---------+------------
+        0    |   (0,2)
+        1    |   (1,2)
+        2    |   (1,0)
+        3    |   (0,1)
 
-   Diagram depicting half-edges:
+    Diagram depicting half-edges:
 
-                   <1,0>
+                   (1,0)
         V3 +-------------------+ V2
            |\                  |
            |  \          T1    |
            |    \              |
-           |      \  <1,1>     |
-     <0,1> |        \          | <1,2>
-           |    <0,0> \        |
+           |      \  (1,1)     |
+     (0,1) |        \          | (1,2)
+           |    (0,0) \        |
            |            \      |
            |              \    |
            |     T0         \  |
            |                  \|
         V0 +-------------------+ V1
-                   <0,2>
+                   (0,2)
 
-   Note: in this example, only need one adjacent half-edge because there are no
-         non-manifold vertices.  But we do allow for non-manifold vertices!
-
-
+    Note: in this example, only need one adjacent half-edge because there are no
+          non-manifold vertices.  But we do allow for non-manifold vertices!
     """
 
     def __init__(self):
 
-        self._reserve_buffer = 0.2
-        self.VtxMap = None
+        # flag to indicate if mesh cells may be added or modified.
+        #  true  = cells can be added, modified
+        #  false = the mesh cells cannot be changed!
+        self._mesh_open = True
+        
+        # amount of extra memory to allocate when re-allocating
+        #    Cell and Vtx2HalfFacets (number between 0.0 and 1.0).
+        self._cell_reserve_buffer = 0.2 # extra 20%
+        
+        
+        
+        
+        
+        # estimate of the size to allocate in Vtx2HalfFacets
+        self._estimate_size_Vtx2HalfFacets = 0
+        
+        # referenced vertices in Cell and (possibly multiple) attached half-facet(s)
+        self.Vtx2HalfFacets = Vtx2HalfFacetMap()
+        
+        # intermediate data structure for building sibling half-facet information
+        self._v2hfs = Vtx2HalfFacetMap() # for a given vertex, it references multiple half-facets.
+        # Note: this data structure will NOT NECESSARILY store all referenced vertices
+        #       in the triangulation.  This is because the vertex with smallest index
+        #       will never be referenced (for example).  This is an internal structure that
+        #       is only used to construct the sibling half-facet information (stored in Cell).
+
+        
         self._size = 0
+
+
+
+    /* main data storage */
+    typedef CellSimplexType<CELL_DIM> CellSimplex_DIM; // convenient
+    // connectivity and sibling half-facet data
+    std::vector<CellSimplex_DIM>  Cell;
+
+
+
 
     def __str__(self):
         OUT_STR = ("The size of the Vertex-to-Half-Facet Map is: " + str(self._size) + "\n"

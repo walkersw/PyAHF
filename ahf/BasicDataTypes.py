@@ -1,10 +1,11 @@
 """
-ahf.Vtx2HalfFacet_Mapping.py
+ahf.BasicDataTypes.py
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Class for storing an array of mappings from global vertex indices to (several)
-incident half-facets.
+Definition of small light-weight classes and data types used to hold
+mesh cell data, mesh vertex coordinate data, etc.
 
-Also, see "BaseSimplexMesh.py" for more explanation.
+Note: these structs are used within BaseSimplexMesh and ???, for storing
+      cell and point coordinate data.
 
 Copyright (c) 08-11-2022,  Shawn W. Walker
 """
@@ -14,6 +15,12 @@ import numpy as np
 # from ahf import NULL_Small, NULL_Med, NULL_Vtx, NULL_Cell
 # from ahf import RealType, PointType
 from ahf import *
+
+from ahf.Vtx2HalfFacet_Mapping import *
+
+
+
+
 
 # define data types
 
@@ -30,7 +37,7 @@ VtxHalfFacetType = np.dtype({'names': ['vtx', 'ci', 'fi'],
 NULL_VtxHalfFacet = np.array((NULL_Vtx, NULL_Cell, NULL_Small), dtype=VtxHalfFacetType)
 
 
-class Vtx2HalfFacetMap:
+class CellSimplexType:
     """
     Class for mapping from a given vertex index to (several) incident
     half-facets.  This class stores an array of these mappings.
