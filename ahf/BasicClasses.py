@@ -98,8 +98,9 @@ class CellSimplexType:
         dimhf  = self.halffacet.shape
         if not np.array_equal(dimvtx,dimhf):
             print("vtx and halffacet arrays are not the same size!")
-        OUT_STR = ("The number of cells is: " + str(self._size) + "\n"
-                 + "The *reserved* size of cells is: " + str(dimvtx[0]) + "\n" )
+        OUT_STR = ("The topological dimension is: " + str(self._cell_dim) + "\n"
+                 + "The number of cells is: " + str(self._size) + "\n"
+                 + "The *reserved* size of cells is: " + str(dimvtx[0]) + "\n")
         return OUT_STR
 
     def Clear(self):
@@ -298,8 +299,9 @@ class VtxCoordType:
 
     def __str__(self):
         dimcoord = self.coord.shape
-        OUT_STR = ("The number of vertices is: " + str(self._size) + "\n"
-                 + "The *reserved* size of vertices is: " + str(dimcoord[0]) + "\n" )
+        OUT_STR = ("The geometric dimension is: " + str(self._geo_dim) + "\n"
+                 + "The number of vertices is: " + str(self._size) + "\n"
+                 + "The *reserved* size of vertices is: " + str(dimcoord[0]) + "\n")
         return OUT_STR
 
     def Clear(self):
