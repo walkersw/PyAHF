@@ -192,34 +192,53 @@ class BaseSimplexMesh:
         return OUT_STR
 
     def Clear(self):
+        """This resets all mesh data."""
         self.Cell.Clear()
         self.Vtx2HalfFacets.Clear()
         self._v2hfs.Clear()
         
         self._mesh_open = True
 
+    def Open(self):
+        """This sets the _mesh_open flag to True to indicate that
+        the mesh can be modified."""
+        self._mesh_open = True
+
+    def Close(self):
+        """This sets the _mesh_open flag to False to indicate that
+        the mesh cannot be modified."""
+        self._mesh_open = False
+
+    def Is_Mesh_Open(self):
+        """This prints and returns whether or not the mesh is open."""
+        if not self._mesh_open:
+            print("Mesh is not open for modification!")
+            print("     You must first use the 'Open' method.")
+        return self._mesh_open
+
     def Num_Cell(self):
+        """Returns the number of cells in the mesh."""
         return self.Cell.Size()
 
+    def Top_Dim(self):
+        """Returns the topological dimension of the mesh."""
+        return self.Cell.Dim()
+
+    def Reserve(self, num_C):
+        """Allocate memory to hold a mesh of a given size (plus a little)."""
+        if not self.Is_Mesh_Open():
+            return
+
+        # compute the actual size to allocate for the cells
+        Desired_Size = np.rint(np.ceil((1.0 + self._cell_reserve_buffer) * num_C))
+        self.Cell.Reserve(Desired_Size)
+        # guess on what to reserve for the intermediate data structure
+        num_v2hfs = (self.Cell.Dim() + 1) * Num_C
+        self.v2hfs.Reserve(num_v2hfs)
 
 
 
 
-    def Reserve(self, num_VM):
-        """This just pre-allocates, or re-sizes.
-         The _size attribute is unchanged."""
-        # compute the space needed (with extra) to allocate
-        Desired_Size = np.rint(np.ceil((1.0 + self._reserve_buffer) * num_VM))
-        if self.VtxMap is None:
-            # fill the array with null values to start
-            self.VtxMap = np.full(Desired_Size.astype(VtxIndType), NULL_VtxHalfFacet, dtype=VtxHalfFacetType)
-        elif self.VtxMap.size < Desired_Size:
-            old_size = self.VtxMap.size
-            self.VtxMap = np.resize(self.VtxMap,Desired_Size)
-            # put in NULL values
-            self.VtxMap[old_size:Desired_Size] = NULL_VtxHalfFacet
-        else:
-            pass
 
     def Append(self, *args):
         """Append a (vertex, half-facet) pair; half-facet = (cell index, local facet index)
