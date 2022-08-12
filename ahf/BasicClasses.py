@@ -284,13 +284,13 @@ class CellSimplexType:
 class VtxCoordType:
     """
     Class for storing vertex coordinate data.
-    GEO_DIM >= 1 is the geometric (ambient) dimension that the points live in.
+    GEO_DIM >= 0 is the geometric (ambient) dimension that the points live in.
     """
 
     def __init__(self,GEO_DIM):
 
-        if (GEO_DIM<1):
-            print("Error: geometric dimension must be positive!")
+        if (GEO_DIM<0):
+            print("Error: geometric dimension must be non-negative!")
         self._geo_dim = GEO_DIM
         # vertex coordinates (initialize)
         self.coord = np.full((1, self._geo_dim), 0.0, dtype=PointType)
