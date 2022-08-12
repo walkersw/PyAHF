@@ -236,36 +236,42 @@ class BaseSimplexMesh:
         num_v2hfs = (self.Cell.Dim() + 1) * Num_C
         self.v2hfs.Reserve(num_v2hfs)
 
-
-
-
-
-    def Append(self, *args):
-        """Append a (vertex, half-facet) pair; half-facet = (cell index, local facet index)
-        if one argument is given, it should be a VtxHalfFacetType;
-        elif two arguments are given, it should be a vertex index, followed by a HalfFacetType;
-        else three arguments are given, (vtx index, cell index, local facet index).
+    def Append_Cell(self, vtx_ind):
+        """Append a single cell by giving its global vertex indices (as an array).
         """
-        
-        if (self.VtxMap is None) or (self.VtxMap.size==self._size):
-            # need to reserve space
-            Reserve(self, self._size+10)
-        
-        if len(args)==1:
-            if args[0].dtype!=VtxHalfFacetType:
-                print("Error: input is not a VtxHalfFacetType!")
-            self.VtxMap[self._size] = args[0]
-            self._size += 1
-        elif len(args)==2:
-            if args[1].dtype!=HalfFacetType:
-                print("Error: second input should be a HalfFacetType!")
-            self.VtxMap[self._size] = (args[0], args[1]['ci'], args[1]['fi'])
-            self._size += 1
-        elif len(args)==3:
-            self.VtxMap[self._size] = (args[0], args[1], args[2])
-            self._size += 1
-        else:
-            print("incorrect number of arguments!")
+        if not self.Is_Mesh_Open():
+            return
+
+        self.Cell.Append(vtx_ind)
+
+    def Append_Cell_Batch(self, num_cells, vtx_ind):
+        """Append several cells at once by giving their global vertex
+        indices (as an array).
+        """
+        if not self.Is_Mesh_Open():
+            return
+
+        self.Cell.Append_Batch(num_cells, vtx_ind)
+
+    def Set_Cell(self, cell_ind, vtx_ind):
+        """Set the vertex data for a given cell (that already exists) by giving its
+        global vertex indices (as an array).
+        """
+        if not self.Is_Mesh_Open():
+            return
+
+        self.Cell.Set(cell_ind, vtx_ind)
+
+    def Set_All_Cell(self, num_cells, vtx_ind):
+        """Set all cell data at once.
+        """
+        if not self.Is_Mesh_Open():
+            return
+
+        self.Cell.Set_All(num_cells, vtx_ind)
+
+
+
 
     def Get_Unique_Vertices(self):
         """Get unique list of vertices.
