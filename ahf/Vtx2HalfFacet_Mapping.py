@@ -82,7 +82,7 @@ class Vtx2HalfFacetMap:
 
         self._reserve_buffer = 0.2
         self.VtxMap = None
-        self._size = 0
+        self._size  = 0
 
     def __str__(self):
         OUT_STR = ("The size of the Vertex-to-Half-Facet Map is: " + str(self._size) + "\n"
@@ -92,7 +92,7 @@ class Vtx2HalfFacetMap:
     def Clear(self):
         del(self.VtxMap)
         self.VtxMap = None
-        self._size = 0
+        self._size  = 0
 
     def Size(self):
         return self._size
