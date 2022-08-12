@@ -156,7 +156,7 @@ class Vtx2HalfFacetMap:
         unique_vertices = np.unique(all_vertices)
         return unique_vertices
 
-    def Display_Unique_Vertices(self):
+    def Print_Unique_Vertices(self):
         """Print unique list of vertices to the screen.
         Does not require 'Sort()' to have been run.
         """
@@ -210,7 +210,7 @@ class Vtx2HalfFacetMap:
         hf = np.array(self.VtxMap[first_index][['ci','fi']], dtype=HalfFacetType)
         return hf
 
-    def Display_Half_Facets(self, vi=NULL_Vtx):
+    def Print_Half_Facets(self, vi=NULL_Vtx):
         """Print out half-facets attached to a given vertex.
         If no argument is given, or NULL_Vtx is given,
         then all half-facets for all stored vertices will be displayed.

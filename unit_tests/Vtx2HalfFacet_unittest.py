@@ -70,7 +70,7 @@ class TestVtx2HalfFacet(unittest.TestCase):
         hf = self.V2HF.Get_Half_Facet(10)
         self.assertEqual(hf==hf1, True, "Should be (8, 1).")
 
-    def test_Display(self):
+    def test_Print(self):
         self.V2HF.Reserve(5)
         print(" ")
         
@@ -85,15 +85,13 @@ class TestVtx2HalfFacet(unittest.TestCase):
         hf[['ci', 'fi']] = (11, 0)
         self.V2HF.Append(5, hf)
 
-        self.V2HF.Display_Half_Facets()
+        self.V2HF.Print_Half_Facets()
         self.V2HF.Sort()
-        self.V2HF.Display_Half_Facets()
+        self.V2HF.Print_Half_Facets()
         
         unique_vertices = self.V2HF.Get_Unique_Vertices()
         self.assertEqual( np.array_equal(unique_vertices,[1, 3, 5]), True, "Should be [1, 3, 5].")
-        self.V2HF.Display_Unique_Vertices()
-
-
+        self.V2HF.Print_Unique_Vertices()
 
 
 if __name__ == '__main__':

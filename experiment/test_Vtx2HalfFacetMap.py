@@ -58,10 +58,10 @@ hf = V2HF.Get_Half_Facet(10)
 
 print(hf)
 
-V2HF.Display_Half_Facets()
+V2HF.Print_Half_Facets()
 
 
 TF = V2HF.VtxMap[1]==NULL_VtxHalfFacet
 print(TF)
 
-V2HF.Display_Unique_Vertices()
+V2HF.Print_Unique_Vertices()
