@@ -141,6 +141,14 @@ class CellSimplexType:
         else:
             pass
 
+    def Capacity(self):
+        """This just returns the reserved number of cells."""
+        dimvtx = self.vtx.shape
+        dimhf  = self.halffacet.shape
+        if not np.array_equal(dimvtx,dimhf):
+            print("vtx and halffacet arrays are not the same size!")
+        return dimvtx[0]
+
     def Append(self, vtx_ind):
         """Append a single cell by giving its global vertex indices (as an array).
         """
@@ -334,6 +342,11 @@ class VtxCoordType:
             self.coord[old_size:Desired_Size][:] = 0.0
         else:
             pass
+
+    def Capacity(self):
+        """This just returns the reserved number of vertex coordinates."""
+        dimcoord = self.coord.shape
+        return dimcoord[0]
 
     def Append(self, vtx_coord):
         """Append a single vertex by giving its coordinates (as an array).

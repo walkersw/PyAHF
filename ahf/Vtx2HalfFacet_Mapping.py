@@ -116,6 +116,10 @@ class Vtx2HalfFacetMap:
         else:
             pass
 
+    def Capacity(self):
+        """This just returns the reserved number of vtx2half-facets."""
+        return len(self.VtxMap)
+
     def Append(self, *args):
         """Append a (vertex, half-facet) pair; half-facet = (cell index, local facet index)
         if one argument is given, it should be a VtxHalfFacetType;

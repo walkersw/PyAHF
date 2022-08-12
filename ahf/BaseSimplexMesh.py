@@ -15,21 +15,10 @@ import numpy as np
 # from ahf import RealType, PointType
 from ahf import *
 
-from ahf.Vtx2HalfFacet_Mapping import *
+#from ahf.Vtx2HalfFacet_Mapping import *
+from ahf.BasicClasses import *
 
-# define data types
 
-# half-facet
-HalfFacetType = np.dtype({'names': ['ci', 'fi'],
-                          'formats': [CellIndType, SmallIndType],
-                          'titles': ['cell index', 'local facet (entity) index']})
-NULL_HalfFacet = np.array((NULL_Cell, NULL_Small), dtype=HalfFacetType)
-
-# vertex half-facet
-VtxHalfFacetType = np.dtype({'names': ['vtx', 'ci', 'fi'],
-                             'formats': [VtxIndType, CellIndType, SmallIndType],
-                             'titles': ['global vertex index', 'cell index', 'local facet (entity) index']})
-NULL_VtxHalfFacet = np.array((NULL_Vtx, NULL_Cell, NULL_Small), dtype=VtxHalfFacetType)
 
 FIX!!!!
 
@@ -163,8 +152,14 @@ class BaseSimplexMesh:
           non-manifold vertices.  But we do allow for non-manifold vertices!
     """
 
-    def __init__(self):
+    def __init__(self,CELL_DIM):
 
+        if (CELL_DIM<0):
+            print("Error: cell dimension must be non-negative!")
+
+        # connectivity and sibling half-facet data
+        self.Cell = CellSimplexType(CELL_DIM)
+        
         # flag to indicate if mesh cells may be added or modified.
         #  true  = cells can be added, modified
         #  false = the mesh cells cannot be changed!
@@ -173,10 +168,6 @@ class BaseSimplexMesh:
         # amount of extra memory to allocate when re-allocating
         #    Cell and Vtx2HalfFacets (number between 0.0 and 1.0).
         self._cell_reserve_buffer = 0.2 # extra 20%
-        
-        
-        
-        
         
         # estimate of the size to allocate in Vtx2HalfFacets
         self._estimate_size_Vtx2HalfFacets = 0
@@ -191,34 +182,28 @@ class BaseSimplexMesh:
         #       will never be referenced (for example).  This is an internal structure that
         #       is only used to construct the sibling half-facet information (stored in Cell).
 
-        
-        self._size = 0
-
-
-
-    /* main data storage */
-    typedef CellSimplexType<CELL_DIM> CellSimplex_DIM; // convenient
-    // connectivity and sibling half-facet data
-    std::vector<CellSimplex_DIM>  Cell;
-
-
-
-
     def __str__(self):
-        OUT_STR = ("The size of the Vertex-to-Half-Facet Map is: " + str(self._size) + "\n"
-                 + "The *reserved* size of the Vertex-to-Half-Facet Map is: " + str(len(self.VtxMap)) + "\n" )
+        OUT_STR = ("The topological dimension is: " + str(self.Cell.Dim()) + "\n"
+                 + "The number of cells is: " + str(self.Cell.Size()) + "\n"
+                 + "The *reserved* size of cells is: " + str(self.Cell.Capacity()) + "\n"
+                 + "The size of the Vertex-to-Half-Facet Map is: " + str(self.Vtx2HalfFacets.Size()) + "\n"
+                 + "The *reserved* size of the Vertex-to-Half-Facet Map is: " 
+                 + str(self.Vtx2HalfFacets.Capacity()) + "\n" )
         return OUT_STR
 
     def Clear(self):
-        del(self.VtxMap)
-        self.VtxMap = None
-        self._size = 0
+        self.Cell.Clear()
+        self.Vtx2HalfFacets.Clear()
+        self._v2hfs.Clear()
+        
+        self._mesh_open = True
 
-    def Size(self):
-        return self._size
+    def Num_Cell(self):
+        return self.Cell.Size()
 
-    # // return non-const reference to internal data
-    # std::vector<VtxHalfFacetType>& Get_VtxMap() { return VtxMap; };
+
+
+
 
     def Reserve(self, num_VM):
         """This just pre-allocates, or re-sizes.
