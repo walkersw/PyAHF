@@ -289,12 +289,12 @@ class CellSimplexType:
         # self.VtxMap = np.sort(self.VtxMap, order=['vtx', 'ci', 'fi'])
 
 
-
-
-
     def Vtx2Adjacent(self, v_in, ci, fi):
-        """Given a vertex, cell, and half-facet, return the other vertices in the half-facet.
-        If the half-facet does not contain the given vertex, then the output is NULL.
+        """Given a global vertex index, cell index, and local facet index, return the *other*
+        global vertices in that facet.  If the facet does not contain the given vertex,
+        then the output is an array of NULL_Vtx's.
+        If Dim() < 2, then the output is an empty array, because facets are either non-existent
+        or they contain only one vertex.
         Note: (ci,fi) is a half-facet, where ci is a cell index, and fi is a local facet index.
         """
         if (fi < 0) or (fi > self._cell_dim):
@@ -303,11 +303,11 @@ class CellSimplexType:
         
         if (self._cell_dim >= 2):
             # get the vertices in the half-facet "fi"
-            vtx_in_hf = self.Get_Global_Vertices_In_Facet(self.Cell.vtx[ci], fi)
+            vtx_in_hf = self.Get_Global_Vertices_In_Facet(self.vtx[ci], fi)
             # now return the vertices in the half-facet, EXCEPT v_in (i.e. the adjacent vertices)
             v_adj = self.Get_Adj_Vertices_In_Facet(vtx_in_hf, v_in)
         else:
-            v_adj = np.zeros(0, NULL_Vtx, dtype=VtxIndType)
+            v_adj = np.zeros(0, dtype=VtxIndType)
         return v_adj
 
     def Get_Local_Vertex_Index_In_Cell(self, vi, cell_vtx):
@@ -361,7 +361,7 @@ class CellSimplexType:
         return facet_vtx
 
     def Get_Adj_Vertices_In_Facet(self, fv, vi):
-        """Returns the (facet) vertices in fv (numpy array) that are not equal to vi, where
+        """Returns the (global) facet vertices in fv (numpy array) that are not equal to vi, where
         vi is also in the facet, i.e. it returns the vertices in the facet that are *adjacent* to vi.
         Note: if vi is not in the facet, then returns an array containing NULL_Vtx's (NULL values).
         Note: if self.Dim()<=1, then returned array has zero length.
@@ -385,15 +385,22 @@ class CellSimplexType:
         return adj_vtx
 
     def Get_Vertex_With_Largest_Index_In_Facet(self, vtx_ind, fi):
-        """Given the vertex indices of a cell and local facet index,
+        """Given the global vertex indices of a cell and local facet index,
         find the vertex index in that facet with the largest index.
         """
-        
         if (fi < 0) or (fi > self._cell_dim):
             print("Error: facet index fi is negative or bigger than cell dimension!")
         assert ((fi >= 0) and (fi <= self._cell_dim)), "Facet index is invalid!"
         
-        MAX_vi = np.max(vi for vi in vtx_ind if vi != vtx_ind[fi])
+        # note: vertex fi is opposite facet fi
+        #       so, facet fi does NOT contain vertex fi
+        
+        # only take valid values
+        vtx_sub = vtx_ind[0:self._cell_dim+1]
+        if (self._cell_dim==0):
+            MAX_vi = NULL_Vtx
+        else:
+            MAX_vi = np.max([vi for vi in vtx_sub if vi != vtx_sub[fi]])
         return MAX_vi
 
     def Adj_Vertices_In_Facet_Equal(self, a, b):

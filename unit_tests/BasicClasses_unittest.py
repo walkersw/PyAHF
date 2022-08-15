@@ -101,6 +101,90 @@ class TestBasicClasses(unittest.TestCase):
         self.assertEqual(np.array_equal(self.VC.coord[4],[4.7, 10.6, -5.1]), True, "Should be [4.7, 10.6, -5.1].")
         self.assertEqual(self.VC.Size(), 5, "Should be 5.")
 
+    def test_Baby_Methods(self):
+        del(self.Cell)
+        del(self.VC)
+        self.Cell = CellSimplexType(3)
+        self.VC   = VtxCoordType(3)
+        
+        Cell_0D = CellSimplexType(0)
+        Cell_0D.Append_Batch(4, [88, 4, 21, 14])
+        print(Cell_0D)
+        self.assertEqual(Cell_0D.Adj_Vertices_In_Facet_Equal(np.array([]), np.array([])), True, "Should be True.")
+        self.assertEqual(Cell_0D.Get_Vertex_With_Largest_Index_In_Facet(np.array([88]), 0)==NULL_Vtx, True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_0D.Get_Adj_Vertices_In_Facet(np.array([]), 34),np.array([])), True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_0D.Get_Global_Vertices_In_Facet(np.array([88]), 0),np.array([])), \
+                         True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_0D.Get_Local_Facets_Sharing_Local_Vertex(0),np.array([])), \
+                         True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_0D.Get_Local_Vertices_Of_Local_Facet(0),np.array([])), \
+                         True, "Should be True.")
+        self.assertEqual(Cell_0D.Get_Local_Vertex_Index_In_Cell(188, [32])==NULL_Small, True, "Should be True.")
+        self.assertEqual(Cell_0D.Get_Local_Vertex_Index_In_Cell(32, [32])==0, True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_0D.Vtx2Adjacent(5, 2, 0),np.array([])), True, "Should be True.")
+
+        Cell_1D = CellSimplexType(1)
+        Cell_1D.Append_Batch(4, [0, 3, 4, 12, 88, 62, 99, 120])
+        print(Cell_1D)
+        self.assertEqual(Cell_1D.Adj_Vertices_In_Facet_Equal(np.array([]), np.array([])), True, "Should be True.")
+        self.assertEqual(Cell_1D.Get_Vertex_With_Largest_Index_In_Facet(np.array([78, 35]), 1)==78, True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_1D.Get_Adj_Vertices_In_Facet(np.array([67]), 34),np.array([])), True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_1D.Get_Global_Vertices_In_Facet(np.array([23, 34]), 0),np.array([34])), \
+                         True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_1D.Get_Local_Facets_Sharing_Local_Vertex(1),np.array([0])), \
+                         True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_1D.Get_Local_Vertices_Of_Local_Facet(0),np.array([1])), \
+                         True, "Should be True.")
+        self.assertEqual(Cell_1D.Get_Local_Vertex_Index_In_Cell(188, [19, 56])==NULL_Small, True, "Should be True.")
+        self.assertEqual(Cell_1D.Get_Local_Vertex_Index_In_Cell(56, [19, 56])==1, True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_1D.Vtx2Adjacent(87, 2, 1),np.array([])), True, "Should be True.")
+        
+        Cell_2D = CellSimplexType(2)
+        Cell_2D.Append_Batch(4, [0, 3, 5, 4, 12, 9, 88, 62, 54, 99, 120, 101])
+        print(Cell_2D)
+        self.assertEqual(Cell_2D.Adj_Vertices_In_Facet_Equal(np.array([12]), np.array([13])), False, "Should be False.")
+        self.assertEqual(Cell_2D.Get_Vertex_With_Largest_Index_In_Facet(np.array([78, 35, 66]), 0)==66, True, "Should be True.")
+        self.assertEqual(Cell_2D.Get_Vertex_With_Largest_Index_In_Facet(np.array([78, 35, 66]), 1)==78, True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_2D.Get_Adj_Vertices_In_Facet(np.array([18, 91]), 34),np.array([NULL_Vtx])), \
+                         True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_2D.Get_Adj_Vertices_In_Facet(np.array([18, 91]), 18),np.array([91])), \
+                         True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_2D.Get_Global_Vertices_In_Facet(np.array([53, 34, 12]), 1),np.array([53, 12])), \
+                         True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_2D.Get_Local_Facets_Sharing_Local_Vertex(2),np.array([0, 1])), \
+                         True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_2D.Get_Local_Vertices_Of_Local_Facet(1),np.array([0, 2])), \
+                         True, "Should be True.")
+        self.assertEqual(Cell_2D.Get_Local_Vertex_Index_In_Cell(188, [91, 29, 56])==NULL_Small, True, "Should be True.")
+        self.assertEqual(Cell_2D.Get_Local_Vertex_Index_In_Cell(29, [91, 29, 56])==1, True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_2D.Vtx2Adjacent(87, 3, 1),np.array([NULL_Vtx])), True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_2D.Vtx2Adjacent(101, 3, 1),np.array([99])), True, "Should be True.")
+        self.assertEqual(np.array_equal(Cell_2D.Vtx2Adjacent(99, 3, 2),np.array([120])), True, "Should be True.")
+        
+        self.Cell.Reserve(5)
+        print(" ")
+        
+        self.Cell.Append_Batch(4, [0, 3, 5, 1, 4, 12, 9, 6, 88, 62, 54, 72, 99, 120, 101, 154])
+        print(self.Cell)
+        self.assertEqual(self.Cell.Adj_Vertices_In_Facet_Equal(np.array([12, 34]), np.array([13, 34])), False, "Should be False.")
+        self.assertEqual(self.Cell.Get_Vertex_With_Largest_Index_In_Facet(np.array([78, 35, 17, 66]), 2)==78, True, "Should be True.")
+        self.assertEqual(self.Cell.Get_Vertex_With_Largest_Index_In_Facet(np.array([78, 35, 17, 66]), 0)==66, True, "Should be True.")
+        self.assertEqual(np.array_equal(self.Cell.Get_Adj_Vertices_In_Facet(np.array([18, 91, 23]), 34), \
+                         np.array([NULL_Vtx, NULL_Vtx])), True, "Should be True.")
+        self.assertEqual(np.array_equal(self.Cell.Get_Adj_Vertices_In_Facet(np.array([18, 91, 23]), 18), \
+                         np.array([91, 23])), True, "Should be True.")
+        self.assertEqual(np.array_equal(self.Cell.Get_Global_Vertices_In_Facet(np.array([53, 5, 12, 8]), 2),np.array([53, 5, 8])), \
+                         True, "Should be True.")
+        self.assertEqual(np.array_equal(self.Cell.Get_Local_Facets_Sharing_Local_Vertex(3),np.array([0, 1, 2])), \
+                         True, "Should be True.")
+        self.assertEqual(np.array_equal(self.Cell.Get_Local_Vertices_Of_Local_Facet(1),np.array([0, 2, 3])), \
+                         True, "Should be True.")
+        self.assertEqual(self.Cell.Get_Local_Vertex_Index_In_Cell(188, [91, 29, 13, 56])==NULL_Small, True, "Should be True.")
+        self.assertEqual(self.Cell.Get_Local_Vertex_Index_In_Cell(13, [91, 29, 13, 56])==2, True, "Should be True.")
+        self.assertEqual(np.array_equal(self.Cell.Vtx2Adjacent(87, 1, 2),np.array([NULL_Vtx, NULL_Vtx])), True, "Should be True.")
+        self.assertEqual(np.array_equal(self.Cell.Vtx2Adjacent(9, 1, 1),np.array([4, 6])), True, "Should be True.")
+        self.assertEqual(np.array_equal(self.Cell.Vtx2Adjacent(4, 1, 2),np.array([12, 6])), True, "Should be True.")
+
     def test_Print(self):
         self.Cell = CellSimplexType(2)
         self.VC   = VtxCoordType(2)
