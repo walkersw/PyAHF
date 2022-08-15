@@ -289,6 +289,130 @@ class CellSimplexType:
         # self.VtxMap = np.sort(self.VtxMap, order=['vtx', 'ci', 'fi'])
 
 
+
+
+
+    def Vtx2Adjacent(self, v_in, ci, fi):
+        """Given a vertex, cell, and half-facet, return the other vertices in the half-facet.
+        If the half-facet does not contain the given vertex, then the output is NULL.
+        Note: (ci,fi) is a half-facet, where ci is a cell index, and fi is a local facet index.
+        """
+        if (fi < 0) or (fi > self._cell_dim):
+            print("Error: facet index fi is negative or bigger than cell dimension!")
+        assert ((fi >= 0) and (fi <= self._cell_dim)), "Facet index is invalid!"
+        
+        if (self._cell_dim >= 2):
+            # get the vertices in the half-facet "fi"
+            vtx_in_hf = self.Get_Global_Vertices_In_Facet(self.Cell.vtx[ci], fi)
+            # now return the vertices in the half-facet, EXCEPT v_in (i.e. the adjacent vertices)
+            v_adj = self.Get_Adj_Vertices_In_Facet(vtx_in_hf, v_in)
+        else:
+            v_adj = np.zeros(0, NULL_Vtx, dtype=VtxIndType)
+        return v_adj
+
+    def Get_Local_Vertex_Index_In_Cell(self, vi, cell_vtx):
+        """Find the *local* index of the given *global* vertex within the given cell vertices.
+        """
+
+        # init to invalid value
+        ii = NULL_Small
+        for kk in range(self._cell_dim+1):
+            if cell_vtx[kk]==vi:
+                ii = kk
+                break
+        return ii
+
+    def Get_Local_Facets_Sharing_Local_Vertex(self, vi):
+        """Return the local facet indices that share a given local vertex.
+        """
+        if (vi < 0) or (vi > self._cell_dim):
+            print("Error: index is negative or bigger than cell dimension!")
+        assert ((vi >= 0) and (vi <= self._cell_dim)), "Index is invalid!"
+
+        # note: vertex vi is opposite facet vi
+        #       so, facet vi does NOT contain vertex vi
+        
+        # make an array: [0, 1, vi-1, vi+1, ..., Dim()]
+        a0 = np.arange(0, vi, dtype=SmallIndType)
+        a1 = np.arange(vi+1, self._cell_dim+1, dtype=SmallIndType)
+        facet_ind = np.concatenate((a0, a1), axis=None)
+        return facet_ind
+
+    def Get_Local_Vertices_Of_Local_Facet(self, fi):
+        """Return the local vertices that are attached to a given local facet.
+        """
+        # hahah, we can reuse this!
+        vert = self.Get_Local_Facets_Sharing_Local_Vertex(fi)
+        return vert
+        
+    def Get_Global_Vertices_In_Facet(self, vtx_ind, fi):
+        """Given a cell's vertices and a local facet index, return the global vertices
+        contained in that facet.
+        """
+        if (fi < 0) or (fi > self._cell_dim):
+            print("Error: facet index fi is negative or bigger than cell dimension!")
+        assert ((fi >= 0) and (fi <= self._cell_dim)), "Facet index is invalid!"
+
+        # note: vertex fi is opposite facet fi
+        #       so, facet fi does NOT contain vertex fi
+        
+        # copy array over (except for vertex fi)
+        facet_vtx = vtx_ind[np.arange(len(vtx_ind))!=fi]
+        return facet_vtx
+
+    def Get_Adj_Vertices_In_Facet(self, fv, vi):
+        """Returns the (facet) vertices in fv (numpy array) that are not equal to vi, where
+        vi is also in the facet, i.e. it returns the vertices in the facet that are *adjacent* to vi.
+        Note: if vi is not in the facet, then returns an array containing NULL_Vtx's (NULL values).
+        Note: if self.Dim()<=1, then returned array has zero length.
+        """
+        
+        # init to invalid value
+        ii = NULL_Small
+        for kk in range(self._cell_dim):
+            if fv[kk]==vi:
+                ii = kk
+                break
+        
+        # we found a match
+        if (ii!=NULL_Small):
+            # copy array over (except for the matching entry)
+            adj_vtx = fv[np.arange(len(fv))!=ii]
+        else:
+            # return NULL value
+            adj_vtx = np.full(np.max([self._cell_dim - 1, 0]), NULL_Vtx, dtype=VtxIndType)
+
+        return adj_vtx
+
+    def Get_Vertex_With_Largest_Index_In_Facet(self, vtx_ind, fi):
+        """Given the vertex indices of a cell and local facet index,
+        find the vertex index in that facet with the largest index.
+        """
+        
+        if (fi < 0) or (fi > self._cell_dim):
+            print("Error: facet index fi is negative or bigger than cell dimension!")
+        assert ((fi >= 0) and (fi <= self._cell_dim)), "Facet index is invalid!"
+        
+        MAX_vi = np.max(vi for vi in vtx_ind if vi != vtx_ind[fi])
+        return MAX_vi
+
+    def Adj_Vertices_In_Facet_Equal(self, a, b):
+        """Return true if arrays are equal, otherwise false.
+        Only the indices [0, 1, ..., self.Dim() - 2] are checked.
+        This routine is used when the arrays contain the vertices in a facet of a cell.
+        Note: if the arrays have zero length, this returns true.
+        """
+        
+        if (a.size < self._cell_dim - 1) or (b.size < self._cell_dim - 1):
+            print("Error: one of the adjacent vertex arrays is too short!")
+        assert ((a.size >= self._cell_dim - 1) and (b.size >= self._cell_dim - 1)), "Adjacent vertex arrays too short!"
+        
+        if (self._cell_dim > 1):
+            return np.array_equal(a[0:self._cell_dim - 1], b[0:self._cell_dim - 1])
+        else:
+            return True
+
+
 class VtxCoordType:
     """
     Class for storing vertex coordinate data.

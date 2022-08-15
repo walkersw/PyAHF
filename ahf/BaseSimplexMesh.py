@@ -271,6 +271,49 @@ class BaseSimplexMesh:
         self.Cell.Set_All(num_cells, vtx_ind)
 
 
+    # private methods below this line.
+
+
+    def _Append_Half_Facets(self, ci, vtx_ind):
+        """Append half-facets to v2hfs struct.
+        ci = cell index, vtx_ind = array of vertex indices of the cell, ci.
+        """
+        
+        vhf = np.array((VTX, ci, NULL_Small), dtype=VtxHalfFacetType)
+
+
+
+# /***************************************************************************************/
+# /* Append half-facets to v2hfs struct.
+   # ci = cell index, vtx = array of vertex indices of the cell, ci. */
+# template <SmallIndType CELL_DIM>
+# void BM<CELL_DIM>::Append_Half_Facets(const CellIndType& ci, const VtxIndType vtx[(CELL_DIM+1)])
+# {
+    # VtxHalfFacetType vhf;
+    # vhf.ci = ci; // store the cell index
+
+    # /* loop through all the half-facets of the cell */
+    # for (SmallIndType fi = 0; fi < (CELL_DIM+1); ++fi)
+    # {
+        # // associate (local #fi) half-facet with the vertex with largest index
+        # //           within that half-facet
+        # vhf.fi = fi;
+        # const VtxIndType VV = Get_Vertex_With_Largest_Index_In_Facet(vtx, fi);
+        # v2hfs.Append(VV, vhf);
+    # }
+# }
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     def Get_Unique_Vertices(self):
