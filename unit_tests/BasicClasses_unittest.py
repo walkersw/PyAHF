@@ -185,6 +185,43 @@ class TestBasicClasses(unittest.TestCase):
         self.assertEqual(np.array_equal(self.Cell.Vtx2Adjacent(9, 1, 1),np.array([4, 6])), True, "Should be True.")
         self.assertEqual(np.array_equal(self.Cell.Vtx2Adjacent(4, 1, 2),np.array([12, 6])), True, "Should be True.")
 
+    def test_Attached_and_Connected(self):
+        del(self.Cell)
+        del(self.VC)
+        self.Cell = CellSimplexType(2)
+        self.VC   = VtxCoordType(2)
+
+        self.Cell.Append_Batch(4, [0, 3, 1, 1, 2, 0, 4, 0, 2, 4, 5, 0])
+        hfs = np.full(3, NULL_HalfFacet, dtype=HalfFacetType)
+        hfs[1] = np.array((1, 1), dtype=HalfFacetType)
+        self.Cell.halffacet[0][:] = hfs[:] # Cell #0
+        hfs[0] = np.array((2, 0), dtype=HalfFacetType)
+        hfs[1] = np.array((0, 1), dtype=HalfFacetType)
+        hfs[2] = NULL_HalfFacet
+        self.Cell.halffacet[1][:] = hfs[:] # Cell #1
+        hfs[0] = np.array((1, 0), dtype=HalfFacetType)
+        hfs[1] = NULL_HalfFacet
+        hfs[2] = np.array((3, 1), dtype=HalfFacetType)
+        self.Cell.halffacet[2][:] = hfs[:] # Cell #2
+        hfs[0] = NULL_HalfFacet
+        hfs[1] = np.array((2, 2), dtype=HalfFacetType)
+        hfs[2] = NULL_HalfFacet
+        self.Cell.halffacet[3][:] = hfs[:] # Cell #3
+        self.Cell.Print()
+        
+        cell_attach = self.Cell.Get_Cells_Attached_To_Vertex(2, 0)
+        self.assertEqual(np.array_equal(cell_attach,np.array([])), True, "Should be True.")
+        cell_attach = self.Cell.Get_Cells_Attached_To_Vertex(0, 2)
+        self.assertEqual(np.array_equal(cell_attach,np.array([2, 1, 0, 3])), True, "Should be True.")
+        cell_attach = self.Cell.Get_Cells_Attached_To_Vertex(2, 1)
+        self.assertEqual(np.array_equal(cell_attach,np.array([1, 2])), True, "Should be True.")
+        #print(cell_attach)
+        
+        self.assertEqual(self.Cell.Two_Cells_Are_Facet_Connected(0, 1, 2), True, "Should be True.")
+        self.assertEqual(self.Cell.Two_Cells_Are_Facet_Connected(0, 1, 3), True, "Should be True.")
+        self.assertEqual(self.Cell.Two_Cells_Are_Facet_Connected(2, 1, 2), True, "Should be True.")
+        self.assertEqual(self.Cell.Two_Cells_Are_Facet_Connected(2, 3, 2), False, "Should be False.")
+
     def test_Print(self):
         self.Cell = CellSimplexType(2)
         self.VC   = VtxCoordType(2)

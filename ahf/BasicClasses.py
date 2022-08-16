@@ -85,6 +85,8 @@ class CellSimplexType:
 
         if (CELL_DIM<0):
             print("Error: cell dimension must be non-negative!")
+        if np.rint(CELL_DIM).astype(SmallIndType)!=CELL_DIM:
+            print("Error: cell dimension must be a non-negative integer!")
         self._cell_dim = CELL_DIM
         # global vertex indices of the cells (initialize)
         self.vtx = np.full((1, self._cell_dim+1), NULL_Vtx)
@@ -92,6 +94,8 @@ class CellSimplexType:
         self.halffacet = np.full((1, self._cell_dim+1), NULL_HalfFacet)
         # actual number of cells
         self._size = 0
+        # amount extra to reserve when finding a variable number of cells attached to a vertex
+        #self._cell_attach_chunk = 5*CELL_DIM
 
     def __str__(self):
         dimvtx = self.vtx.shape
@@ -287,6 +291,151 @@ class CellSimplexType:
     # def Sort(self):
         # """Sort the VtxMap so it is useable."""
         # self.VtxMap = np.sort(self.VtxMap, order=['vtx', 'ci', 'fi'])
+
+    def Get_Cells_Attached_To_Vertex(self, vi, ci):
+        """Returns all cell indices (a numpy array) that are attached to vertex "vi" AND are
+        facet-connected to the cell "ci".  WARNING: this requires the sibling half-facet data
+        (see self.halffacet) to be built before this can be used.
+        Note: the returned cell_array can be empty.
+        """
+        if ( (vi==NULL_Vtx) or (ci==NULL_Cell) ):
+            # the vertex or starting cell is null, so do nothing.
+            return np.array([], dtype=CellIndType)
+
+        # do a recursive search to collect all the cells
+        cell_list = [] # initialize as an empty list
+        self._Get_Cells_Attached_To_Vertex_Recurse(vi, ci, cell_list)
+        
+        return np.array(cell_list, dtype=CellIndType)
+
+    def _Get_Cells_Attached_To_Vertex_Recurse(self, vi, ci, cell_list):
+        """Recursive function call for the above method.
+        """
+        # if we have been searching too long...
+        if (len(cell_list) > 100000):
+            # then quit!
+            print("Error in 'Get_Cells_Attached_To_Vertex'...")
+            print("    Recursion depth is too great.")
+            print("    There should not be more than 100,000 cells attached to a single vertex!")
+            return
+
+        # cell is null, so nothing left to do
+        if (ci==NULL_Cell):
+            # this can happen if the neighbor cell does not exist
+            return
+
+        # if ci is already in the list
+        if (ci in cell_list):
+            # then we have already visited this cell, so done
+            return
+        else:
+            # access the cell
+            cell_vtx       = self.vtx[ci]
+            cell_halffacet = self.halffacet[ci]
+            # check again that the vertex is actually in the cell
+            local_vi = self.Get_Local_Vertex_Index_In_Cell(vi, cell_vtx)
+            if (local_vi==NULL_Small):
+                # cell does not actually contain the vertex
+                #    will only happen if the (vi, ci) given to 'Get_Cells_Attached_To_Vertex'
+                #    is not valid, i.e. ci does not contain vi.
+                # so, we are done
+                return
+
+            # add the cell to the list
+            cell_list.append(ci)
+
+            if (self._cell_dim > 0):
+                # get the local facets that share the vertex
+                local_facet = self.Get_Local_Facets_Sharing_Local_Vertex(local_vi)
+                
+                # loop through the facets
+                for fi in range(self._cell_dim):
+                    if (local_facet[fi]!=NULL_Small):
+                        # determine the neighbor cell on the "other side" of that facet and search it
+                        self._Get_Cells_Attached_To_Vertex_Recurse(vi, cell_halffacet[local_facet[fi]]['ci'], cell_list)
+                    # else the neighbor does not exist, so do nothing
+
+    def Two_Cells_Are_Facet_Connected(self, vi, ci_a, ci_b):
+        """Returns true/false if two cells (that share the same vertex) are connected
+        by a "chain" of half-facet neighbors.  WARNING: this requires the sibling
+        half-facet data (see self.halffacet) to be built before this can be used.
+        Note: this routine is useful for determining when two cells are in the same
+        "connected component" of the mesh (this is important when the mesh is
+        *not* a manifold).
+        """
+        if ( (vi==NULL_Vtx) or (ci_a==NULL_Cell) or (ci_b==NULL_Cell) ):
+            # something is null, so do nothing
+            return False
+
+        # init recursion depth count
+        Depth_Count = 0
+        # init current cell and target cell
+        Start_Cell   = np.array(ci_a, dtype=CellIndType, copy=True)
+        Current_Cell = np.array(ci_a, dtype=CellIndType, copy=True)
+        Target_Cell  = np.array(ci_b, dtype=CellIndType, copy=True)
+
+        # do a recursive search to find the target
+        return self._Two_Cells_Are_Facet_Connected_Recurse(vi, Start_Cell, Current_Cell, Target_Cell, Depth_Count)
+
+    def _Two_Cells_Are_Facet_Connected_Recurse(self, vi, start, current, target, Depth_Count):
+        """Recursive function call for the above method.
+        """
+        # if we have been searching too long...
+        if (Depth_Count > 100000):
+            # then quit!
+            print("Error in 'Two_Cells_Are_Facet_Connected'...")
+            print("    Recursion depth is too great.")
+            print("    There should not be more than 100,000 cells attached to a single vertex!")
+            return False
+
+        # if we loop back to the beginning...
+        if (Depth_Count > 0):
+            if (current==start):
+                # we did not find the target
+                return False
+
+        # current cell is null, so nothing left to do
+        if (current==NULL_Cell):
+            # this can happen if the neighbor cell does not exist
+            return False
+
+        # if current matches the target
+        if (current==target):
+            # we found it!
+            return True
+        else:
+            # access the cell
+            cell_vtx       = self.vtx[current]
+            cell_halffacet = self.halffacet[current]
+            # check again that the vertex is actually in the cell
+            local_vi = self.Get_Local_Vertex_Index_In_Cell(vi, cell_vtx)
+            if (local_vi==NULL_Small):
+                # cell does not actually contain the vertex
+                #    will only happen if the (vi, ci_a), or (vi, ci_b) given to
+                #    'Two_Cells_Are_Facet_Connected' is not valid,
+                #    i.e. ci_a does not contain vi, or ci_b does not contain vi
+                # so, we are done
+                return False
+
+            # get the local facets that share the vertex
+            local_facet = self.Get_Local_Facets_Sharing_Local_Vertex(local_vi)
+
+            # keep counting
+            Depth_Count += 1
+
+            # loop through the facets
+            CONNECTED = False # init
+            for fi in range(self._cell_dim):
+                if (local_facet[fi]!=NULL_Small):
+                    # determine the neighbor cell on the "other side" of that facet and search it
+                    CONNECTED = self._Two_Cells_Are_Facet_Connected_Recurse( \
+                                      vi, start, cell_halffacet[local_facet[fi]]['ci'], target, Depth_Count)
+                    if CONNECTED:
+                        break # it was found!
+                # else the neighbor does not exist, so do nothing
+
+            return CONNECTED
+
 
 
     def Vtx2Adjacent(self, v_in, ci, fi):
