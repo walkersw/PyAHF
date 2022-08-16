@@ -281,7 +281,41 @@ class BaseSimplexMesh:
         # now "ci" is the *current* cell index
         self._Append_Half_Facets(ci, vtx_ind)
 
+    def Get_Unique_Vertices(self):
+        """Get unique list of vertices.
+        """
+        CELL_DIM = self.Dim()
+        
+        if (self._mesh_open):
+            unique_vertices = np.unique(self.Cell.vtx)
+        else:
+            unique_vertices = self.Vtx2HalfFacets.Get_Unique_Vertices()
 
+        return unique_vertices
+
+    def Print_Unique_Vertices(self):
+        """Print unique list of vertices to the screen.
+        """
+        
+        unique_vertices = self.Get_Unique_Vertices()
+        
+        print("Unique list of vertex indices:")
+        print(str(unique_vertices[0]), end="")
+        for kk in range(1, unique_vertices.size):
+            print(", " + str(unique_vertices[kk]), end="")
+        print("")
+
+    def Num_Vtx(self):
+        """Returns the number of vertices referenced in self.Cell."""
+        uv = self.Get_Unique_Vertices()
+        return uv.size()
+
+    def Max_Vtx_Index(self):
+        """Returns the number of vertices referenced in self.Cell."""
+        uv = self.Get_Unique_Vertices()
+        return uv[-1]
+
+    # all public routines below this need the mesh to be finalized to output..........
 
 
     # private methods below this line.
@@ -539,42 +573,6 @@ class BaseSimplexMesh:
         # Note: we don't have to sort again,
         #       because the half-facets are ordered by the attached vertex
 
-    def Get_Unique_Vertices(self):
-        """Get unique list of vertices.
-        """
-        CELL_DIM = self.Dim()
-        
-        if (self._mesh_open):
-            NC = self.Num_Cell()
-            Num_Local_Vtx = np.array((CELL_DIM+1), dtype=SmallIndType)
-            # empty list to start
-            uv = []
-
-            # add all vertices of each cell
-            for ci in np.arange(0, NC, 1, dtype=CellIndType):
-                c_vtx = self.Cell.vtx[ci]
-                # loop through each vertex of the current (simplex) cell
-                for vi in np.arange(0, Num_Local_Vtx, 1, dtype=SmallIndType):
-                    uv.append(c_vtx[vi])
-
-            uv_np = np.array(uv, dtype=VtxIndType)
-            unique_vertices = np.unique(uv_np)
-        else:
-            unique_vertices = self.Vtx2HalfFacets.Get_Unique_Vertices()
-
-        return unique_vertices
-
-    def Print_Unique_Vertices(self):
-        """Print unique list of vertices to the screen.
-        """
-        
-        unique_vertices = self.Get_Unique_Vertices()
-        
-        print("Unique list of vertex indices:")
-        print(str(unique_vertices[0]), end="")
-        for kk in range(1, unique_vertices.size):
-            print(", " + str(unique_vertices[kk]), end="")
-        print("")
 
 
     # Note: all methods below this line require ??????
