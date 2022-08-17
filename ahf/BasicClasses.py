@@ -375,6 +375,30 @@ class CellSimplexType:
             EE_str = "(" + str(v0) + ", " + str(v1) + ")"
         return EE_str
 
+    def Get_FreeBoundary(self, vi, ci):
+        """Returns all half-facets that are referenced by only one cell;
+        i.e. the half-facets that are on the boundary of the mesh.
+        WARNING: this requires the sibling half-facet data (see self.halffacet)
+        to be built before this can be used correctly.
+        Note: the returned numpy array can be empty.
+        """
+        NC = self.Size()
+        bdy = [] # init to empty list
+
+        # check all cells
+        for ci in np.arange(0, NC, dtype=CellIndType):
+            Cell_HFs = self.halffacet[ci]
+            # loop through each local facet of the current (simplex) cell
+            for fi in np.arange(0, self._cell_dim + 1, dtype=SmallIndType):
+                HF = np.array((NULL_Cell, NULL_Small), dtype=HalfFacetType)
+                if (Cell_HFs[fi]==NULL_HalfFacet):
+                    # this facet has no neighbor!
+                    HF[['ci','fi']] = (ci, fi) # so store this bdy facet
+                    bdy.append(HF)
+
+        bdy_np = np.array(bdy, dtype=HalfFacetType)
+        return bdy_np
+
     def Get_Cells_Attached_To_Vertex(self, vi, ci):
         """Returns all cell indices (a numpy array) that are attached to vertex "vi" AND are
         facet-connected to the cell "ci".  WARNING: this requires the sibling half-facet data
