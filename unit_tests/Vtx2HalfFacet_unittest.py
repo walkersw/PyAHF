@@ -70,6 +70,45 @@ class TestVtx2HalfFacet(unittest.TestCase):
         hf = self.V2HF.Get_Half_Facet(10)
         self.assertEqual(hf==hf1, True, "Should be (8, 1).")
 
+    def test_Reindex(self):
+        self.V2HF.Reserve(8)
+        print(" ")
+        
+        hf = np.array((4, 2), dtype=HalfFacetType)
+        self.V2HF.Append(3, hf)
+        hf[['ci', 'fi']] = (7, 0)
+        self.V2HF.Append(1, hf)
+        hf[['ci', 'fi']] = (9, 1)
+        self.V2HF.Append(3, hf)
+        hf[['ci', 'fi']] = (14, 2)
+        self.V2HF.Append(1, hf)
+        hf[['ci', 'fi']] = (11, 0)
+        self.V2HF.Append(5, hf)
+        hf[['ci', 'fi']] = (6, 1)
+        self.V2HF.Append(7, hf)
+        hf[['ci', 'fi']] = (12, 2)
+        self.V2HF.Append(15, hf)
+        hf[['ci', 'fi']] = (13, 0)
+        self.V2HF.Append(7, hf)
+
+        self.V2HF.Print_Half_Facets()
+        Num_Vtx = self.V2HF.Num_Vtx()
+        self.assertEqual( Num_Vtx, 5, "Should be 5.")
+        Max_vi = self.V2HF.Max_Vtx_Index()
+        self.assertEqual( Max_vi, 15, "Should be 15.")
+        
+        new_indices = np.zeros(16)
+        lin_indices = np.linspace(0, 4, num=5, dtype=VtxIndType)
+        unique_vertices = self.V2HF.Get_Unique_Vertices()
+        new_indices[unique_vertices] = lin_indices
+        #print(new_indices)
+        #print(lin_indices)
+        self.V2HF.Reindex_Vertices(new_indices)
+        self.V2HF.Print_Half_Facets()
+        CHK_uv = self.V2HF.Get_Unique_Vertices()
+        self.assertEqual(np.array_equal(CHK_uv,np.array([0, 1, 2, 3, 4])), True, "Should be [0, 1, 2, 3, 4].")
+        self.V2HF.Print_Unique_Vertices()
+
     def test_Print(self):
         self.V2HF.Reserve(5)
         print(" ")

@@ -268,11 +268,7 @@ class CellSimplexType:
     def Get_Unique_Vertices(self):
         """Get unique list of vertices from the current cell data.
         """
-        
-        sub_cell = self.vtx[0:self._size][:]
-        dimsub = sub_cell.shape
-        sub_cell.shape = (dimsub[0]*dimsub[1],)
-        unique_vertices = np.unique(sub_cell)
+        unique_vertices = np.unique(self.vtx)
         
         return unique_vertices
 
@@ -291,6 +287,93 @@ class CellSimplexType:
     # def Sort(self):
         # """Sort the VtxMap so it is useable."""
         # self.VtxMap = np.sort(self.VtxMap, order=['vtx', 'ci', 'fi'])
+
+    def Num_Vtx(self):
+        """Returns the number of (unique) vertices referenced in self.vtx."""
+        uv = self.Get_Unique_Vertices()
+        return uv.size
+
+    def Max_Vtx_Index(self):
+        """Returns the largest vertex index referenced in self.vtx."""
+        return np.amax(self.vtx)
+
+    def Reindex_Vertices(self, new_indices):
+        """Re-index the vertices in the mesh.
+        Example: new_index = new_indices[old_index]
+        """
+        # basic check
+        if (new_indices.size < self.Max_Vtx_Index()):
+            print("Error in 'CellSimplexType.Reindex_Vertices'!")
+            print("    The given list of indices is shorter than the")
+            print("    max vertex index referenced by cells in the mesh.")
+            return
+
+        # go through all the cells, and the vertices of each cell, and map those vertices
+        NC = self.Size()
+        for ci in np.arange(0, NC, dtype=CellIndType):
+            for vi in np.arange(0, self._cell_dim+1, dtype=SmallIndType):
+                self.vtx[ci][vi] = new_indices[self.vtx[ci][vi]]
+
+    def Get_Edges(self):
+        """Returns numpy array, of length M and type MeshEdgeType, containing all edges
+        in the mesh, where M is the number of edges.  Note: this is a unique list of
+        *sorted* edges, i.e. each element is an edge (v0, v1) that satisfies v0 < v1,
+        where v0, v1 are the global vertex indices of the edge end points.
+        Moreover, the edges are in ascending order (['v0', 'v1']).
+        """
+        NC = self.Size()
+        Num_Local_Edge = np.ceil((self._cell_dim+1) * self._cell_dim / 2)
+        S = NC * Num_Local_Edge
+        #edges = np.zeros((S,2), dtype=VtxIndType)
+        
+        edges = np.full(S.astype(CellIndType), NULL_MeshEdge, dtype=MeshEdgeType)
+        
+        # add all edges of each cell
+        ind_cnt = np.zeros(1, dtype=CellIndType)
+        for ci in np.arange(0, NC, dtype=CellIndType):
+            # loop through each local edge of the current (simplex) cell
+            # i.e. loop through all the distinct pairs of vertices in the cell
+            for vi in np.arange(0, self._cell_dim+1, dtype=SmallIndType):
+                c_vtx = np.sort(self.vtx[ci]) # sort whole cell
+                for vj in np.arange(vi+1, self._cell_dim+1, dtype=SmallIndType):
+                    edges[ind_cnt] = (c_vtx[vi], c_vtx[vj])
+                    ind_cnt += 1
+
+        # check
+        if ind_cnt!=S:
+            print("Error: we did not get all the edges!?!?")
+
+        # sort all the edges
+        edges = np.sort(edges, order=['v0', 'v1'])      
+
+        return edges
+
+    def Print_Edges(self):
+        """Print out all the edges in the mesh (this uses "Get_Edges").
+        """
+        edges = self.Get_Edges()
+        
+        if (edges.size > 0):
+            # print all mesh edges
+            print("All edges of the mesh (a unique, sorted list):")
+            print("Edge #:  ( vertex #0, vertex #1 )")
+            for ei in np.arange(0, edges.size, dtype=CellIndType):
+                EE_str = self._get_edge_string(edges[ei]['v0'], edges[ei]['v1'])
+                OUT_str = str(ei) + ": " + EE_str
+                print(OUT_str)
+        else:
+            print("There are NO mesh edges!")
+        
+        print(" ")
+
+    def _get_edge_string(self, v0, v1):
+        """Get string representing an edge.
+        """
+        if ( (v0==NULL_Vtx) or (v1==NULL_Vtx)):
+            EE_str = "(NULL)"
+        else:
+            EE_str = "(" + str(v0) + ", " + str(v1) + ")"
+        return EE_str
 
     def Get_Cells_Attached_To_Vertex(self, vi, ci):
         """Returns all cell indices (a numpy array) that are attached to vertex "vi" AND are

@@ -81,6 +81,11 @@ class TestBasicClasses(unittest.TestCase):
         uv = self.Cell.Get_Unique_Vertices()
         self.assertEqual(np.array_equal(uv,[1, 2, 3, 4, 5, 6, 9, 11, 13, 14, 23, 33, 45, 48, 55, 57, 71, 88]), True, "Should be [1, 2, 3, 4, 5, 6, 9, 11, 13, 14, 23, 33, 45, 48, 55, 57, 71, 88].")
         
+        Num_Vtx = self.Cell.Num_Vtx()
+        self.assertEqual(Num_Vtx, 18, "Should be 18.")
+        Max_vi = self.Cell.Max_Vtx_Index()
+        self.assertEqual(Max_vi, 88, "Should be 88.")
+        
         self.VC.Reserve(5)
         print(" ")
         
@@ -100,6 +105,26 @@ class TestBasicClasses(unittest.TestCase):
         self.assertEqual(np.array_equal(self.VC.coord[2],[-1.2, 4.4, 6.6]), True, "Should be [-1.2, 4.4, 6.6].")
         self.assertEqual(np.array_equal(self.VC.coord[4],[4.7, 10.6, -5.1]), True, "Should be [4.7, 10.6, -5.1].")
         self.assertEqual(self.VC.Size(), 5, "Should be 5.")
+
+    def test_Reindex(self):
+        del(self.Cell)
+        del(self.VC)
+        self.Cell = CellSimplexType(3)
+        self.VC   = VtxCoordType(3)
+
+        new_cell_vtx = [0, 3, 5, 1, 4, 12, 9, 6, 88, 62, 54, 72, 99, 120, 101, 154]
+        self.Cell.Append_Batch(4, new_cell_vtx)
+        self.Cell.Print()
+        
+        new_indices = np.zeros(155)
+        lin_indices = np.linspace(0, 15, num=16, dtype=VtxIndType)
+        new_indices[new_cell_vtx] = lin_indices
+        # print(new_indices)
+        # print(lin_indices)
+        self.Cell.Reindex_Vertices(new_indices)
+        self.Cell.Print()
+        CHK_Cell_vtx = np.array([[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15]])
+        self.assertEqual(np.array_equal(self.Cell.vtx,CHK_Cell_vtx), True, "Should be [[ 0  1  2  3], [ 4  5  6  7], [ 8  9 10 11], [12 13 14 15]].")
 
     def test_Baby_Methods(self):
         del(self.Cell)
@@ -259,6 +284,31 @@ class TestBasicClasses(unittest.TestCase):
         EE2 = np.array((4, 23), dtype=MeshEdgeType)
         self.assertEqual(Edge_array[2]==EE2, True, "Should be (4, 23).")
         self.assertEqual(Edge_array[4]['v1']==16, True, "Should be 16.")
+
+    def test_Get_Edges(self):
+        self.Cell = CellSimplexType(2)
+        self.VC   = VtxCoordType(2)
+        print(" ")
+
+        self.Cell.Append_Batch(4, [0, 3, 5, 4, 12, 9, 88, 62, 54, 99, 120, 101])
+        self.Cell.Print()
+        EE = self.Cell.Get_Edges()
+        self.Cell.Print_Edges()
+        
+        Edge_CHK = np.full(12, NULL_MeshEdge, dtype=MeshEdgeType)
+        Edge_CHK[0]  = (0, 3)
+        Edge_CHK[1]  = (0, 5)
+        Edge_CHK[2]  = (3, 5)
+        Edge_CHK[3]  = (4, 9)
+        Edge_CHK[4]  = (4, 12)
+        Edge_CHK[5]  = (9, 12)
+        Edge_CHK[6]  = (54, 62)
+        Edge_CHK[7]  = (54, 88)
+        Edge_CHK[8]  = (62, 88)
+        Edge_CHK[9]  = (99, 101)
+        Edge_CHK[10] = (99, 120)
+        Edge_CHK[11] = (101, 120)
+        self.assertEqual(np.array_equal(Edge_CHK,EE), True, "Should be True.")
 
 if __name__ == '__main__':
     unittest.main()

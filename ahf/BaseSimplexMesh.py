@@ -284,8 +284,6 @@ class BaseSimplexMesh:
     def Get_Unique_Vertices(self):
         """Get unique list of vertices.
         """
-        CELL_DIM = self.Dim()
-        
         if (self._mesh_open):
             unique_vertices = np.unique(self.Cell.vtx)
         else:
@@ -306,16 +304,63 @@ class BaseSimplexMesh:
         print("")
 
     def Num_Vtx(self):
-        """Returns the number of vertices referenced in self.Cell."""
+        """Returns the number of (unique) vertices referenced in self.Cell."""
         uv = self.Get_Unique_Vertices()
-        return uv.size()
+        return uv.size
 
     def Max_Vtx_Index(self):
-        """Returns the number of vertices referenced in self.Cell."""
-        uv = self.Get_Unique_Vertices()
-        return uv[-1]
+        """Returns the largest vertex index referenced in self.Cell."""
+        if (self._mesh_open):
+            max_vi = self.Cell.Max_Vtx_Index()
+        else:
+            max_vi = self.Vtx2HalfFacets.Max_Vtx_Index()
 
-    # all public routines below this need the mesh to be finalized to output..........
+        return max_vi
+
+    def Reindex_Vertices(self, new_indices):
+        """Re-index the vertices in the mesh.
+        Example: new_index = new_indices[old_index]
+        """
+        # the mesh must be *open* to do this.
+        if not self.Is_Mesh_Open():
+            return
+
+        # basic check
+        if (new_indices.size < self.Max_Vtx_Index()):
+            print("Error in 'BaseSimplexMesh.Reindex_Vertices'!")
+            print("    The given list of indices is shorter than the")
+            print("    max vertex index referenced by cells in the mesh.")
+            return
+
+        self.Cell.Reindex_Vertices(new_indices)
+        self.Vtx2HalfFacets.Reindex_Vertices(new_indices)
+
+    def Finalize_Mesh_Connectivity(self):
+        """Finalize the data structures for determining mesh connectivity, i.e.
+        determine neighbors (sibling half-facets), vtx2half-facet mapping, etc.)
+        and *close* the mesh.
+        """
+        # the mesh must be *open* to do this.
+        if not self.Is_Mesh_Open():
+            return
+
+        # this sequence of commands must be used!
+        self._Finalize_v2hfs(True) # setup an intermediate structure
+        self._Build_Sibling_HalfFacets()
+        self._Build_Vtx2HalfFacets()
+
+        # now *close* the mesh to further modification
+        self.Close()
+
+    # all public routines below this need the mesh to be finalized to output
+    #     correct information, i.e. the mesh should be "closed" and all internal
+    #     data structures updated. This is done by building the sibling half-facet
+    #     structure, and filling out the Vtx2HalfFacets mapping. All of this is
+    #     automatically done by the "Finalize_Mesh_Connectivity" method.
+
+
+
+
 
 
     # private methods below this line.

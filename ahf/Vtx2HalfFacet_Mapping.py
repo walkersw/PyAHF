@@ -151,11 +151,7 @@ class Vtx2HalfFacetMap:
         """Get unique list of vertices.
         Does not require 'Sort()' to have been run.
         """
-        
-        all_vertices = np.zeros(self._size, dtype=VtxIndType)
-        for kk in range(self._size):
-            # extract out the vertex indices
-            all_vertices[kk] = self.VtxMap[kk]['vtx']
+        all_vertices = self.VtxMap[0:self._size]['vtx']
 
         unique_vertices = np.unique(all_vertices)
         return unique_vertices
@@ -172,6 +168,30 @@ class Vtx2HalfFacetMap:
         for kk in range(1, unique_vertices.size):
             print(", " + str(unique_vertices[kk]), end="")
         print("")
+
+    def Num_Vtx(self):
+        """Returns the number of (unique) vertices referenced in self.VtxMap."""
+        uv = self.Get_Unique_Vertices()
+        return uv.size
+
+    def Max_Vtx_Index(self):
+        """Returns the largest vertex index referenced in self.VtxMap."""
+        return np.amax(self.VtxMap[0:self._size]['vtx'])
+
+    def Reindex_Vertices(self, new_indices):
+        """Re-index the vertices in the VtxMap.
+        Example: new_index = new_indices[old_index]
+        """
+        # basic check
+        if (new_indices.size < self.Max_Vtx_Index()):
+            print("Error in 'Vtx2HalfFacetMap.Reindex_Vertices'!")
+            print("    The given list of indices is shorter than the")
+            print("    max vertex index referenced by VtxMap.")
+            return
+        
+        # go through self.VtxMap and map its vertices
+        for kk in range(self._size):
+            self.VtxMap[kk]['vtx'] = new_indices[self.VtxMap[kk]['vtx']]
 
     def Sort(self):
         """Sort the VtxMap so it is useable."""
