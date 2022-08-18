@@ -358,14 +358,76 @@ class BaseSimplexMesh:
     #     structure, and filling out the Vtx2HalfFacets mapping. All of this is
     #     automatically done by the "Finalize_Mesh_Connectivity" method.
 
+    def Is_Connected(self, *args):
+        """Test if a pair of vertices is connected by an edge; returns True/False.
+        Inputs: either give a single MeshEdgeType, or
+                give two arguments (tail/head vertex indices of the edge).
+        WARNING: this requires the sibling half-facet data (see self.Cell.halffacet)
+        to be built, and self.Vtx2HalfFacets must be completed as well, before this
+        method can be used.
+        """
+        if len(args)==1:
+            if args[0].dtype!=MeshEdgeType:
+                print("Error: input is not a MeshEdgeType!")
+            v0 = args[0]['v0']
+            v1 = args[0]['v1']
+        elif len(args)==2:
+            if (args[0].dtype!=VtxIndType or args[1].dtype!=VtxIndType):
+                print("Error: two inputs should be of VtxIndType!")
+            v0 = args[0]
+            v1 = args[1]
+        else:
+            print("incorrect number of arguments!")
 
+        if (v0==v1):
+            print("Input vertices v0, v1 are the *same*!")
+            return True # trivial
 
+        # get all cells attached to v0
+        attached_cells = self.Get_Cells_Attached_To_Vertex(v0)
+        
+        # check if v1 is in any of the cells
+        v1_in_cell = False # init
+        for ci in attached_cells:
+            cell_vtx = self.Cell.vtx[ci]
+            v1_in_cell = np.isin(v1, cell_vtx)
+            if v1_in_cell:
+                break
 
+        return v1_in_cell
 
+    def Get_Cells_Attached_To_Edge(self, *args):
+        """Returns all cell indices (numpy array) attached to a given edge.
+        Inputs: either give a single MeshEdgeType, or
+                give two arguments (tail/head vertex indices of the edge).
+        WARNING: this requires the sibling half-facet data (see self.Cell.halffacet)
+        to be built, and self.Vtx2HalfFacets must be completed as well, before this
+        method can be used.
+        """
+        if len(args)==1:
+            if args[0].dtype!=MeshEdgeType:
+                print("Error: input is not a MeshEdgeType!")
+            v0 = args[0]['v0']
+            v1 = args[0]['v1']
+        elif len(args)==2:
+            if (args[0].dtype!=VtxIndType or args[1].dtype!=VtxIndType):
+                print("Error: two inputs should be of VtxIndType!")
+            v0 = args[0]
+            v1 = args[1]
+        else:
+            print("incorrect number of arguments!")
 
+        if (v0==v1):
+            print("Input vertices v0, v1 are the *same*!")
 
+        # get all cells attached to v0
+        attached_to_v0 = self.Get_Cells_Attached_To_Vertex(v0)
+        # get all cells attached to v1
+        attached_to_v1 = self.Get_Cells_Attached_To_Vertex(v1)
 
-
+        # find the common cell indices
+        attached_cells = np.intersect1d(attached_to_v0, attached_to_v1)
+        return attached_cells
 
     def Print_v2hfs(self, vi):
         """Print (multiple) half-facets attached to a given vertex
@@ -436,7 +498,22 @@ class BaseSimplexMesh:
                 print(", " + str(cell_array[cc]), endl="")
             print("")
 
+    def Get_Nonmanifold_HalfFacets(self):
+        """Get a unique set of non-manifold half-facets. This returns a numpy array
+        of half-facets, each defining a *distinct* non-manifold half-facet.
 
+        WARNING: this routine requires the sibling half-facet data to be built first.
+        """
+        non_manifold_hf = self.Cell.Get_Nonmanifold_HalfFacets()
+        return non_manifold_hf
+
+    def Print_Nonmanifold_HalfFacets(self):
+        """Print all non-manifold half-facets in the mesh.
+        WARNING: this routine requires the sibling half-facet data to be built first.
+        """
+        self.Cell.Print_Nonmanifold_HalfFacets()
+
+    #Get_Nonmanifold_Vertices
 
 
     # private methods below this line.

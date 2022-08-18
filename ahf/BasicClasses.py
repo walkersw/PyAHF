@@ -589,17 +589,20 @@ class CellSimplexType:
         Note: the output also contains the given half-facet.
         Note: this routine requires the sibling half-facet data to be built first.
         """
-        attached_hf = [] # init to empty list
+        if hf_in.dtype!=HalfFacetType:
+            print("Error: given half-facet must be of type HalfFacetType!")
+            return []
         
         # verify that the given half-facet is not NULL
         if (hf_in==NULL_HalfFacet):
             return np.full(0, NULL_HalfFacet, dtype=HalfFacetType)
 
         # put in the initial half-facet
+        attached_hf = [] # init to empty list
         attached_hf.append(hf_in)
 
         # cycle through all the neighbors and store them
-        COUNT = 0;
+        COUNT = 0
         while (COUNT < 100000): # allow for up to 100,000 neighbors!
             COUNT += 1
             # get the next half-facet
@@ -617,7 +620,7 @@ class CellSimplexType:
             # else store it
             attached_hf.append(next_hf)
             
-        if (COUNT >= 100000)
+        if (COUNT >= 100000):
             # then quit!
             print("Error in 'CellSimplexType.Get_HalfFacets_Attached_To_HalfFacet'...")
             print("    Number of neighbors is too large.")
@@ -634,6 +637,73 @@ class CellSimplexType:
         for hf_jj in attached:
             print(str(hf_jj))
 
+    def Get_Nonmanifold_HalfFacets(self):
+        """Get a unique set of non-manifold half-facets. This returns a numpy array
+        of half-facets, each defining a *distinct* non-manifold half-facet.
+
+        WARNING: this routine requires the sibling half-facet data to be built first.
+        """
+        non_manifold_hf = [] # init to empty list
+
+        # go thru all the elements
+        NC = self.Size()
+        for ci in np.arange(0, NC, dtype=CellIndType):
+            #const CellSimplex_DIM CL = Get_Cell_struct(ci);
+            CL_halffacet = self.halffacet[ci]
+            # loop through all the half-facets
+            for fi in np.arange(0, self._cell_dim+1, dtype=SmallIndType):
+                # get the facet neighbor
+                #const HalfFacetType& neighbor_hf = CL.halffacet[fi];
+                neighbor_hf = CL_halffacet[fi]
+                n_ci = neighbor_hf['ci']
+                n_fi = neighbor_hf['fi']
+
+                # if the neighbor is not-NULL
+                if (neighbor_hf!=NULL_HalfFacet):
+                    #const CellSimplex_DIM N_CL = Get_Cell_struct(n_ci);
+                    N_CL_halffacet = self.halffacet[n_ci]
+                    
+                    # if the neighbor half-facet looks back at the cell we started at
+                    if (N_CL_halffacet[n_fi]['ci']==ci):
+                        # and if the local facet does *not* match where we started
+                        if (N_CL_halffacet[n_fi]['fi']!=fi):
+                            # then: two distinct facets of the same cell are joined together!!
+                            # this should not happen!
+                            print("Error in 'CellSimplexType.Get_Nonmanifold_HalfFacets':")
+                            print("      Two facets of the same cell are siblings; this should not happen!")
+                            assert(N_CL_halffacet[n_fi]['fi']==fi)
+                        # else the local facet matches where we started,
+                        #      so the starting half-facet only has one neighbor,
+                        #      i.e. it is *manifold* (do nothing).
+                    else: # there is more than one neighbor, so this half-facet is *not* manifold
+                        # get all of the neighbors (including the starting half-facet)
+                        vec_neighbor = self.Get_HalfFacets_Attached_To_HalfFacet(neighbor_hf)
+
+                        # get the neighbor half-facet with the largest cell index
+                        max_ci = np.argmax(vec_neighbor[:]['ci'])
+                        MAX_hf = vec_neighbor[max_ci]
+                        # store that half-facet
+                        non_manifold_hf.append(MAX_hf)
+                # else there is no neighbor so this half-facet is *manifold* (do nothing)
+
+        # now clean it up by removing duplicate half-facets
+        temp_np = np.array(non_manifold_hf, dtype=HalfFacetType)
+        non_manifold_hf_np = np.unique(temp_np)
+        return non_manifold_hf_np
+
+    def Print_Nonmanifold_HalfFacets(self):
+        """Print all non-manifold half-facets in the mesh.
+        WARNING: this routine requires the sibling half-facet data to be built first.
+        """
+        non_manifold_hf = self.Get_Nonmanifold_HalfFacets()
+
+        NUM = non_manifold_hf.size
+        if (NUM==0):
+            print("There are *no* non-manifold half-facets.")
+        else: # there is at least 1
+            print("These are all the non-manifold half-facets in the mesh (output: (cell index, local facet index)):")
+            for hf_jj in non_manifold_hf:
+                print(str(hf_jj))
 
 
 

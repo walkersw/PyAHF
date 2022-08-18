@@ -252,6 +252,16 @@ class TestBasicClasses(unittest.TestCase):
         self.assertEqual(self.Cell.Two_Cells_Are_Facet_Connected(2, 3, 2), False, "Should be False.")
         print("")
 
+        hf_in = np.array((1, 1), dtype=HalfFacetType)
+        attached0 = self.Cell.Get_HalfFacets_Attached_To_HalfFacet(hf_in)
+        self.assertEqual(np.array_equal(attached0,np.array([(1,1), (0,1)], dtype=HalfFacetType)), True, "Should be True.")
+        self.Cell.Print_HalfFacets_Attached_To_HalfFacet(hf_in)
+        hf_in[['ci','fi']] = (3, 1)
+        attached1 = self.Cell.Get_HalfFacets_Attached_To_HalfFacet(hf_in)
+        self.assertEqual(np.array_equal(attached1,np.array([(3,1), (2,2)], dtype=HalfFacetType)), True, "Should be True.")
+        self.Cell.Print_HalfFacets_Attached_To_HalfFacet(hf_in)
+        print("")
+
         free_bdy = self.Cell.Get_FreeBoundary()
         print("free boundary of the mesh:")
         print(free_bdy)
@@ -263,6 +273,83 @@ class TestBasicClasses(unittest.TestCase):
         free_bdy_CHK[4] = (3, 0)
         free_bdy_CHK[5] = (3, 2)
         self.assertEqual(np.array_equal(free_bdy,free_bdy_CHK), True, "Should be True.")
+        print("")
+
+        non_man_hf = self.Cell.Get_Nonmanifold_HalfFacets()
+        self.Cell.Print_Nonmanifold_HalfFacets()
+        self.assertEqual(np.array_equal(non_man_hf,np.array([], dtype=HalfFacetType)), True, "Should be True.")
+        print("")
+
+    def test_Nonmanifold_1(self):
+        del(self.Cell)
+        del(self.VC)
+        self.Cell = CellSimplexType(2)
+        self.VC   = VtxCoordType(3)
+
+        # see Nonmanifold_Triangle_Mesh_1.jpg
+        self.Cell.Append_Batch(4, [0,1,2, 1,3,2, 1,4,2, 1,2,5])
+        hfs = np.full(3, NULL_HalfFacet, dtype=HalfFacetType)
+        hfs[0] = (1, 1)
+        self.Cell.halffacet[0][:] = hfs[:] # Cell #0
+        hfs[0] = NULL_HalfFacet
+        hfs[1] = (2, 1)
+        hfs[2] = NULL_HalfFacet
+        self.Cell.halffacet[1][:] = hfs[:] # Cell #1
+        hfs[0] = NULL_HalfFacet
+        hfs[1] = (3, 2)
+        hfs[2] = NULL_HalfFacet
+        self.Cell.halffacet[2][:] = hfs[:] # Cell #2
+        hfs[0] = NULL_HalfFacet
+        hfs[1] = NULL_HalfFacet
+        hfs[2] = (0, 0)
+        self.Cell.halffacet[3][:] = hfs[:] # Cell #3
+        self.Cell.Print()
+
+        non_man_hf = self.Cell.Get_Nonmanifold_HalfFacets()
+        self.Cell.Print_Nonmanifold_HalfFacets()
+        self.assertEqual(np.array_equal(non_man_hf,np.array([(3, 2)], dtype=HalfFacetType)), True, "Should be True.")
+        print("")
+
+    def test_Nonmanifold_2(self):
+        del(self.Cell)
+        del(self.VC)
+        self.Cell = CellSimplexType(2)
+        self.VC   = VtxCoordType(3)
+
+        # see Nonmanifold_Triangle_Mesh_2.jpg
+        self.Cell.Append_Batch(7, [0,1,5, 5,2,1, 1,5,3, 4,5,1, 9,6,5, 9,5,7, 8,9,5])
+        hfs = np.full(3, NULL_HalfFacet, dtype=HalfFacetType)
+        hfs[0] = (1, 1)
+        self.Cell.halffacet[0][:] = hfs[:] # Cell #0
+        hfs[0] = NULL_HalfFacet
+        hfs[1] = (2, 2)
+        hfs[2] = NULL_HalfFacet
+        self.Cell.halffacet[1][:] = hfs[:] # Cell #1
+        hfs[0] = NULL_HalfFacet
+        hfs[1] = NULL_HalfFacet
+        hfs[2] = (3, 0)
+        self.Cell.halffacet[2][:] = hfs[:] # Cell #2
+        hfs[0] = (0, 0)
+        hfs[1] = NULL_HalfFacet
+        hfs[2] = NULL_HalfFacet
+        self.Cell.halffacet[3][:] = hfs[:] # Cell #3
+        hfs[0] = NULL_HalfFacet
+        hfs[1] = (5, 2)
+        hfs[2] = NULL_HalfFacet
+        self.Cell.halffacet[4][:] = hfs[:] # Cell #4
+        hfs[0] = NULL_HalfFacet
+        hfs[1] = NULL_HalfFacet
+        hfs[2] = (6, 0)
+        self.Cell.halffacet[5][:] = hfs[:] # Cell #5
+        hfs[0] = (4, 1)
+        hfs[1] = NULL_HalfFacet
+        hfs[2] = NULL_HalfFacet
+        self.Cell.halffacet[6][:] = hfs[:] # Cell #6
+        self.Cell.Print()
+
+        non_man_hf = self.Cell.Get_Nonmanifold_HalfFacets()
+        self.Cell.Print_Nonmanifold_HalfFacets()
+        self.assertEqual(np.array_equal(non_man_hf,np.array([(3, 0), (6, 0)], dtype=HalfFacetType)), True, "Should be True.")
         print("")
 
     def test_Print(self):
