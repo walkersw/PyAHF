@@ -243,26 +243,31 @@ class CellSimplexType:
             OUT += "]"
         return OUT
 
-    def Print_Cell(self, ci):
-        """Print single cell data to the screen.
+    def Print(self, ci=NULL_Cell):
+        """Print cell connectivity and sibling half-facets. "ci" is the index of a
+        specific cell; if ci=NULL_Cell, then print all cells.  If no cell index is
+        given, then print all cells.
         """
-        if (ci >= self._size):
-            print("Error: invalid cell index!")
+        if (ci==NULL_Cell):
+            # then print all the cells
+            print("Cell connectivity data:")
+            print("-----------------------")
+            print("cell # :        vertices        |   sibling half-facets")
+            NC = self.Size()
+            for kk in np.arange(0, NC, dtype=CellIndType):
+                cell_str = self._get_cell_string(kk)
+                OUT_str = str(kk) + ": " + cell_str
+                print(OUT_str)
         else:
-            OUT = self._get_cell_string(ci)
-            print(OUT)
-
-    def Print(self):
-        """Print all the cell data to the screen.
-        """
-        
-        print("Cell connectivity data:")
-        print("-----------------------")
-        print("cell index: [vertex indices] | [sibling half-facets]")
-        for ci in range(0, self._size):
+            # then print ONE cell
+            if (ci >= self._size):
+                print("Error: invalid cell index!")
+                return
+            print("Connectivity of cell #: " + str(ci))
+            print("----------------------------------")
+            print("        vertices        |   sibling half-facets")
             cell_str = self._get_cell_string(ci)
-            OUT_str = str(ci) + ": " + cell_str
-            print(OUT_str)
+            print(cell_str)
         print("")
 
     def Get_Unique_Vertices(self):
@@ -375,7 +380,7 @@ class CellSimplexType:
             EE_str = "(" + str(v0) + ", " + str(v1) + ")"
         return EE_str
 
-    def Get_FreeBoundary(self, vi, ci):
+    def Get_FreeBoundary(self):
         """Returns all half-facets that are referenced by only one cell;
         i.e. the half-facets that are on the boundary of the mesh.
         WARNING: this requires the sibling half-facet data (see self.halffacet)
@@ -542,6 +547,93 @@ class CellSimplexType:
                 # else the neighbor does not exist, so do nothing
 
             return CONNECTED
+
+    def Print_Two_Cells_Are_Facet_Connected(self, vi, ci_a, ci_b):
+        """Print information stating whether two cells (that share the same vertex) are
+        facet-connected. Note: this is useful for determining when two cells are in the
+        same "connected component" of the mesh (this is important when the mesh
+        is *not* a manifold).
+        """
+        if (vi==NULL_Vtx):
+            # something is null, so do nothing
+            print("Vertex is invalid, so print nothing!")
+            return
+        if ( (ci_a==NULL_Cell) or (ci_b==NULL_Cell) ):
+            # cell is null, so do nothing.
+            print("One of the cells is invalid, so print nothing!")
+            return
+
+        CONNECTED = self.Two_Cells_Are_Facet_Connected(vi, ci_a, ci_b)
+        if (CONNECTED):
+            print("Cell #" + str(ci_a) + " and Cell #" + str(ci_b) \
+                  + " are facet-connected *and* share vertex #" + str(vi) + ".")
+        else:
+            # make sure both cells contain the vertex
+            CL_a_vtx = self.vtx[ci_a]
+            contain_a = np.isin(vi, CL_a_vtx)
+            CL_b_vtx = self.vtx[ci_b]
+            contain_b = np.isin(vi, CL_b_vtx)
+
+            if ( contain_a and contain_b ):
+                print("Cell #" + str(ci_a) + " and Cell #" + str(ci_b) + " both share vertex #" \
+                      + str(vi) + " but are *not* facet connected.")
+            else:
+                print("Cell #" + str(ci_a) + " and Cell #" + str(ci_b) \
+                      + " do *not* both share vertex #" + str(vi) + ".")
+
+    def Get_HalfFacets_Attached_To_HalfFacet(self, hf_in):
+        """Get all half-facets attached to a given half-facet.  Note that all of these
+        attached half-facets refer to the *same* geometrically defined facet in the mesh.
+
+        The output of this method is a numpy array.
+        Note: the output also contains the given half-facet.
+        Note: this routine requires the sibling half-facet data to be built first.
+        """
+        attached_hf = [] # init to empty list
+        
+        # verify that the given half-facet is not NULL
+        if (hf_in==NULL_HalfFacet):
+            return np.full(0, NULL_HalfFacet, dtype=HalfFacetType)
+
+        # put in the initial half-facet
+        attached_hf.append(hf_in)
+
+        # cycle through all the neighbors and store them
+        COUNT = 0;
+        while (COUNT < 100000): # allow for up to 100,000 neighbors!
+            COUNT += 1
+            # get the next half-facet
+            current_hf = attached_hf[-1]
+            CL_halffacet = self.halffacet[current_hf['ci']]
+            next_hf = CL_halffacet[current_hf['fi']]
+
+            # if the neighbor does not exist, then stop!
+            if (next_hf==NULL_HalfFacet):
+                break
+
+            # if we get back to the starting half-facet, stop!
+            if (next_hf==hf_in):
+                break
+            # else store it
+            attached_hf.append(next_hf)
+            
+        if (COUNT >= 100000)
+            # then quit!
+            print("Error in 'CellSimplexType.Get_HalfFacets_Attached_To_HalfFacet'...")
+            print("    Number of neighbors is too large.")
+            print("    There should not be more than 100,000 cells attached to a single facet!")
+
+        return np.array(attached_hf, dtype=HalfFacetType)
+
+    def Print_HalfFacets_Attached_To_HalfFacet(self, hf_in):
+        """Print half-facets attached to given half-facet.
+        """
+        attached = self.Get_HalfFacets_Attached_To_HalfFacet(hf_in)
+        
+        print("The half-facets attached to " + str(hf_in) + " are:")
+        for hf_jj in attached:
+            print(str(hf_jj))
+
 
 
 

@@ -210,7 +210,7 @@ class TestBasicClasses(unittest.TestCase):
         self.assertEqual(np.array_equal(self.Cell.Vtx2Adjacent(9, 1, 1),np.array([4, 6])), True, "Should be True.")
         self.assertEqual(np.array_equal(self.Cell.Vtx2Adjacent(4, 1, 2),np.array([12, 6])), True, "Should be True.")
 
-    def test_Attached_and_Connected(self):
+    def test_Attached_and_Connected_and_FreeBdy(self):
         del(self.Cell)
         del(self.VC)
         self.Cell = CellSimplexType(2)
@@ -218,18 +218,18 @@ class TestBasicClasses(unittest.TestCase):
 
         self.Cell.Append_Batch(4, [0, 3, 1, 1, 2, 0, 4, 0, 2, 4, 5, 0])
         hfs = np.full(3, NULL_HalfFacet, dtype=HalfFacetType)
-        hfs[1] = np.array((1, 1), dtype=HalfFacetType)
+        hfs[1] = (1, 1)
         self.Cell.halffacet[0][:] = hfs[:] # Cell #0
-        hfs[0] = np.array((2, 0), dtype=HalfFacetType)
-        hfs[1] = np.array((0, 1), dtype=HalfFacetType)
+        hfs[0] = (2, 0)
+        hfs[1] = (0, 1)
         hfs[2] = NULL_HalfFacet
         self.Cell.halffacet[1][:] = hfs[:] # Cell #1
-        hfs[0] = np.array((1, 0), dtype=HalfFacetType)
+        hfs[0] = (1, 0)
         hfs[1] = NULL_HalfFacet
-        hfs[2] = np.array((3, 1), dtype=HalfFacetType)
+        hfs[2] = (3, 1)
         self.Cell.halffacet[2][:] = hfs[:] # Cell #2
         hfs[0] = NULL_HalfFacet
-        hfs[1] = np.array((2, 2), dtype=HalfFacetType)
+        hfs[1] = (2, 2)
         hfs[2] = NULL_HalfFacet
         self.Cell.halffacet[3][:] = hfs[:] # Cell #3
         self.Cell.Print()
@@ -242,12 +242,32 @@ class TestBasicClasses(unittest.TestCase):
         self.assertEqual(np.array_equal(cell_attach,np.array([1, 2])), True, "Should be True.")
         #print(cell_attach)
         
+        self.Cell.Print_Two_Cells_Are_Facet_Connected(0, 1, 2)
         self.assertEqual(self.Cell.Two_Cells_Are_Facet_Connected(0, 1, 2), True, "Should be True.")
+        self.Cell.Print_Two_Cells_Are_Facet_Connected(0, 1, 3)
         self.assertEqual(self.Cell.Two_Cells_Are_Facet_Connected(0, 1, 3), True, "Should be True.")
+        self.Cell.Print_Two_Cells_Are_Facet_Connected(2, 1, 2)
         self.assertEqual(self.Cell.Two_Cells_Are_Facet_Connected(2, 1, 2), True, "Should be True.")
+        self.Cell.Print_Two_Cells_Are_Facet_Connected(2, 3, 2)
         self.assertEqual(self.Cell.Two_Cells_Are_Facet_Connected(2, 3, 2), False, "Should be False.")
+        print("")
+
+        free_bdy = self.Cell.Get_FreeBoundary()
+        print("free boundary of the mesh:")
+        print(free_bdy)
+        free_bdy_CHK = np.full(6, NULL_HalfFacet, dtype=HalfFacetType)
+        free_bdy_CHK[0] = (0, 0)
+        free_bdy_CHK[1] = (0, 2)
+        free_bdy_CHK[2] = (1, 2)
+        free_bdy_CHK[3] = (2, 1)
+        free_bdy_CHK[4] = (3, 0)
+        free_bdy_CHK[5] = (3, 2)
+        self.assertEqual(np.array_equal(free_bdy,free_bdy_CHK), True, "Should be True.")
+        print("")
 
     def test_Print(self):
+        del(self.Cell)
+        del(self.VC)
         self.Cell = CellSimplexType(2)
         self.VC   = VtxCoordType(2)
 
@@ -267,6 +287,8 @@ class TestBasicClasses(unittest.TestCase):
         self.VC.Print()
 
     def test_MeshEdgeType(self):
+        del(self.Cell)
+        del(self.VC)
         self.Cell = CellSimplexType(2)
         self.VC   = VtxCoordType(2)
         print(" ")
@@ -286,6 +308,8 @@ class TestBasicClasses(unittest.TestCase):
         self.assertEqual(Edge_array[4]['v1']==16, True, "Should be 16.")
 
     def test_Get_Edges(self):
+        del(self.Cell)
+        del(self.VC)
         self.Cell = CellSimplexType(2)
         self.VC   = VtxCoordType(2)
         print(" ")

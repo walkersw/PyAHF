@@ -363,6 +363,82 @@ class BaseSimplexMesh:
 
 
 
+
+
+
+
+    def Print_v2hfs(self, vi):
+        """Print (multiple) half-facets attached to a given vertex
+        (from intermediate data structure).
+        """
+        print("'_v2hfs':")
+        self._v2hfs.Print_Half_Facets(vi)
+
+    def Print_Vtx2HalfFacets(self, vi):
+        """Print half-facets attached to a given vertex (for final data structure).
+        """
+        print("'Vtx2HalfFacets':")
+        self.Vtx2HalfFacets.Print_Half_Facets(vi)
+
+    def Get_Cells_Attached_To_Vertex(self, vi):
+        """Returns all cell indices (a numpy array) that are attached to vertex "vi".
+        WARNING: this requires the sibling half-facet data (see self.Cell.halffacet)
+        to be built, and self.Vtx2HalfFacets must be completed as well, before this
+        method can be used.
+        Note: the returned cell_array can be empty.
+        """
+        cell_array = np.array([], dtype=CellIndType) # initialize as an empty array
+        if (vi==NULL_Vtx):
+            # the vertex is null, so do nothing.
+            return cell_array
+
+        # get the attached half-facets
+        HF_1st, Num_HF = self.Vtx2HalfFacets.Get_Half_Facets(vi)
+
+        # loop through each half-facet
+        # (each one corresponds to a connected component of the mesh)
+        for hf_it in np.arange(HF_1st, HF_1st + Num_HF, dtype=VtxIndType):
+            star_hf_it = self.Vtx2HalfFacets.VtxMap[hf_it]
+            temp_array = self.Cell.Get_Cells_Attached_To_Vertex(vi, star_hf_it['ci'])
+            # store the found cells in cell_array
+            cell_array = np.concatenate((cell_array, temp_array), axis=0)
+
+        return cell_array
+
+    def Print_Cells_Attached_To_Vertex(self, vi):
+        """Print all cell indices that are attached to vertex "vi".
+        This prints out the separate connected components.
+        WARNING: this requires the sibling half-facet data (see self.Cell.halffacet)
+        to be built, and self.Vtx2HalfFacets must be completed as well, before this
+        method can be used.
+        """
+        if (vi==NULL_Vtx):
+            # the vertex is null, so do nothing.
+            print("Vertex is invalid, so print nothing!")
+            return
+
+        # get the attached half-facets
+        HF_1st, Num_HF = self.Vtx2HalfFacets.Get_Half_Facets(vi)
+
+        print("The following cells are attached to vertex #" + str(vi) + ":")
+
+        # loop through each half-facet
+        # (each one corresponds to a connected component of the mesh)
+        COUNT = 0
+        for hf_it in np.arange(HF_1st, HF_1st + Num_HF, dtype=VtxIndType):
+            star_hf_it = self.Vtx2HalfFacets.VtxMap[hf_it]
+            COUNT += 1
+            print("component #" + str(COUNT) + ": ")
+            cell_array = self.Cell.Get_Cells_Attached_To_Vertex(vi, star_hf_it['ci'])
+            print(str(cell_array[0]), endl="")
+            # print it
+            for cc in np.arange(1, cell_array.size, dtype=CellIndType):
+                print(", " + str(cell_array[cc]), endl="")
+            print("")
+
+
+
+
     # private methods below this line.
 
     def _Append_Half_Facets(self, ci, vtx_ind):
