@@ -4,9 +4,9 @@ ahf.BaseSimplexMesh.py
 Base class for array based half-facet (AHF) data structure to store and
 process simplex meshes.
 
-Also, see "Vtx2HalfFacet_Mapping.py" for more explanation.
+Also, see "Vtx2HalfFacet_Mapping.py" and "BasicClasses.py" for more explanation.
 
-Copyright (c) 08-12-2022,  Shawn W. Walker
+Copyright (c) 08-18-2022,  Shawn W. Walker
 """
 
 import numpy as np
@@ -17,10 +17,6 @@ from ahf import *
 
 #from ahf.Vtx2HalfFacet_Mapping import *
 from ahf.BasicClasses import *
-
-
-
-FIX!!!!
 
 
 class BaseSimplexMesh:
@@ -516,7 +512,7 @@ class BaseSimplexMesh:
     def Get_Nonmanifold_Vertices(self):
         """Get the set of non-manifold vertices. This returns a numpy array of
         vertex indices, each defining a *distinct* non-manifold vertex.
-        WARNING: this requires the 'Vtx2HalfFacets' variable to be filled in.
+        WARNING: this requires the 'Vtx2HalfFacets' variable to be filled in and complete.
         """
         non_man_vtx = [] # init to empty list
 
@@ -526,12 +522,11 @@ class BaseSimplexMesh:
         # check everything (note: V2HF is already sorted.)
         # Note: no need to check the last entry.
         for it in np.arange(0, self.Vtx2HalfFacets.Size()-1, dtype=VtxIndType):
-            std::vector<VtxHalfFacetType>::const_iterator next_it = it+1;
             next_it = it+1
             current_vtx = V2HF[it]['vtx']
             next_vtx    = V2HF[next_it]['vtx']
             # if a vertex shows up more than once, then it is a *non-manifold* vertex
-            if (current_vtx==next_vtx)
+            if (current_vtx==next_vtx):
                 # add this vertex to the output array
                 non_man_vtx.append(current_vtx)
 
@@ -786,7 +781,7 @@ class BaseSimplexMesh:
                                       + str(global_vi) + ".")
                                 temp_hf = self.Vtx2HalfFacets.Get_Half_Facet(global_vi)
                                 assert(temp_hf!=NULL_HalfFacet) # this should stop the program
-                            else if (Num_HF==1):
+                            elif (Num_HF==1):
                                 # in this case, it is obvious what to replace
                                 # (*(RR.first)).ci = ci;
                                 # (*(RR.first)).fi = local_fi;
