@@ -513,8 +513,47 @@ class BaseSimplexMesh:
         """
         self.Cell.Print_Nonmanifold_HalfFacets()
 
-    #Get_Nonmanifold_Vertices
+    def Get_Nonmanifold_Vertices(self):
+        """Get the set of non-manifold vertices. This returns a numpy array of
+        vertex indices, each defining a *distinct* non-manifold vertex.
+        WARNING: this requires the 'Vtx2HalfFacets' variable to be filled in.
+        """
+        non_man_vtx = [] # init to empty list
 
+        # access the vtx-to-half-facet data
+        V2HF = self.Vtx2HalfFacets.VtxMap
+
+        # check everything (note: V2HF is already sorted.)
+        # Note: no need to check the last entry.
+        for it in np.arange(0, self.Vtx2HalfFacets.Size()-1, dtype=VtxIndType):
+            std::vector<VtxHalfFacetType>::const_iterator next_it = it+1;
+            next_it = it+1
+            current_vtx = V2HF[it]['vtx']
+            next_vtx    = V2HF[next_it]['vtx']
+            # if a vertex shows up more than once, then it is a *non-manifold* vertex
+            if (current_vtx==next_vtx)
+                # add this vertex to the output array
+                non_man_vtx.append(current_vtx)
+
+        # now clean it up by removing duplicate vertices
+        temp_np = np.array(non_man_vtx, dtype=VtxIndType)
+        non_manifold_vtx = np.unique(temp_np)
+        return non_manifold_vtx
+
+    def Print_Nonmanifold_Vertices(self):
+        """Get the set of non-manifold vertices. This returns a numpy array of
+        vertex indices, each defining a *distinct* non-manifold vertex.
+        WARNING: this requires the 'Vtx2HalfFacets' variable to be filled in.
+        """
+        non_manifold_vtx = self.Get_Nonmanifold_Vertices()
+        
+        NUM = non_manifold_vtx.size
+        if (NUM==0):
+            print("There are *no* non-manifold vertices.")
+        else: # there is more than 1
+            print("These are all the non-manifold vertex indices:")
+            for vi in non_manifold_vtx:
+                print(str(vi))
 
     # private methods below this line.
 
