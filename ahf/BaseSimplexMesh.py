@@ -148,22 +148,22 @@ class BaseSimplexMesh:
           non-manifold vertices.  But we do allow for non-manifold vertices!
     """
 
-    def __init__(self,CELL_DIM):
+    def __init__(self, CELL_DIM, res_buf=0.2):
 
         if (CELL_DIM<0):
             print("Error: cell dimension must be non-negative!")
+        assert(CELL_DIM>=0)
+        if np.rint(CELL_DIM).astype(SmallIndType)!=CELL_DIM:
+            print("Error: cell dimension must be a non-negative integer!")
+        assert(np.rint(CELL_DIM).astype(SmallIndType)==CELL_DIM)
 
         # connectivity and sibling half-facet data
-        self.Cell = CellSimplexType(CELL_DIM)
+        self.Cell = CellSimplexType(CELL_DIM, res_buf)
         
         # flag to indicate if mesh cells may be added or modified.
         #  true  = cells can be added, modified
         #  false = the mesh cells cannot be changed!
         self._mesh_open = True
-        
-        # amount of extra memory to allocate when re-allocating
-        #    Cell and Vtx2HalfFacets (number between 0.0 and 1.0).
-        self._cell_reserve_buffer = 0.2 # extra 20%
         
         # estimate of the size to allocate in Vtx2HalfFacets
         self._estimate_size_Vtx2HalfFacets = 0
@@ -179,12 +179,17 @@ class BaseSimplexMesh:
         #       is only used to construct the sibling half-facet information (stored in Cell).
 
     def __str__(self):
+        if self._mesh_open:
+            open_str = "The mesh is open for editing."
+        else:
+            open_str = "The mesh is currently closed and cannot be modified."
         OUT_STR = ("The topological dimension is: " + str(self.Cell.Dim()) + "\n"
                  + "The number of cells is: " + str(self.Cell.Size()) + "\n"
                  + "The *reserved* size of cells is: " + str(self.Cell.Capacity()) + "\n"
                  + "The size of the Vertex-to-Half-Facet Map is: " + str(self.Vtx2HalfFacets.Size()) + "\n"
                  + "The *reserved* size of the Vertex-to-Half-Facet Map is: " 
-                 + str(self.Vtx2HalfFacets.Capacity()) + "\n" )
+                 + str(self.Vtx2HalfFacets.Capacity()) + "\n"
+                 + open_str + "\n" )
         return OUT_STR
 
     def Clear(self):
@@ -220,16 +225,14 @@ class BaseSimplexMesh:
         """Returns the topological dimension of the mesh."""
         return self.Cell.Dim()
 
-    def Reserve(self, num_C):
-        """Allocate memory to hold a mesh of a given size (plus a little)."""
+    def Reserve(self, num_cl):
+        """Allocate memory to hold a mesh (of cells) of a given size (plus a little)."""
         if not self.Is_Mesh_Open():
             return
 
-        # compute the actual size to allocate for the cells
-        Desired_Size = np.rint(np.ceil((1.0 + self._cell_reserve_buffer) * num_C))
-        self.Cell.Reserve(Desired_Size)
+        self.Cell.Reserve(num_cl)
         # guess on what to reserve for the intermediate data structure
-        num_v2hfs = (self.Cell.Dim() + 1) * Num_C
+        num_v2hfs = (self.Cell.Dim() + 1) * num_cl
         self.v2hfs.Reserve(num_v2hfs)
 
     def Append_Cell(self, vtx_ind):

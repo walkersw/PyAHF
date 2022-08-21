@@ -81,12 +81,18 @@ class CellSimplexType:
     Note: each vertex is contained (attached) to its corresponding facet.
     """
 
-    def __init__(self,CELL_DIM):
-
+    def __init__(self, CELL_DIM, res_buf=0.2):
+        """
+        CELL_DIM >= 0 is the topological dimension that the cells live in.
+        res_buf in [0.0, 1.0] is optional, and is for reserving extra space for cell data.
+        """
         if (CELL_DIM<0):
             print("Error: cell dimension must be non-negative!")
+        assert(CELL_DIM>=0)
         if np.rint(CELL_DIM).astype(SmallIndType)!=CELL_DIM:
             print("Error: cell dimension must be a non-negative integer!")
+        assert(np.rint(CELL_DIM).astype(SmallIndType)==CELL_DIM)
+
         self._cell_dim = CELL_DIM
         # global vertex indices of the cells (initialize)
         self.vtx = np.full((1, self._cell_dim+1), NULL_Vtx)
@@ -94,8 +100,9 @@ class CellSimplexType:
         self.halffacet = np.full((1, self._cell_dim+1), NULL_HalfFacet)
         # actual number of cells
         self._size = 0
-        # amount extra to reserve when finding a variable number of cells attached to a vertex
-        #self._cell_attach_chunk = 5*CELL_DIM
+        # amount of extra memory to allocate when re-allocating vtx and halffacet
+        #       (number between 0.0 and 1.0).
+        self._reserve_buffer = res_buf # e.g. 0.2 means extra 20%
 
     def __str__(self):
         dimvtx = self.vtx.shape
@@ -104,7 +111,7 @@ class CellSimplexType:
             print("vtx and halffacet arrays are not the same size!")
         OUT_STR = ("The topological dimension is: " + str(self._cell_dim) + "\n"
                  + "The number of cells is: " + str(self._size) + "\n"
-                 + "The *reserved* size of cells is: " + str(dimvtx[0]) + "\n")
+                 + "The *reserved* size of cells is: " + str(self.Capacity()) + "\n")
         return OUT_STR
 
     def Clear(self):
@@ -132,9 +139,8 @@ class CellSimplexType:
         if not np.array_equal(dimvtx,dimhf):
             print("vtx and halffacet arrays are not the same size!")
 
-        # compute the space needed
-        Desired_Size = np.rint(num_cl).astype(VtxIndType)
-        
+        # compute the actual size to allocate for the cells
+        Desired_Size = np.rint(np.ceil((1.0 + self._reserve_buffer) * num_cl)).astype(CellIndType)
         if dimvtx[0] < Desired_Size:
             old_size = dimvtx[0]
             self.vtx.resize((Desired_Size, self._cell_dim+1))
@@ -153,7 +159,7 @@ class CellSimplexType:
             print("vtx and halffacet arrays are not the same size!")
         return dimvtx[0]
 
-    def Append(self, vtx_ind):
+    def Append(self, cell_vtx):
         """Append a single cell by giving its global vertex indices (as an array).
         """
         
@@ -162,13 +168,13 @@ class CellSimplexType:
             # need to reserve space
             self.Reserve(self._size+10)
         
-        if len(vtx_ind)==(self._cell_dim+1):
-            self.vtx[self._size][:] = vtx_ind[:]
+        if len(cell_vtx)==(self._cell_dim+1):
+            self.vtx[self._size][:] = cell_vtx[:]
             self._size += 1
         else:
             print("Error: incorrect number of vertex indices!")
 
-    def Append_Batch(self, num_cells, vtx_ind):
+    def Append_Batch(self, num_cells, cell_vtx):
         """Append several cells at once by giving their global vertex
         indices (as an array).
         """
@@ -177,39 +183,40 @@ class CellSimplexType:
         New_Total_Cells = Num_Current_Cells + num_cells;
         self.Reserve(New_Total_Cells)
         
-        if len(vtx_ind)==(self._cell_dim+1)*num_cells:
+        if len(cell_vtx)==(self._cell_dim+1)*num_cells:
             dimvtx = self.vtx.shape
             self.vtx.shape = (dimvtx[0]*dimvtx[1],)
-            self.vtx[Num_Current_Cells*(self._cell_dim+1):New_Total_Cells*(self._cell_dim+1)] = vtx_ind[:]
+            self.vtx[Num_Current_Cells*(self._cell_dim+1):New_Total_Cells*(self._cell_dim+1)] = cell_vtx[:]
             self._size += num_cells
             # put it back
             self.vtx.shape = dimvtx
         else:
             print("Error: incorrect number of vertex indices!")
 
-    def Set(self, cell_ind, vtx_ind):
+    def Set(self, cell_ind, cell_vtx):
         """Set the vertex data for a given cell (that already exists) by giving its
         global vertex indices (as an array).
         """
         
         if (cell_ind>=self._size):
             print("Error: the given cell index does not exist!")
+            return
         
-        if len(vtx_ind)==(self._cell_dim+1):
-            self.vtx[cell_ind][:] = vtx_ind[:]
+        if len(cell_vtx)==(self._cell_dim+1):
+            self.vtx[cell_ind][:] = cell_vtx[:]
         else:
             print("Error: incorrect number of vertex indices!")
 
-    def Set_All(self, num_cells, vtx_ind):
+    def Set_All(self, num_cells, cell_vtx):
         """Set all cell data at once.
         """
         
         self.Reserve(num_cells)
         
-        if len(vtx_ind)==(self._cell_dim+1)*num_cells:
+        if len(cell_vtx)==(self._cell_dim+1)*num_cells:
             dimvtx = self.vtx.shape
             self.vtx.shape = (dimvtx[0]*dimvtx[1],)
-            self.vtx[0:num_cells*(self._cell_dim+1)] = vtx_ind[:]
+            self.vtx[0:num_cells*(self._cell_dim+1)] = cell_vtx[:]
             self._size = num_cells
             # put it back
             self.vtx.shape = dimvtx
@@ -273,7 +280,7 @@ class CellSimplexType:
     def Get_Unique_Vertices(self):
         """Get unique list of vertices from the current cell data.
         """
-        unique_vertices = np.unique(self.vtx)
+        unique_vertices = np.unique(self.vtx[0:self.Size()][:])
         
         return unique_vertices
 
@@ -300,8 +307,8 @@ class CellSimplexType:
 
     def Max_Vtx_Index(self):
         """Returns the largest vertex index referenced in self.vtx."""
-        return np.amax(self.vtx)
-
+        return np.amax(self.vtx[0:self.Size()][:])
+        
     def Reindex_Vertices(self, new_indices):
         """Re-index the vertices in the mesh.
         Example: new_index = new_indices[old_index]
@@ -840,25 +847,40 @@ class CellSimplexType:
 
 class VtxCoordType:
     """
-    Class for storing vertex coordinate data.
-    GEO_DIM >= 0 is the geometric (ambient) dimension that the points live in.
+    Class for storing array of vertex coordinate data.  Meant to be used by the Mesh class.
     """
 
-    def __init__(self,GEO_DIM):
-
+    def __init__(self, GEO_DIM, res_buf=0.2):
+        """
+        GEO_DIM >= 0 is the geometric (ambient) dimension that the points live in.
+        res_buf in [0.0, 1.0] is optional, and is for reserving extra space for coordinates.
+        """
         if (GEO_DIM<0):
             print("Error: geometric dimension must be non-negative!")
+        assert(GEO_DIM>=0)
+        if np.rint(GEO_DIM).astype(SmallIndType)!=GEO_DIM:
+            print("Error: geometric dimension must be a non-negative integer!")
+        assert(np.rint(GEO_DIM).astype(SmallIndType)==GEO_DIM)
+
         self._geo_dim = GEO_DIM
         # vertex coordinates (initialize)
         self.coord = np.full((1, self._geo_dim), 0.0, dtype=PointType)
         # actual number of vertices
         self._size = 0
+        # amount of extra memory to allocate when re-allocating coord
+        #       (number between 0.0 and 1.0).
+        self._reserve_buffer = res_buf # e.g. 0.2 means extra 20%
+
+        # flag to indicate if vertex coordinates may be added or modified.
+        #  true  = vertex coord can be added, modified
+        #  false = the vertex coord cannot be changed!
+        self._coord_open = True
 
     def __str__(self):
         dimcoord = self.coord.shape
         OUT_STR = ("The geometric dimension is: " + str(self._geo_dim) + "\n"
                  + "The number of vertices is: " + str(self._size) + "\n"
-                 + "The *reserved* size of vertices is: " + str(dimcoord[0]) + "\n")
+                 + "The *reserved* size of vertices is: " + str(self.Capacity()) + "\n")
         return OUT_STR
 
     def Clear(self):
@@ -867,6 +889,23 @@ class VtxCoordType:
         del(self.coord)
         self.coord = np.full((1, self._geo_dim), 0.0, dtype=PointType)
         self._size = 0
+
+    def Open(self):
+        """This sets the _coord_open flag to True to indicate that
+        the coordinates can be modified."""
+        self._coord_open = True
+
+    def Close(self):
+        """This sets the _mesh_open flag to False to indicate that
+        the coordinates cannot be modified."""
+        self._coord_open = False
+
+    def Is_Coord_Open(self):
+        """This prints and returns whether or not the coordinates are open."""
+        if not self._coord_open:
+            print("Vertex coordinates are not open for modification!")
+            print("     You must first use the 'Open' method.")
+        return self._coord_open
 
     def Size(self):
         """This returns the number of vertices."""
@@ -878,12 +917,14 @@ class VtxCoordType:
 
     def Reserve(self, num_vtx):
         """This just pre-allocates, or re-sizes.
-         The _size attribute is unchanged."""
-        dimcoord = self.coord.shape
+        The _size attribute is unchanged."""
+        if not self.Is_Coord_Open():
+            return
 
-        # compute the space needed
-        Desired_Size = np.rint(num_vtx).astype(VtxIndType)
+        dimcoord = self.coord.shape
         
+        # compute the size needed
+        Desired_Size = np.rint(np.ceil((1.0 + self._reserve_buffer) * num_vtx)).astype(VtxIndType)
         if dimcoord[0] < Desired_Size:
             old_size = dimcoord[0]
             self.coord.resize((Desired_Size, self._geo_dim))
@@ -898,42 +939,38 @@ class VtxCoordType:
         return dimcoord[0]
 
     def Append(self, vtx_coord):
-        """Append a single vertex by giving its coordinates (as an array).
+        """Append several vertices at once by giving their coordinates (as a numpy array).
+        vtx_coord has shape (M,GEO_DIM), where M is the number of vertices.
         """
-        
-        dimcoord = self.coord.shape
-        if (dimcoord[0]==self._size):
-            # need to reserve space
-            self.Reserve(self._size+10)
-        
-        if len(vtx_coord)==(self._geo_dim):
-            self.coord[self._size][:] = vtx_coord[:]
-            self._size += 1
-        else:
-            print("Error: incorrect number of vertex coordinates!")
+        if not self.Is_Coord_Open():
+            return
+        if type(vtx_coord) is not np.ndarray:
+            print("Error: input must be a numpy array!")
+            return
 
-    def Append_Batch(self, num_vtx, vtx_coord):
-        """Append several vertices at once by giving their coordinates (as an array).
-        """
-        
         Num_Current_Vtx = self.Size()
-        New_Total_Vtx = Num_Current_Vtx + num_vtx;
+        dim_vc = vtx_coord.shape
+        if len(dim_vc)==1:
+            num_vtx = 1
+            input_geo_dim = dim_vc[0]
+        else:
+            num_vtx = dim_vc[0]
+            input_geo_dim = dim_vc[1]
+        New_Total_Vtx = Num_Current_Vtx + num_vtx
         self.Reserve(New_Total_Vtx)
         
-        if len(vtx_coord)==self._geo_dim*num_vtx:
-            dimcoord = self.coord.shape
-            self.coord.shape = (dimcoord[0]*dimcoord[1],)
-            self.coord[Num_Current_Vtx*self._geo_dim:New_Total_Vtx*self._geo_dim] = vtx_coord[:]
+        if input_geo_dim==self._geo_dim:
+            self.coord[Num_Current_Vtx:New_Total_Vtx][:] = vtx_coord
             self._size += num_vtx
-            # put it back
-            self.coord.shape = dimcoord
         else:
-            print("Error: incorrect number of vertex coordinates!")
+            print("Error: geometric dimension of given vertex coordinates is incorrect!")
 
     def Set(self, vtx_ind, vtx_coord):
         """Set the coordinates for a given vertex (that already exists) by giving an array.
         """
-        
+        if not self.Is_Coord_Open():
+            return
+
         if (vtx_ind>=self._size):
             print("Error: the given vertex index does not exist!")
         
@@ -943,9 +980,11 @@ class VtxCoordType:
             print("Error: incorrect number of vertex coordinates!")
 
     def Set_All(self, num_vtx, vtx_coord):
-        """Set all vertex coordinate at once.
+        """Set all vertex coordinates at once.
         """
-        
+        if not self.Is_Coord_Open():
+            return
+
         self.Reserve(num_vtx)
         
         if len(vtx_coord)==self._geo_dim*num_vtx:
@@ -975,29 +1014,31 @@ class VtxCoordType:
             OUT += "]"
         return OUT
 
-    def Print_Vtx(self, vi, num_digit=3):
-        """Print single vertex coordinate data to the screen.
-        Optional extra argument specifies number of digits after decimal point.
+    def Print(self, vi=NULL_Vtx, num_digit=3):
+        """Print all the vertex coordinate data to the screen. "vi" is the index of a
+        specific vertex; if vi=NULL_Vtx, then print all vertex coordinates.
+        If no vertex index is given, then print all vertex coordinates.
+        Optional second argument (default=3) specifies number of digits after decimal point.
         """
-        if (vi >= self._size):
-            print("Error: invalid vertex index!")
+        if (vi==NULL_Vtx):
+            # then print all the vertex coordinates
+            print("Vertex coordinate data:")
+            print("-----------------------")
+            print("vtx index: [x_{0}, ..., x_{" + str(self._geo_dim-1) + "}]")
+            for vi in range(0, self._size):
+                vtx_str = self._get_coord_string(vi, num_digit)
+                OUT_str = str(vi) + ": " + vtx_str
+                print(OUT_str)
         else:
-            OUT = self._get_coord_string(vi, num_digit)
-            print(OUT)
-
-    def Print(self, num_digit=3):
-        """Print all the vertex coordinate data to the screen.
-        Optional argument specifies number of digits after decimal point.
-        """
-        
-        print("Vertex coordinate data:")
-        print("-----------------------")
-        print("vtx index: [x_{0}, ..., x_{" + str(self._geo_dim-1) + "}]")
-        for vi in range(0, self._size):
-            vtx_str = self._get_coord_string(vi, num_digit)
-            OUT_str = str(vi) + ": " + vtx_str
-            print(OUT_str)
+            # then print coordinates for one vertex
+            if (vi >= self._size):
+                print("Error: invalid vertex index!")
+            else:
+                OUT = self._get_coord_string(vi, num_digit)
+                print(OUT)
         print("")
+
+
 
 
     #

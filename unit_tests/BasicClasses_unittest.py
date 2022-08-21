@@ -49,9 +49,11 @@ class TestBasicClasses(unittest.TestCase):
         num_reserve = 4
         self.Cell.Reserve(num_reserve)
         self.VC.Reserve(num_reserve)
-        self.assertEqual(self.Cell.vtx.shape[0], num_reserve, "Reserved size should be " + str(num_reserve) + ".")
-        self.assertEqual(self.Cell.halffacet.shape[0], num_reserve, "Reserved size should be " + str(num_reserve) + ".")
-        self.assertEqual(self.VC.coord.shape[0], num_reserve, "Reserved size should be " + str(num_reserve) + ".")
+        self.assertEqual(self.Cell.vtx.shape[0], num_reserve+1, "Reserved size should be " + str(num_reserve+1) + ".")
+        self.assertEqual(self.Cell.halffacet.shape[0], num_reserve+1, "Reserved size should be " + str(num_reserve+1) + ".")
+        self.assertEqual(self.VC.coord.shape[0], num_reserve+1, "Reserved size should be " + str(num_reserve+1) + ".")
+        self.assertEqual(self.Cell.Capacity(), num_reserve+1, "Capacity should be " + str(num_reserve+1) + ".")
+        self.assertEqual(self.VC.Capacity(), num_reserve+1, "Reserved size should be " + str(num_reserve+1) + ".")
 
     def test_Append_and_Set(self):
         del(self.Cell)
@@ -64,16 +66,17 @@ class TestBasicClasses(unittest.TestCase):
         
         self.Cell.Append([1, 2, 3, 4])
         self.Cell.Append([4, 23, 88])
-        print(self.Cell)
+        self.Cell.Print()
 
         new_cell_vtx = [2, 5, 4, 11, 6, 88, 9, 13, 1, 4, 90, 74, 23, 45, 71, 55]
         self.Cell.Append_Batch(4, new_cell_vtx)
 
-        print(self.Cell.vtx)
-        print(self.Cell)
+        self.Cell.Print()
+        #print(self.Cell.vtx)
+        #print(self.Cell)
 
         self.Cell.Set(3, [57, 14, 33, 48])
-        print(self.Cell.vtx)
+        self.Cell.Print()
 
         self.assertEqual(np.array_equal(self.Cell.vtx[2],[6, 88, 9, 13]), True, "Should be [6, 88, 9, 13].")
         self.assertEqual(self.Cell.Size(), 5, "Should be 5.")
@@ -89,12 +92,13 @@ class TestBasicClasses(unittest.TestCase):
         self.VC.Reserve(5)
         print(" ")
         
-        self.VC.Append([0.2, 1.4, -9.4])
-        self.VC.Append([4.4, 2.3])
+        self.VC.Append(np.array([0.2, 1.4, -9.4]))
+        self.VC.Append(np.array([4.4, 2.3]))
         print(self.VC)
 
-        new_vtx_coord = [3.1, -2.5, 7.3, -1.2, 4.4, 6.6, 3.6, -7.8, 10.1, 4.7, 10.6, -5.1]
-        self.VC.Append_Batch(4, new_vtx_coord)
+        new_vtx_coord = np.array([3.1, -2.5, 7.3, -1.2, 4.4, 6.6, 3.6, -7.8, 10.1, 4.7, 10.6, -5.1])
+        new_vtx_coord.shape = (4,3)
+        self.VC.Append(new_vtx_coord)
 
         print(self.VC.coord)
         print(self.VC)
@@ -124,7 +128,8 @@ class TestBasicClasses(unittest.TestCase):
         self.Cell.Reindex_Vertices(new_indices)
         self.Cell.Print()
         CHK_Cell_vtx = np.array([[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15]])
-        self.assertEqual(np.array_equal(self.Cell.vtx,CHK_Cell_vtx), True, "Should be [[ 0  1  2  3], [ 4  5  6  7], [ 8  9 10 11], [12 13 14 15]].")
+        self.assertEqual(np.array_equal(self.Cell.vtx[0:4][:],CHK_Cell_vtx), \
+                         True, "Should be [[ 0  1  2  3], [ 4  5  6  7], [ 8  9 10 11], [12 13 14 15]].")
 
     def test_Baby_Methods(self):
         del(self.Cell)
@@ -211,6 +216,43 @@ class TestBasicClasses(unittest.TestCase):
         self.assertEqual(np.array_equal(self.Cell.Vtx2Adjacent(4, 1, 2),np.array([12, 6])), True, "Should be True.")
 
     def test_Attached_and_Connected_and_FreeBdy(self):
+        """Example Mesh:
+
+
+            V1 +-------------------+ V3
+               |\      (0,0)       |
+               |  \           T0   |
+               |    \              |
+               |      \ (0,1)      |
+               |        \          | 
+               |(1,2)     \   (0,2)|
+               |       (1,1)\      |
+               |              \    |
+               |   T1           \  |
+               |       (1,0)      \|
+            V2 +-------------------+ V0
+               |       (2,0)      /|
+               |                /  |
+               |   T2         /    |
+               |       (2,2)/      |
+               |(2,1)     /   (3,0)|
+               |        /          |
+               |      / (3,1)      |
+               |    /              |
+               |  /           T3   |
+               |/      (3,2)       |
+            V4 +-------------------+ V5
+
+        Triangle Connectivity and Sibling Half-Facet (Half-Edge) Data Struct:
+
+        triangle |   vertices   |     sibling half-edges
+         indices |  V0, V1, V2  |     E0,     E1,      E2
+        ---------+--------------+-------------------------
+            0    |   0,  3,  1  | (NULL),  (1,1),  (NULL)
+            1    |   1,  2,  0  |  (2,0),  (0,1),  (NULL)
+            2    |   4,  0,  2  |  (1,0), (NULL),   (3,1)
+            3    |   4,  5,  0  | (NULL),  (2,2),  (NULL)
+        """
         del(self.Cell)
         del(self.VC)
         self.Cell = CellSimplexType(2)
@@ -372,6 +414,7 @@ class TestBasicClasses(unittest.TestCase):
         self.assertEqual(np.array_equal(self.VC.coord[3],[10.1, -19.4]), True, "Should be [10.1, -19.4].")
         print(" ")
         self.VC.Print()
+        self.VC.Print(3, num_digit=10)
 
     def test_MeshEdgeType(self):
         del(self.Cell)

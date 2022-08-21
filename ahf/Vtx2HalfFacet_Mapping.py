@@ -78,10 +78,11 @@ class Vtx2HalfFacetMap:
     Ei (the local edge index) define the particular half-edge.
     """
 
-    def __init__(self):
+    def __init__(self, res_buf=0.2):
 
-        self._reserve_buffer = 0.2
         self.VtxMap = None
+        # amount of extra memory to allocate when re-allocating VtxMap (number between 0.0 and 1.0).
+        self._reserve_buffer = res_buf # e.g. 0.2 means extra 20%
         self._size  = 0
 
     def __str__(self):
