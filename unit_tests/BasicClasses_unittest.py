@@ -25,6 +25,7 @@ class TestBasicClasses(unittest.TestCase):
     def tearDown(self):
         self.Cell.Clear()
         self.VC.Clear()
+        print(" ")
 
     def test_Size_and_Dim(self):
         del(self.Cell)
@@ -103,7 +104,7 @@ class TestBasicClasses(unittest.TestCase):
         print(self.VC.coord)
         print(self.VC)
 
-        self.VC.Set(3, [8.8, -6.7, 2.7])
+        self.VC.Set(3, np.array([8.8, -6.7, 2.7]))
         print(self.VC.coord)
 
         self.assertEqual(np.array_equal(self.VC.coord[2],[-1.2, 4.4, 6.6]), True, "Should be [-1.2, 4.4, 6.6].")
@@ -320,7 +321,6 @@ class TestBasicClasses(unittest.TestCase):
         non_man_hf = self.Cell.Get_Nonmanifold_HalfFacets()
         self.Cell.Print_Nonmanifold_HalfFacets()
         self.assertEqual(np.array_equal(non_man_hf,np.array([], dtype=HalfFacetType)), True, "Should be True.")
-        print("")
 
     def test_Nonmanifold_1(self):
         del(self.Cell)
@@ -350,7 +350,6 @@ class TestBasicClasses(unittest.TestCase):
         non_man_hf = self.Cell.Get_Nonmanifold_HalfFacets()
         self.Cell.Print_Nonmanifold_HalfFacets()
         self.assertEqual(np.array_equal(non_man_hf,np.array([(3, 2)], dtype=HalfFacetType)), True, "Should be True.")
-        print("")
 
     def test_Nonmanifold_2(self):
         del(self.Cell)
@@ -392,7 +391,6 @@ class TestBasicClasses(unittest.TestCase):
         non_man_hf = self.Cell.Get_Nonmanifold_HalfFacets()
         self.Cell.Print_Nonmanifold_HalfFacets()
         self.assertEqual(np.array_equal(non_man_hf,np.array([(3, 0), (6, 0)], dtype=HalfFacetType)), True, "Should be True.")
-        print("")
 
     def test_Print(self):
         del(self.Cell)
@@ -409,8 +407,12 @@ class TestBasicClasses(unittest.TestCase):
         self.assertEqual( np.array_equal(unique_vertices,[1, 2, 6, 7, 9, 12, 13, 16, 18, 19, 34, 39, 43, 99]), True, "Should be [1, 2, 6, 7, 9, 12, 13, 16, 18, 19, 34, 39, 43, 99].")
         self.Cell.Print_Unique_Vertices()
 
-        coord_data = [7.3, -1.2, 4.4, 6.6, 3.6, -7.8, 10.1, -19.4, 12.6, 35.7, -66.7, 32.8]
-        self.VC.Set_All(6, coord_data)
+        self.VC.Init_Coord(3)
+        self.assertEqual(np.array_equal(self.VC.coord[1],[0.0, 0.0]), True, "Should be [0.0, 0.0].")
+
+        coord_data = np.array([7.3, -1.2, 4.4, 6.6, 3.6, -7.8, 10.1, -19.4, 12.6, 35.7, -66.7, 32.8])
+        coord_data.shape = (6,2)
+        self.VC.Set(coord_data)
         self.assertEqual(np.array_equal(self.VC.coord[3],[10.1, -19.4]), True, "Should be [10.1, -19.4].")
         print(" ")
         self.VC.Print()

@@ -948,7 +948,6 @@ class VtxCoordType:
             print("Error: input must be a numpy array!")
             return
 
-        Num_Current_Vtx = self.Size()
         dim_vc = vtx_coord.shape
         if len(dim_vc)==1:
             num_vtx = 1
@@ -956,6 +955,8 @@ class VtxCoordType:
         else:
             num_vtx = dim_vc[0]
             input_geo_dim = dim_vc[1]
+
+        Num_Current_Vtx = self.Size()
         New_Total_Vtx = Num_Current_Vtx + num_vtx
         self.Reserve(New_Total_Vtx)
         
@@ -965,37 +966,83 @@ class VtxCoordType:
         else:
             print("Error: geometric dimension of given vertex coordinates is incorrect!")
 
-    def Set(self, vtx_ind, vtx_coord):
-        """Set the coordinates for a given vertex (that already exists) by giving an array.
+    def Set(self, *args):
+        """Set vertex coordinates.  Two ways to call:
+        -Overwrite coordinates of specific vertex:
+            two inputs: (vtx_ind, vtx_coord), where
+            vtx_ind is a single vertex index that already exists,
+            vtx_coord is a numpy array of length self.Dim()
+        -Set all vertex coordinates at once:
+            one input: vtx_coord, which has shape (M,GEO_DIM), where M is the number of vertices.
         """
         if not self.Is_Coord_Open():
             return
+        # decipher inputs
+        if len(args)==1:
+            # set all vertex coordinates
+            vtx_coord = args[0]
+            if type(vtx_coord) is not np.ndarray:
+                print("Error: vtx_coord input must be a numpy array!")
+                return
+            dim_vc = vtx_coord.shape
+            if len(dim_vc)==1:
+                num_vtx = 1
+                input_geo_dim = dim_vc[0]
+            else:
+                num_vtx = dim_vc[0]
+                input_geo_dim = dim_vc[1]
+        elif len(args)==2:
+            # set a specific vertex
+            vtx_ind   = args[0]
+            vtx_coord = args[1]
+            if type(vtx_coord) is not np.ndarray:
+                print("Error: vtx_coord input must be a numpy array!")
+                return
 
-        if (vtx_ind>=self._size):
-            print("Error: the given vertex index does not exist!")
-        
-        if len(vtx_coord)==self._geo_dim:
-            self.coord[vtx_ind][:] = vtx_coord[:]
+            input_geo_dim = vtx_coord.size
+            if ( (vtx_ind==NULL_Vtx) or (vtx_ind>=self._size) ):
+                print("Error: given vertex index is not valid!")
+                return
         else:
-            print("Error: incorrect number of vertex coordinates!")
+            print("incorrect number of arguments!")
+            return
 
-    def Set_All(self, num_vtx, vtx_coord):
-        """Set all vertex coordinates at once.
+        if input_geo_dim==self._geo_dim:
+            if len(args)==1:
+                self.Reserve(num_vtx)
+                self.coord[0:num_vtx][:] = vtx_coord
+                self._size = num_vtx
+                # put in ZERO values for the rest
+                self.coord[num_vtx+1:][:] = 0.0
+            else:
+                self.coord[vtx_ind][:] = vtx_coord
+        else:
+            print("Error: geometric dimension of given vertex coordinates is incorrect!")
+
+    def Init_Coord(self, num_vtx):
+        """Allocate given number of vertex coordinates and set all to 0.0
         """
         if not self.Is_Coord_Open():
             return
 
-        self.Reserve(num_vtx)
-        
-        if len(vtx_coord)==self._geo_dim*num_vtx:
-            dimcoord = self.coord.shape
-            self.coord.shape = (dimcoord[0]*dimcoord[1],)
-            self.coord[0:num_vtx*self._geo_dim] = vtx_coord[:]
+        if num_vtx > 0:
+            self.Reserve(num_vtx)
+            self.coord[:][:] = 0.0
             self._size = num_vtx
-            # put it back
-            self.coord.shape = dimcoord
         else:
-            print("Error: incorrect number of vertex coordinates!")
+            pass
+
+
+
+
+    # // re-index the vertex coordinates
+    # void Reindex_Vertices(const VtxIndType&, const VtxIndType*, const VtxIndType*);
+
+    # // get the cartesian box that bounds all the points
+    # void Bounding_Box(PointType*, PointType*) const;
+    # void Bounding_Box(const VtxIndType&, const VtxIndType*, PointType*, PointType*) const;
+
+
 
     def _get_coord_string(self, vi, num_digit=3):
         """Get string representing single vertex coordinate data.
