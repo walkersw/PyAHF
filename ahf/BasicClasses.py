@@ -161,7 +161,7 @@ class CellSimplexType:
 
     def Append(self, cell_vtx):
         """Append several cells at once by giving their global vertex indices (as a numpy array).
-        cell_vtx has shape (M,CELL_DIM+1), where M is the number of cells.
+        cell_vtx has shape (M,self.Dim()+1), where M is the number of cells.
         """
         if type(cell_vtx) is not np.ndarray:
             print("Error: input must be a numpy array!")
@@ -187,6 +187,57 @@ class CellSimplexType:
 
 
 
+
+    # def Set(self, *args):
+        # """Set cell data.  Two ways to call:
+        # -Overwrite cell vertices of specific cell:
+            # two inputs: (cell_ind, cell_vtx), where
+            # cell_ind is a single cell index that already exists,
+            # cell_vtx is a numpy array of length self.Dim()+1
+        # -Set all cell data at once:
+            # one input: cell_vtx, which has shape (M,self.Dim()+1), where M is the number of cells.
+        # """
+        # # decipher inputs
+        # if len(args)==1:
+            # # set all vertex coordinates
+            # vtx_coord = args[0]
+            # if type(vtx_coord) is not np.ndarray:
+                # print("Error: vtx_coord input must be a numpy array!")
+                # return
+            # dim_vc = vtx_coord.shape
+            # if len(dim_vc)==1:
+                # num_vtx = 1
+                # input_geo_dim = dim_vc[0]
+            # else:
+                # num_vtx = dim_vc[0]
+                # input_geo_dim = dim_vc[1]
+        # elif len(args)==2:
+            # # set a specific vertex
+            # vtx_ind   = args[0]
+            # vtx_coord = args[1]
+            # if type(vtx_coord) is not np.ndarray:
+                # print("Error: vtx_coord input must be a numpy array!")
+                # return
+
+            # input_geo_dim = vtx_coord.size
+            # if ( (vtx_ind==NULL_Vtx) or (vtx_ind>=self._size) ):
+                # print("Error: given vertex index is not valid!")
+                # return
+        # else:
+            # print("incorrect number of arguments!")
+            # return
+
+        # if input_geo_dim==self._geo_dim:
+            # if len(args)==1:
+                # self.Reserve(num_vtx)
+                # self.coord[0:num_vtx,:] = vtx_coord
+                # self._size = num_vtx
+                # # put in ZERO values for the rest
+                # self.coord[num_vtx+1:][:] = 0.0
+            # else:
+                # self.coord[vtx_ind,:] = vtx_coord
+        # else:
+            # print("Error: geometric dimension of given vertex coordinates is incorrect!")
 
 
 
