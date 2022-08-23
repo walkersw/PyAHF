@@ -132,6 +132,37 @@ class TestBasicClasses(unittest.TestCase):
         self.assertEqual(np.array_equal(self.Cell.vtx[0:4][:],CHK_Cell_vtx), \
                          True, "Should be [[ 0  1  2  3], [ 4  5  6  7], [ 8  9 10 11], [12 13 14 15]].")
 
+        vtx_coord = np.array([3.1, -2.5, 7.3, -1.2, 4.4, 6.6, 3.6, -7.8, 10.1, 4.7, 10.6, -5.1])
+        vtx_coord.shape = (4,3)
+        self.VC.Set(vtx_coord)
+        self.VC.Print()
+
+        old_indices = np.array([3, 1, 2, 0], dtype=VtxIndType)
+        new_indices = np.array([2, 4, 6, 1], dtype=VtxIndType)
+        self.VC.Reindex_Vertices(old_indices, new_indices)
+        self.VC.Print()
+        self.assertEqual(np.array_equal(self.VC.coord[1],[3.1, -2.5, 7.3]), True, "Should be [3.1, -2.5, 7.3].")
+        self.assertEqual(np.array_equal(self.VC.coord[6],[3.6, -7.8, 10.1]), True, "Should be [3.6, -7.8, 10.1].")
+
+    def test_Bounding_Box(self):
+        del(self.Cell)
+        del(self.VC)
+        self.Cell = CellSimplexType(2)
+        self.VC   = VtxCoordType(2)
+
+        vtx_coord = np.array([3.1, -2.5, -7.3, 1.2, 4.4, 6.6, -3.6, 7.8, 10.1, -4.7, -6.6, -5.1])
+        vtx_coord.shape = (6,2)
+        self.VC.Set(vtx_coord)
+        self.VC.Print()
+
+        BB_min, BB_max = self.VC.Bounding_Box()
+        self.assertEqual(np.array_equal(BB_min,[-7.3, -5.1]), True, "Should be [-7.3, -5.1].")
+        self.assertEqual(np.array_equal(BB_max,[10.1,  7.8]), True, "Should be [10.1,  7.8].")
+        VI = np.array([3, 0, 1])
+        BB_min, BB_max = self.VC.Bounding_Box(VI)
+        self.assertEqual(np.array_equal(BB_min,[-7.3, -2.5]), True, "Should be [-7.3, -2.5].")
+        self.assertEqual(np.array_equal(BB_max,[ 3.1,  7.8]), True, "Should be [ 3.1,  7.8].")
+
     def test_Baby_Methods(self):
         del(self.Cell)
         del(self.VC)
@@ -218,7 +249,6 @@ class TestBasicClasses(unittest.TestCase):
 
     def test_Attached_and_Connected_and_FreeBdy(self):
         """Example Mesh:
-
 
             V1 +-------------------+ V3
                |\      (0,0)       |

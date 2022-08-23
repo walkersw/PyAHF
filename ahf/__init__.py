@@ -31,6 +31,6 @@ NULL_Cell  = np.iinfo(CellIndType).max
 RealType = np.dtype('float64')
 
 # define type for vertex point coordinates
-PointType = np.dtype('float64')
+CoordType = np.dtype('float64')
 
 #

@@ -13,7 +13,7 @@ Copyright (c) 08-12-2022,  Shawn W. Walker
 import numpy as np
 # from ahf import SmallIndType, MedIndType, VtxIndType, CellIndType
 # from ahf import NULL_Small, NULL_Med, NULL_Vtx, NULL_Cell
-# from ahf import RealType, PointType
+# from ahf import RealType, CoordType
 from ahf import *
 
 from ahf.Vtx2HalfFacet_Mapping import *
@@ -712,8 +712,6 @@ class CellSimplexType:
             for hf_jj in non_manifold_hf:
                 print(str(hf_jj))
 
-
-
     def Vtx2Adjacent(self, v_in, ci, fi):
         """Given a global vertex index, cell index, and local facet index, return the *other*
         global vertices in that facet.  If the facet does not contain the given vertex,
@@ -864,7 +862,7 @@ class VtxCoordType:
 
         self._geo_dim = GEO_DIM
         # vertex coordinates (initialize)
-        self.coord = np.full((1, self._geo_dim), 0.0, dtype=PointType)
+        self.coord = np.full((1, self._geo_dim), 0.0, dtype=CoordType)
         # actual number of vertices
         self._size = 0
         # amount of extra memory to allocate when re-allocating coord
@@ -887,7 +885,7 @@ class VtxCoordType:
         """This clears all coordinate data.
          The _size attribute (i.e. number of vertices) is set to zero."""
         del(self.coord)
-        self.coord = np.full((1, self._geo_dim), 0.0, dtype=PointType)
+        self.coord = np.full((1, self._geo_dim), 0.0, dtype=CoordType)
         self._size = 0
 
     def Open(self):
@@ -1010,12 +1008,12 @@ class VtxCoordType:
         if input_geo_dim==self._geo_dim:
             if len(args)==1:
                 self.Reserve(num_vtx)
-                self.coord[0:num_vtx][:] = vtx_coord
+                self.coord[0:num_vtx,:] = vtx_coord
                 self._size = num_vtx
                 # put in ZERO values for the rest
                 self.coord[num_vtx+1:][:] = 0.0
             else:
-                self.coord[vtx_ind][:] = vtx_coord
+                self.coord[vtx_ind,:] = vtx_coord
         else:
             print("Error: geometric dimension of given vertex coordinates is incorrect!")
 
@@ -1025,6 +1023,8 @@ class VtxCoordType:
         if not self.Is_Coord_Open():
             return
 
+        num_vtx = np.rint(num_vtx).astype(VtxIndType)
+
         if num_vtx > 0:
             self.Reserve(num_vtx)
             self.coord[:][:] = 0.0
@@ -1032,17 +1032,72 @@ class VtxCoordType:
         else:
             pass
 
+    def Reindex_Vertices(self, old_indices, new_indices):
+        """Re-index the vertex coordinates:
+        old_indices[ii] gets mapped to new_indices[ii], for 0 <= ii < old_indices.size.
+        Note: the inputs are numpy arrays.
+        """
+        if not self.Is_Coord_Open():
+            return
 
+        # basic check
+        num_indices = old_indices.size
+        if (num_indices > self.Size()):
+            print("Error in 'VtxCoordType.Reindex_Vertices'!")
+            print("    The given list of indices is longer than the number of current vertices.")
+            return
+        if (num_indices!=new_indices.size):
+            print("Error in 'VtxCoordType.Reindex_Vertices'!")
+            print("    The given index lists are not of the same length.")
+            return
 
+        # find the max old and new vertex indices
+        MAX_old_vi = np.amax(old_indices)
+        MAX_new_vi = np.amax(new_indices)
 
-    # // re-index the vertex coordinates
-    # void Reindex_Vertices(const VtxIndType&, const VtxIndType*, const VtxIndType*);
+        # basic check
+        if (MAX_old_vi >= self.Size()):
+            print("Error in 'VtxCoordType.Reindex_Vertices'!")
+            print("    The maximum old vertex index is greater than the current last vertex index.")
+            return
 
-    # // get the cartesian box that bounds all the points
-    # void Bounding_Box(PointType*, PointType*) const;
-    # void Bounding_Box(const VtxIndType&, const VtxIndType*, PointType*, PointType*) const;
+        # copy over
+        old_coord = np.copy(self.coord)
+        # re-init the coordinate list
+        self.Clear() # clear the coordinate data
+        self.Init_Coord(MAX_new_vi+1) # need to add +1 because this sets the number of vertices
+        
+        # now map vertices over
+        self.coord[new_indices[:],:] = old_coord[old_indices]
 
+    def Bounding_Box(self, VI=None):
+        """Get the bounding box of all the vertex coordinates.
+        Output: min and max limits of the coordinates (component-wise).
+        example:  if GEO_DIM==3, then
+        BB_min[:] = [X_min, Y_min, Z_min], (numpy array),
+        BB_max[:] = [X_max, Y_max, Z_max], (numpy array).
+        If no input is given, all vertices are accounted for when computing the
+        bounding box.  Otherwise, only the vertex indices in the given numpy array
+        are considered.
+        """
+        # initialize the box
+        BB_min = np.zeros(self._geo_dim, dtype=CoordType)
+        BB_max = np.zeros(self._geo_dim, dtype=CoordType)
+        
+        # now compute
+        if VI is None:
+            for ii in np.arange(0, self._geo_dim, dtype=SmallIndType):
+                BB_min[ii] = np.amin(self.coord[:,ii])
+                BB_max[ii] = np.amax(self.coord[:,ii])
+        else:
+            if type(VI) is not np.ndarray:
+                print("Error: VI input must be a numpy array!")
+                return
+            for ii in np.arange(0, self._geo_dim, dtype=SmallIndType):
+                BB_min[ii] = np.amin(self.coord[VI,ii])
+                BB_max[ii] = np.amax(self.coord[VI,ii])
 
+        return BB_min, BB_max
 
     def _get_coord_string(self, vi, num_digit=3):
         """Get string representing single vertex coordinate data.
