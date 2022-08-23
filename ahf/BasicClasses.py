@@ -160,38 +160,36 @@ class CellSimplexType:
         return dimvtx[0]
 
     def Append(self, cell_vtx):
-        """Append a single cell by giving its global vertex indices (as an array).
+        """Append several cells at once by giving their global vertex indices (as a numpy array).
+        cell_vtx has shape (M,CELL_DIM+1), where M is the number of cells.
         """
+        if type(cell_vtx) is not np.ndarray:
+            print("Error: input must be a numpy array!")
+            return
+
+        dim_cl = cell_vtx.shape
+        if len(dim_cl)==1:
+            num_cell = 1
+            input_cell_dim = dim_cl[0] - 1
+        else:
+            num_cell = dim_cl[0]
+            input_cell_dim = dim_cl[1] - 1
+
+        Num_Current_Cells = self.Size()
+        New_Total_Cells = Num_Current_Cells + num_cell
+        self.Reserve(New_Total_Cells)
         
-        dimvtx = self.vtx.shape
-        if (dimvtx[0]==self._size):
-            # need to reserve space
-            self.Reserve(self._size+10)
-        
-        if len(cell_vtx)==(self._cell_dim+1):
-            self.vtx[self._size][:] = cell_vtx[:]
-            self._size += 1
+        if input_cell_dim==self._cell_dim:
+            self.vtx[Num_Current_Cells:New_Total_Cells][:] = cell_vtx
+            self._size += num_cell
         else:
             print("Error: incorrect number of vertex indices!")
 
-    def Append_Batch(self, num_cells, cell_vtx):
-        """Append several cells at once by giving their global vertex
-        indices (as an array).
-        """
-        
-        Num_Current_Cells = self.Size()
-        New_Total_Cells = Num_Current_Cells + num_cells;
-        self.Reserve(New_Total_Cells)
-        
-        if len(cell_vtx)==(self._cell_dim+1)*num_cells:
-            dimvtx = self.vtx.shape
-            self.vtx.shape = (dimvtx[0]*dimvtx[1],)
-            self.vtx[Num_Current_Cells*(self._cell_dim+1):New_Total_Cells*(self._cell_dim+1)] = cell_vtx[:]
-            self._size += num_cells
-            # put it back
-            self.vtx.shape = dimvtx
-        else:
-            print("Error: incorrect number of vertex indices!")
+
+
+
+
+
 
     def Set(self, cell_ind, cell_vtx):
         """Set the vertex data for a given cell (that already exists) by giving its

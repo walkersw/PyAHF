@@ -65,12 +65,13 @@ class TestBasicClasses(unittest.TestCase):
         self.Cell.Reserve(5)
         print(" ")
         
-        self.Cell.Append([1, 2, 3, 4])
-        self.Cell.Append([4, 23, 88])
+        self.Cell.Append(np.array([1, 2, 3, 4]))
+        self.Cell.Append(np.array([4, 23, 88]))
         self.Cell.Print()
 
-        new_cell_vtx = [2, 5, 4, 11, 6, 88, 9, 13, 1, 4, 90, 74, 23, 45, 71, 55]
-        self.Cell.Append_Batch(4, new_cell_vtx)
+        new_cell_vtx = np.array([2, 5, 4, 11, 6, 88, 9, 13, 1, 4, 90, 74, 23, 45, 71, 55])
+        new_cell_vtx.shape = (4,4)
+        self.Cell.Append(new_cell_vtx)
 
         self.Cell.Print()
         #print(self.Cell.vtx)
@@ -117,12 +118,14 @@ class TestBasicClasses(unittest.TestCase):
         self.Cell = CellSimplexType(3)
         self.VC   = VtxCoordType(3)
 
-        new_cell_vtx = [0, 3, 5, 1, 4, 12, 9, 6, 88, 62, 54, 72, 99, 120, 101, 154]
-        self.Cell.Append_Batch(4, new_cell_vtx)
+        new_cell_vtx = np.array([0, 3, 5, 1, 4, 12, 9, 6, 88, 62, 54, 72, 99, 120, 101, 154])
+        new_cell_vtx.shape = (4,4)
+        self.Cell.Append(new_cell_vtx)
         self.Cell.Print()
         
         new_indices = np.zeros(155)
         lin_indices = np.linspace(0, 15, num=16, dtype=VtxIndType)
+        new_cell_vtx.shape = (16,)
         new_indices[new_cell_vtx] = lin_indices
         # print(new_indices)
         # print(lin_indices)
@@ -170,7 +173,7 @@ class TestBasicClasses(unittest.TestCase):
         self.VC   = VtxCoordType(3)
         
         Cell_0D = CellSimplexType(0)
-        Cell_0D.Append_Batch(4, [88, 4, 21, 14])
+        Cell_0D.Append(np.array([88, 4, 21, 14]))
         print(Cell_0D)
         self.assertEqual(Cell_0D.Adj_Vertices_In_Facet_Equal(np.array([]), np.array([])), True, "Should be True.")
         self.assertEqual(Cell_0D.Get_Vertex_With_Largest_Index_In_Facet(np.array([88]), 0)==NULL_Vtx, True, "Should be True.")
@@ -186,7 +189,9 @@ class TestBasicClasses(unittest.TestCase):
         self.assertEqual(np.array_equal(Cell_0D.Vtx2Adjacent(5, 2, 0),np.array([])), True, "Should be True.")
 
         Cell_1D = CellSimplexType(1)
-        Cell_1D.Append_Batch(4, [0, 3, 4, 12, 88, 62, 99, 120])
+        cv = np.array([0, 3, 4, 12, 88, 62, 99, 120])
+        cv.shape = (4,2)
+        Cell_1D.Append(cv)
         print(Cell_1D)
         self.assertEqual(Cell_1D.Adj_Vertices_In_Facet_Equal(np.array([]), np.array([])), True, "Should be True.")
         self.assertEqual(Cell_1D.Get_Vertex_With_Largest_Index_In_Facet(np.array([78, 35]), 1)==78, True, "Should be True.")
@@ -202,7 +207,9 @@ class TestBasicClasses(unittest.TestCase):
         self.assertEqual(np.array_equal(Cell_1D.Vtx2Adjacent(87, 2, 1),np.array([])), True, "Should be True.")
         
         Cell_2D = CellSimplexType(2)
-        Cell_2D.Append_Batch(4, [0, 3, 5, 4, 12, 9, 88, 62, 54, 99, 120, 101])
+        cv = np.array([0, 3, 5, 4, 12, 9, 88, 62, 54, 99, 120, 101])
+        cv.shape = (4,3)
+        Cell_2D.Append(cv)
         print(Cell_2D)
         self.assertEqual(Cell_2D.Adj_Vertices_In_Facet_Equal(np.array([12]), np.array([13])), False, "Should be False.")
         self.assertEqual(Cell_2D.Get_Vertex_With_Largest_Index_In_Facet(np.array([78, 35, 66]), 0)==66, True, "Should be True.")
@@ -226,7 +233,9 @@ class TestBasicClasses(unittest.TestCase):
         self.Cell.Reserve(5)
         print(" ")
         
-        self.Cell.Append_Batch(4, [0, 3, 5, 1, 4, 12, 9, 6, 88, 62, 54, 72, 99, 120, 101, 154])
+        cv = np.array([0, 3, 5, 1, 4, 12, 9, 6, 88, 62, 54, 72, 99, 120, 101, 154])
+        cv.shape = (4,4)
+        self.Cell.Append(cv)
         print(self.Cell)
         self.assertEqual(self.Cell.Adj_Vertices_In_Facet_Equal(np.array([12, 34]), np.array([13, 34])), False, "Should be False.")
         self.assertEqual(self.Cell.Get_Vertex_With_Largest_Index_In_Facet(np.array([78, 35, 17, 66]), 2)==78, True, "Should be True.")
@@ -289,7 +298,9 @@ class TestBasicClasses(unittest.TestCase):
         self.Cell = CellSimplexType(2)
         self.VC   = VtxCoordType(2)
 
-        self.Cell.Append_Batch(4, [0, 3, 1, 1, 2, 0, 4, 0, 2, 4, 5, 0])
+        cv = np.array([0, 3, 1, 1, 2, 0, 4, 0, 2, 4, 5, 0])
+        cv.shape = (4,3)
+        self.Cell.Append(cv)
         hfs = np.full(3, NULL_HalfFacet, dtype=HalfFacetType)
         hfs[1] = (1, 1)
         self.Cell.halffacet[0][:] = hfs[:] # Cell #0
@@ -359,7 +370,9 @@ class TestBasicClasses(unittest.TestCase):
         self.VC   = VtxCoordType(3)
 
         # see Nonmanifold_Triangle_Mesh_1.jpg
-        self.Cell.Append_Batch(4, [0,1,2, 1,3,2, 1,4,2, 1,2,5])
+        cv = np.array([0,1,2, 1,3,2, 1,4,2, 1,2,5])
+        cv.shape = (4,3)
+        self.Cell.Append(cv)
         hfs = np.full(3, NULL_HalfFacet, dtype=HalfFacetType)
         hfs[0] = (1, 1)
         self.Cell.halffacet[0][:] = hfs[:] # Cell #0
@@ -388,7 +401,9 @@ class TestBasicClasses(unittest.TestCase):
         self.VC   = VtxCoordType(3)
 
         # see Nonmanifold_Triangle_Mesh_2.jpg
-        self.Cell.Append_Batch(7, [0,1,5, 5,2,1, 1,5,3, 4,5,1, 9,6,5, 9,5,7, 8,9,5])
+        cv = np.array([0,1,5, 5,2,1, 1,5,3, 4,5,1, 9,6,5, 9,5,7, 8,9,5])
+        cv.shape = (7,3)
+        self.Cell.Append(cv)
         hfs = np.full(3, NULL_HalfFacet, dtype=HalfFacetType)
         hfs[0] = (1, 1)
         self.Cell.halffacet[0][:] = hfs[:] # Cell #0
@@ -476,7 +491,9 @@ class TestBasicClasses(unittest.TestCase):
         self.VC   = VtxCoordType(2)
         print(" ")
 
-        self.Cell.Append_Batch(4, [0, 3, 5, 4, 12, 9, 88, 62, 54, 99, 120, 101])
+        cv = np.array([0, 3, 5, 4, 12, 9, 88, 62, 54, 99, 120, 101])
+        cv.shape = (4,3)
+        self.Cell.Append(cv)
         self.Cell.Print()
         EE = self.Cell.Get_Edges()
         self.Cell.Print_Edges()
