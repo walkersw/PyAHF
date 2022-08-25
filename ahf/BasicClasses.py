@@ -367,7 +367,8 @@ class CellSimplexType:
             print("Error: we did not get all the edges!?!?")
 
         # sort all the edges
-        edges = np.sort(edges, order=['v0', 'v1'])      
+        edges = np.sort(edges, order=['v0', 'v1'])
+        edges = np.unique(edges)
 
         return edges
 
