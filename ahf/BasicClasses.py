@@ -185,90 +185,52 @@ class CellSimplexType:
         else:
             print("Error: incorrect number of vertex indices!")
 
-
-
-
-    # def Set(self, *args):
-        # """Set cell data.  Two ways to call:
-        # -Overwrite cell vertices of specific cell:
-            # two inputs: (cell_ind, cell_vtx), where
-            # cell_ind is a single cell index that already exists,
-            # cell_vtx is a numpy array of length self.Dim()+1
-        # -Set all cell data at once:
-            # one input: cell_vtx, which has shape (M,self.Dim()+1), where M is the number of cells.
-        # """
-        # # decipher inputs
-        # if len(args)==1:
-            # # set all vertex coordinates
-            # vtx_coord = args[0]
-            # if type(vtx_coord) is not np.ndarray:
-                # print("Error: vtx_coord input must be a numpy array!")
-                # return
-            # dim_vc = vtx_coord.shape
-            # if len(dim_vc)==1:
-                # num_vtx = 1
-                # input_geo_dim = dim_vc[0]
-            # else:
-                # num_vtx = dim_vc[0]
-                # input_geo_dim = dim_vc[1]
-        # elif len(args)==2:
-            # # set a specific vertex
-            # vtx_ind   = args[0]
-            # vtx_coord = args[1]
-            # if type(vtx_coord) is not np.ndarray:
-                # print("Error: vtx_coord input must be a numpy array!")
-                # return
-
-            # input_geo_dim = vtx_coord.size
-            # if ( (vtx_ind==NULL_Vtx) or (vtx_ind>=self._size) ):
-                # print("Error: given vertex index is not valid!")
-                # return
-        # else:
-            # print("incorrect number of arguments!")
-            # return
-
-        # if input_geo_dim==self._geo_dim:
-            # if len(args)==1:
-                # self.Reserve(num_vtx)
-                # self.coord[0:num_vtx,:] = vtx_coord
-                # self._size = num_vtx
-                # # put in ZERO values for the rest
-                # self.coord[num_vtx+1:][:] = 0.0
-            # else:
-                # self.coord[vtx_ind,:] = vtx_coord
-        # else:
-            # print("Error: geometric dimension of given vertex coordinates is incorrect!")
-
-
-
-
-    def Set(self, cell_ind, cell_vtx):
-        """Set the vertex data for a given cell (that already exists) by giving its
-        global vertex indices (as an array).
+    def Set(self, *args):
+        """Set cell data.  Two ways to call:
+        -Set all cell data at once:
+            one input: cell_vtx, which has shape (M,self.Dim()+1), where M is the number of cells.
+        -Overwrite cell vertex indices of specific cell:
+            two inputs: (cell_ind, cell_vtx), where
+            cell_ind is a single cell index that already exists,
+            cell_vtx is a numpy array of length self.Dim()+1
         """
-        
-        if (cell_ind>=self._size):
-            print("Error: the given cell index does not exist!")
-            return
-        
-        if len(cell_vtx)==(self._cell_dim+1):
-            self.vtx[cell_ind][:] = cell_vtx[:]
+        # decipher inputs
+        if len(args)==1:
+            # set all vertex coordinates
+            cell_vtx = args[0]
+            if type(cell_vtx) is not np.ndarray:
+                print("Error: cell_vtx input must be a numpy array!")
+                return
+            dim_cl = cell_vtx.shape
+            if len(dim_cl)==1:
+                num_cell = 1
+                input_cell_dim = dim_cl[0] - 1
+            else:
+                num_cell = dim_cl[0]
+                input_cell_dim = dim_cl[1] - 1
+        elif len(args)==2:
+            # set a specific cell
+            cell_ind = args[0]
+            cell_vtx = args[1]
+            if type(cell_vtx) is not np.ndarray:
+                print("Error: cell_vtx input must be a numpy array!")
+                return
+
+            input_cell_dim = cell_vtx.size - 1
+            if ( (cell_ind==NULL_Cell) or (cell_ind>=self._size) ):
+                print("Error: given cell index is not valid!")
+                return
         else:
-            print("Error: incorrect number of vertex indices!")
+            print("incorrect number of arguments!")
+            return
 
-    def Set_All(self, num_cells, cell_vtx):
-        """Set all cell data at once.
-        """
-        
-        self.Reserve(num_cells)
-        
-        if len(cell_vtx)==(self._cell_dim+1)*num_cells:
-            dimvtx = self.vtx.shape
-            self.vtx.shape = (dimvtx[0]*dimvtx[1],)
-            self.vtx[0:num_cells*(self._cell_dim+1)] = cell_vtx[:]
-            self._size = num_cells
-            # put it back
-            self.vtx.shape = dimvtx
+        if input_cell_dim==self._cell_dim:
+            if len(args)==1:
+                self.Reserve(num_cell)
+                self.vtx[0:num_cell,:] = cell_vtx
+                self._size = num_cell
+            else:
+                self.vtx[cell_ind,:] = cell_vtx
         else:
             print("Error: incorrect number of vertex indices!")
 

@@ -77,7 +77,7 @@ class TestBasicClasses(unittest.TestCase):
         #print(self.Cell.vtx)
         #print(self.Cell)
 
-        self.Cell.Set(3, [57, 14, 33, 48])
+        self.Cell.Set(3, np.array([57, 14, 33, 48]))
         self.Cell.Print()
 
         self.assertEqual(np.array_equal(self.Cell.vtx[2],[6, 88, 9, 13]), True, "Should be [6, 88, 9, 13].")
@@ -443,8 +443,9 @@ class TestBasicClasses(unittest.TestCase):
         self.Cell = CellSimplexType(2)
         self.VC   = VtxCoordType(2)
 
-        cell_data = [1, 6, 2, 18, 13, 9, 34, 12, 43, 7, 12, 16, 99, 39, 19]
-        self.Cell.Set_All(5, cell_data)
+        cell_data = np.array([1, 6, 2, 18, 13, 9, 34, 12, 43, 7, 12, 16, 99, 39, 19])
+        cell_data.shape = (5,3)
+        self.Cell.Set(cell_data)
         print(" ")
         self.Cell.Print()
         
