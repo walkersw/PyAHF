@@ -26,7 +26,9 @@ class TestBaseSimplexMesh(unittest.TestCase):
         del(self.Mesh)
         self.Mesh = BaseSimplexMesh(2)
         
-        self.Mesh.Append_Cell_Batch(4, [0, 3, 1, 1, 2, 0, 4, 0, 2, 4, 5, 0])
+        cell_vtx = np.array([0, 3, 1, 1, 2, 0, 4, 0, 2, 4, 5, 0])
+        cell_vtx.shape = (4,3)
+        self.Mesh.Append_Cell(cell_vtx)
         print(self.Mesh)
 
         self.assertEqual(self.Mesh.Num_Cell(), 4, "Num_Cell should be 4.")

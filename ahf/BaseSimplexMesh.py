@@ -183,12 +183,13 @@ class BaseSimplexMesh:
             open_str = "The mesh is open for editing."
         else:
             open_str = "The mesh is currently closed and cannot be modified."
+
+        Cell_cap, Vtx2HF_cap = self.Capacity()
         OUT_STR = ("The topological dimension is: " + str(self.Cell.Dim()) + "\n"
                  + "The number of cells is: " + str(self.Cell.Size()) + "\n"
-                 + "The *reserved* size of cells is: " + str(self.Cell.Capacity()) + "\n"
+                 + "The *reserved* size of cells is: " + str(Cell_cap) + "\n"
                  + "The size of the Vertex-to-Half-Facet Map is: " + str(self.Vtx2HalfFacets.Size()) + "\n"
-                 + "The *reserved* size of the Vertex-to-Half-Facet Map is: " 
-                 + str(self.Vtx2HalfFacets.Capacity()) + "\n"
+                 + "The *reserved* size of the Vertex-to-Half-Facet Map is: " + str(Vtx2HF_cap) + "\n"
                  + open_str + "\n" )
         return OUT_STR
 
@@ -233,52 +234,53 @@ class BaseSimplexMesh:
         self.Cell.Reserve(num_cl)
         # guess on what to reserve for the intermediate data structure
         num_v2hfs = (self.Cell.Dim() + 1) * num_cl
-        self.v2hfs.Reserve(num_v2hfs)
+        self._v2hfs.Reserve(num_v2hfs)
 
-    def Append_Cell(self, vtx_ind):
-        """Append a single cell by giving its global vertex indices (as an array).
+    def Capacity(self):
+        """This returns the reserved number of cells,
+        and the reserved number of vtx-to-halffacets (in that order)."""
+        Cell_cap   = self.Cell.Capacity()
+        Vtx2HF_cap = self.Vtx2HalfFacets.Capacity()
+        return Cell_cap, Vtx2HF_cap
+
+    def Append_Cell(self, cell_vtx):
+        """Append several cells at once by giving their global vertex indices (as a numpy array).
+        cell_vtx has shape (M,self.Dim()+1), where M is the number of cells, or
+        cell_vtx is a 1-D array of length self.Dim()+1 in the case of one cell.
         """
         if not self.Is_Mesh_Open():
             return
 
-        self.Cell.Append(vtx_ind)
+        self.Cell.Append(cell_vtx)
 
-    def Append_Cell_Batch(self, num_cells, vtx_ind):
-        """Append several cells at once by giving their global vertex
-        indices (as an array).
+    def Set_Cell(self, *args):
+        """Set cell data.  Two ways to call:
+        -Set all cell data at once:
+            one input: cell_vtx, which has shape (M,self.Dim()+1), where M is the number of cells.
+        -Overwrite cell vertex indices of specific cell:
+            two inputs: (cell_ind, cell_vtx), where
+            cell_ind is a single cell index that already exists,
+            cell_vtx is a numpy array of length self.Dim()+1
         """
         if not self.Is_Mesh_Open():
             return
 
-        self.Cell.Append_Batch(num_cells, vtx_ind)
+        self.Cell.Set(args)
 
-    def Set_Cell(self, cell_ind, vtx_ind):
-        """Set the vertex data for a given cell (that already exists) by giving its
-        global vertex indices (as an array).
-        """
-        if not self.Is_Mesh_Open():
-            return
-
-        self.Cell.Set(cell_ind, vtx_ind)
-
-    def Set_All_Cell(self, num_cells, vtx_ind):
-        """Set all cell data at once.
-        """
-        if not self.Is_Mesh_Open():
-            return
-
-        self.Cell.Set_All(num_cells, vtx_ind)
-
-    def Append_Cell_And_Update(self, vtx_ind):
+    def Append_Cell_And_Update(self, cell_vtx):
         """Append a single cell to the end of the list, and build the intermediate
         v2hfs structure (incrementally).
         """
+        if cell_vtx.size!=self.Top_Dim()+1:
+            print("Error: size of cell_vtx must be " + str(self.Top_Dim()+1) + "!")
+            return
+
         # get the next cell index
         ci = self.Cell.Size() # i.e. the current size
-        self.Append_Cell(vtx_ind)
+        self.Append_Cell(cell_vtx)
 
         # now "ci" is the *current* cell index
-        self._Append_Half_Facets(ci, vtx_ind)
+        self._Append_Half_Facets(ci, cell_vtx)
 
     def Get_Unique_Vertices(self):
         """Get unique list of vertices.

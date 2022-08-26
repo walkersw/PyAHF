@@ -156,12 +156,13 @@ class CellSimplexType:
         dimvtx = self.vtx.shape
         dimhf  = self.halffacet.shape
         if not np.array_equal(dimvtx,dimhf):
-            print("vtx and halffacet arrays are not the same size!")
+            print("Error: vtx and halffacet arrays are not the same size!")
         return dimvtx[0]
 
     def Append(self, cell_vtx):
         """Append several cells at once by giving their global vertex indices (as a numpy array).
-        cell_vtx has shape (M,self.Dim()+1), where M is the number of cells.
+        cell_vtx has shape (M,self.Dim()+1), where M is the number of cells, or
+        cell_vtx is a 1-D array of length self.Dim()+1 in the case of one cell.
         """
         if type(cell_vtx) is not np.ndarray:
             print("Error: input must be a numpy array!")
