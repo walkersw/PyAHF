@@ -21,8 +21,9 @@ class TestBaseSimplexMesh(unittest.TestCase):
 
     def tearDown(self):
         self.Mesh.Clear()
+        print(" ")
 
-    def test_Size_and_Dim(self):
+    def test_Size_Capacity_Dim(self):
         del(self.Mesh)
         self.Mesh = BaseSimplexMesh(2)
         
@@ -33,176 +34,123 @@ class TestBaseSimplexMesh(unittest.TestCase):
 
         self.assertEqual(self.Mesh.Num_Cell(), 4, "Num_Cell should be 4.")
         self.assertEqual(self.Mesh.Top_Dim(), 2, "Top_Dim should be 2.")
-
-    # def test_Reserve(self):
-        # del(self.Cell)
-        # del(self.VC)
-        # self.Cell = CellSimplexType(4)
-        # self.VC   = VtxCoordType(6)
-
-        # num_reserve = 4
-        # self.Cell.Reserve(num_reserve)
-        # self.VC.Reserve(num_reserve)
-        # self.assertEqual(self.Cell.vtx.shape[0], num_reserve, "Reserved size should be " + str(num_reserve) + ".")
-        # self.assertEqual(self.Cell.halffacet.shape[0], num_reserve, "Reserved size should be " + str(num_reserve) + ".")
-        # self.assertEqual(self.VC.coord.shape[0], num_reserve, "Reserved size should be " + str(num_reserve) + ".")
-
-    # def test_Append_and_Set(self):
-        # del(self.Cell)
-        # del(self.VC)
-        # self.Cell = CellSimplexType(3)
-        # self.VC   = VtxCoordType(3)
-
-        # self.Cell.Reserve(5)
-        # print(" ")
         
-        # self.Cell.Append([1, 2, 3, 4])
-        # self.Cell.Append([4, 23, 88])
-        # print(self.Cell)
+        Cell_cap, Vtx2HF_cap = self.Mesh.Capacity()
+        self.assertEqual(Cell_cap, 5, "Cell Capacity should be 5.")
+        self.assertEqual(Vtx2HF_cap, 0, "Vtx2HF capacity should be 0.")
 
-        # new_cell_vtx = [2, 5, 4, 11, 6, 88, 9, 13, 1, 4, 90, 74, 23, 45, 71, 55]
-        # self.Cell.Append_Batch(4, new_cell_vtx)
+    def test_Reserve(self):
+        del(self.Mesh)
+        self.Mesh = BaseSimplexMesh(4)
 
-        # print(self.Cell.vtx)
-        # print(self.Cell)
-
-        # self.Cell.Set(3, [57, 14, 33, 48])
-        # print(self.Cell.vtx)
-
-        # self.assertEqual(np.array_equal(self.Cell.vtx[2],[6, 88, 9, 13]), True, "Should be [6, 88, 9, 13].")
-        # self.assertEqual(self.Cell.Size(), 5, "Should be 5.")
+        num_reserve = 4
+        self.Mesh.Reserve(num_reserve)
+        Cell_cap, Vtx2HalfFacets_cap = self.Mesh.Capacity()
+        print(self.Mesh)
+        self.assertEqual(Cell_cap, num_reserve+1, "Cell capacity should be " + str(num_reserve+1) + ".")
+        self.assertEqual(Vtx2HalfFacets_cap, 0, "Vtx2HalfFacets capacity should be " + str(0) + ".")
+        _v2hfs_cap = np.rint((4+1) * num_reserve * 1.2)
+        self.assertEqual(self.Mesh._v2hfs.Capacity(), _v2hfs_cap, "_v2hfs capacity should be " + str(_v2hfs_cap) + ".")
         
-        # uv = self.Cell.Get_Unique_Vertices()
-        # self.assertEqual(np.array_equal(uv,[1, 2, 3, 4, 5, 6, 9, 11, 13, 14, 23, 33, 45, 48, 55, 57, 71, 88]), True, "Should be [1, 2, 3, 4, 5, 6, 9, 11, 13, 14, 23, 33, 45, 48, 55, 57, 71, 88].")
-        
-        # Num_Vtx = self.Cell.Num_Vtx()
-        # self.assertEqual(Num_Vtx, 18, "Should be 18.")
-        # Max_vi = self.Cell.Max_Vtx_Index()
-        # self.assertEqual(Max_vi, 88, "Should be 88.")
-        
-        # self.VC.Reserve(5)
-        # print(" ")
-        
-        # self.VC.Append([0.2, 1.4, -9.4])
-        # self.VC.Append([4.4, 2.3])
-        # print(self.VC)
+    def test_Append_and_Set(self):
+        del(self.Mesh)
+        self.Mesh = BaseSimplexMesh(3)
 
-        # new_vtx_coord = [3.1, -2.5, 7.3, -1.2, 4.4, 6.6, 3.6, -7.8, 10.1, 4.7, 10.6, -5.1]
-        # self.VC.Append_Batch(4, new_vtx_coord)
-
-        # print(self.VC.coord)
-        # print(self.VC)
-
-        # self.VC.Set(3, [8.8, -6.7, 2.7])
-        # print(self.VC.coord)
-
-        # self.assertEqual(np.array_equal(self.VC.coord[2],[-1.2, 4.4, 6.6]), True, "Should be [-1.2, 4.4, 6.6].")
-        # self.assertEqual(np.array_equal(self.VC.coord[4],[4.7, 10.6, -5.1]), True, "Should be [4.7, 10.6, -5.1].")
-        # self.assertEqual(self.VC.Size(), 5, "Should be 5.")
-
-    # def test_Reindex(self):
-        # del(self.Cell)
-        # del(self.VC)
-        # self.Cell = CellSimplexType(3)
-        # self.VC   = VtxCoordType(3)
-
-        # new_cell_vtx = [0, 3, 5, 1, 4, 12, 9, 6, 88, 62, 54, 72, 99, 120, 101, 154]
-        # self.Cell.Append_Batch(4, new_cell_vtx)
-        # self.Cell.Print()
+        self.Mesh.Reserve(5)
+        print(" ")
         
-        # new_indices = np.zeros(155)
-        # lin_indices = np.linspace(0, 15, num=16, dtype=VtxIndType)
-        # new_indices[new_cell_vtx] = lin_indices
-        # # print(new_indices)
-        # # print(lin_indices)
-        # self.Cell.Reindex_Vertices(new_indices)
-        # self.Cell.Print()
-        # CHK_Cell_vtx = np.array([[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15]])
-        # self.assertEqual(np.array_equal(self.Cell.vtx,CHK_Cell_vtx), True, "Should be [[ 0  1  2  3], [ 4  5  6  7], [ 8  9 10 11], [12 13 14 15]].")
+        self.Mesh.Append_Cell(np.array([1, 2, 3, 4]))
+        self.Mesh.Append_Cell(np.array([4, 23, 88]))
+        print(self.Mesh)
+        self.Mesh.Cell.Print()
 
-    # def test_Baby_Methods(self):
-        # del(self.Cell)
-        # del(self.VC)
-        # self.Cell = CellSimplexType(3)
-        # self.VC   = VtxCoordType(3)
+        new_cell_vtx = np.array([2, 5, 4, 11, 6, 88, 9, 13, 1, 4, 90, 74, 23, 45, 71, 55])
+        new_cell_vtx.shape = (4,4)
+        self.Mesh.Append_Cell(new_cell_vtx)
         
-        # Cell_0D = CellSimplexType(0)
-        # Cell_0D.Append_Batch(4, [88, 4, 21, 14])
-        # print(Cell_0D)
-        # self.assertEqual(Cell_0D.Adj_Vertices_In_Facet_Equal(np.array([]), np.array([])), True, "Should be True.")
-        # self.assertEqual(Cell_0D.Get_Vertex_With_Largest_Index_In_Facet(np.array([88]), 0)==NULL_Vtx, True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_0D.Get_Adj_Vertices_In_Facet(np.array([]), 34),np.array([])), True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_0D.Get_Global_Vertices_In_Facet(np.array([88]), 0),np.array([])), \
-                         # True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_0D.Get_Local_Facets_Sharing_Local_Vertex(0),np.array([])), \
-                         # True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_0D.Get_Local_Vertices_Of_Local_Facet(0),np.array([])), \
-                         # True, "Should be True.")
-        # self.assertEqual(Cell_0D.Get_Local_Vertex_Index_In_Cell(188, [32])==NULL_Small, True, "Should be True.")
-        # self.assertEqual(Cell_0D.Get_Local_Vertex_Index_In_Cell(32, [32])==0, True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_0D.Vtx2Adjacent(5, 2, 0),np.array([])), True, "Should be True.")
+        self.Mesh.Cell.Print()
+        
+        self.Mesh.Set_Cell(3, np.array([57, 14, 33, 48]))
+        self.Mesh.Cell.Print()
 
-        # Cell_1D = CellSimplexType(1)
-        # Cell_1D.Append_Batch(4, [0, 3, 4, 12, 88, 62, 99, 120])
-        # print(Cell_1D)
-        # self.assertEqual(Cell_1D.Adj_Vertices_In_Facet_Equal(np.array([]), np.array([])), True, "Should be True.")
-        # self.assertEqual(Cell_1D.Get_Vertex_With_Largest_Index_In_Facet(np.array([78, 35]), 1)==78, True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_1D.Get_Adj_Vertices_In_Facet(np.array([67]), 34),np.array([])), True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_1D.Get_Global_Vertices_In_Facet(np.array([23, 34]), 0),np.array([34])), \
-                         # True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_1D.Get_Local_Facets_Sharing_Local_Vertex(1),np.array([0])), \
-                         # True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_1D.Get_Local_Vertices_Of_Local_Facet(0),np.array([1])), \
-                         # True, "Should be True.")
-        # self.assertEqual(Cell_1D.Get_Local_Vertex_Index_In_Cell(188, [19, 56])==NULL_Small, True, "Should be True.")
-        # self.assertEqual(Cell_1D.Get_Local_Vertex_Index_In_Cell(56, [19, 56])==1, True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_1D.Vtx2Adjacent(87, 2, 1),np.array([])), True, "Should be True.")
+        self.assertEqual(np.array_equal(self.Mesh.Cell.vtx[2],[6, 88, 9, 13]), True, "Should be [6, 88, 9, 13].")
+        self.assertEqual(self.Mesh.Cell.Size(), 5, "Should be 5.")
         
-        # Cell_2D = CellSimplexType(2)
-        # Cell_2D.Append_Batch(4, [0, 3, 5, 4, 12, 9, 88, 62, 54, 99, 120, 101])
-        # print(Cell_2D)
-        # self.assertEqual(Cell_2D.Adj_Vertices_In_Facet_Equal(np.array([12]), np.array([13])), False, "Should be False.")
-        # self.assertEqual(Cell_2D.Get_Vertex_With_Largest_Index_In_Facet(np.array([78, 35, 66]), 0)==66, True, "Should be True.")
-        # self.assertEqual(Cell_2D.Get_Vertex_With_Largest_Index_In_Facet(np.array([78, 35, 66]), 1)==78, True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_2D.Get_Adj_Vertices_In_Facet(np.array([18, 91]), 34),np.array([NULL_Vtx])), \
-                         # True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_2D.Get_Adj_Vertices_In_Facet(np.array([18, 91]), 18),np.array([91])), \
-                         # True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_2D.Get_Global_Vertices_In_Facet(np.array([53, 34, 12]), 1),np.array([53, 12])), \
-                         # True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_2D.Get_Local_Facets_Sharing_Local_Vertex(2),np.array([0, 1])), \
-                         # True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_2D.Get_Local_Vertices_Of_Local_Facet(1),np.array([0, 2])), \
-                         # True, "Should be True.")
-        # self.assertEqual(Cell_2D.Get_Local_Vertex_Index_In_Cell(188, [91, 29, 56])==NULL_Small, True, "Should be True.")
-        # self.assertEqual(Cell_2D.Get_Local_Vertex_Index_In_Cell(29, [91, 29, 56])==1, True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_2D.Vtx2Adjacent(87, 3, 1),np.array([NULL_Vtx])), True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_2D.Vtx2Adjacent(101, 3, 1),np.array([99])), True, "Should be True.")
-        # self.assertEqual(np.array_equal(Cell_2D.Vtx2Adjacent(99, 3, 2),np.array([120])), True, "Should be True.")
+        uv = self.Mesh.Get_Unique_Vertices()
+        self.assertEqual(np.array_equal(uv,[1, 2, 3, 4, 5, 6, 9, 11, 13, 14, 23, 33, 45, 48, 55, 57, 71, 88]), True, "Should be [1, 2, 3, 4, 5, 6, 9, 11, 13, 14, 23, 33, 45, 48, 55, 57, 71, 88].")
         
-        # self.Cell.Reserve(5)
-        # print(" ")
+        Num_Vtx = self.Mesh.Num_Vtx()
+        self.assertEqual(Num_Vtx, 18, "Should be 18.")
+        Max_vi = self.Mesh.Max_Vtx_Index()
+        self.assertEqual(Max_vi, 88, "Should be 88.")
+
+    def test_2D_Manifold_Mesh_1(self):
+        del(self.Mesh)
+        self.Mesh = BaseSimplexMesh(2)
+
+        # see Manifold_Triangle_Mesh_1.jpg
+        cv = np.array([0,1,4, 1,2,4, 2,3,4, 3,0,4])
+        cv.shape = (4,3)
+        self.Mesh.Append_Cell(cv)
+
+        self.Mesh._Finalize_v2hfs(True)
+        self.Mesh.Print_v2hfs()
+
+        # check '_v2hfs' against reference data
+        vhfs_REF = np.full(12, NULL_VtxHalfFacet, dtype=VtxHalfFacetType)
+        vhfs_REF[0]  = (1, 0, 2)
+        vhfs_REF[1]  = (2, 1, 2)
+        vhfs_REF[2]  = (3, 2, 2)
+        vhfs_REF[3]  = (3, 3, 2)
+        vhfs_REF[4]  = (4, 0, 0)
+        vhfs_REF[5]  = (4, 0, 1)
+        vhfs_REF[6]  = (4, 1, 0)
+        vhfs_REF[7]  = (4, 1, 1)
+        vhfs_REF[8]  = (4, 2, 0)
+        vhfs_REF[9]  = (4, 2, 1)
+        vhfs_REF[10] = (4, 3, 0)
+        vhfs_REF[11] = (4, 3, 1)
+        #print(self.Mesh._v2hfs.VtxMap[0:self.Mesh._v2hfs.Size()])
+        #print(vhfs_REF)
+        self.assertEqual(np.array_equal(self.Mesh._v2hfs.VtxMap[0:self.Mesh._v2hfs.Size()],vhfs_REF), True, "Should be True.")
+
+        # fill out the sibling half-facet data in 'self.Mesh.Cell'
+        self.Mesh._Build_Sibling_HalfFacets()
+        self.Mesh.Cell.Print()
         
-        # self.Cell.Append_Batch(4, [0, 3, 5, 1, 4, 12, 9, 6, 88, 62, 54, 72, 99, 120, 101, 154])
-        # print(self.Cell)
-        # self.assertEqual(self.Cell.Adj_Vertices_In_Facet_Equal(np.array([12, 34]), np.array([13, 34])), False, "Should be False.")
-        # self.assertEqual(self.Cell.Get_Vertex_With_Largest_Index_In_Facet(np.array([78, 35, 17, 66]), 2)==78, True, "Should be True.")
-        # self.assertEqual(self.Cell.Get_Vertex_With_Largest_Index_In_Facet(np.array([78, 35, 17, 66]), 0)==66, True, "Should be True.")
-        # self.assertEqual(np.array_equal(self.Cell.Get_Adj_Vertices_In_Facet(np.array([18, 91, 23]), 34), \
-                         # np.array([NULL_Vtx, NULL_Vtx])), True, "Should be True.")
-        # self.assertEqual(np.array_equal(self.Cell.Get_Adj_Vertices_In_Facet(np.array([18, 91, 23]), 18), \
-                         # np.array([91, 23])), True, "Should be True.")
-        # self.assertEqual(np.array_equal(self.Cell.Get_Global_Vertices_In_Facet(np.array([53, 5, 12, 8]), 2),np.array([53, 5, 8])), \
-                         # True, "Should be True.")
-        # self.assertEqual(np.array_equal(self.Cell.Get_Local_Facets_Sharing_Local_Vertex(3),np.array([0, 1, 2])), \
-                         # True, "Should be True.")
-        # self.assertEqual(np.array_equal(self.Cell.Get_Local_Vertices_Of_Local_Facet(1),np.array([0, 2, 3])), \
-                         # True, "Should be True.")
-        # self.assertEqual(self.Cell.Get_Local_Vertex_Index_In_Cell(188, [91, 29, 13, 56])==NULL_Small, True, "Should be True.")
-        # self.assertEqual(self.Cell.Get_Local_Vertex_Index_In_Cell(13, [91, 29, 13, 56])==2, True, "Should be True.")
-        # self.assertEqual(np.array_equal(self.Cell.Vtx2Adjacent(87, 1, 2),np.array([NULL_Vtx, NULL_Vtx])), True, "Should be True.")
-        # self.assertEqual(np.array_equal(self.Cell.Vtx2Adjacent(9, 1, 1),np.array([4, 6])), True, "Should be True.")
-        # self.assertEqual(np.array_equal(self.Cell.Vtx2Adjacent(4, 1, 2),np.array([12, 6])), True, "Should be True.")
+        # check 'Cell.halffacet' against reference data
+        Cell_HF_REF = np.full((4,3), NULL_HalfFacet, dtype=HalfFacetType)
+        Cell_HF_REF[0][0] = (1, 1)
+        Cell_HF_REF[0][1] = (3, 0)
+        Cell_HF_REF[1][0] = (2, 1)
+        Cell_HF_REF[1][1] = (0, 0)
+        Cell_HF_REF[2][0] = (3, 1)
+        Cell_HF_REF[2][1] = (1, 0)
+        Cell_HF_REF[3][0] = (0, 1)
+        Cell_HF_REF[3][1] = (2, 0)
+        #print(self.Mesh.Cell.halffacet[0:self.Mesh.Num_Cell()])
+        #print(Cell_HF_REF)
+        self.assertEqual(np.array_equal(self.Mesh.Cell.halffacet[0:self.Mesh.Num_Cell()],Cell_HF_REF), True, "Should be True.")
+
+        # generate the Vtx2HalfFacets data struct
+        self.Mesh._Build_Vtx2HalfFacets()
+        self.Mesh.Close() # we can close it now, i.e. no more modifications
+        self.Mesh.Print_Vtx2HalfFacets()
+
+        # check 'Vtx2HalfFacets' against reference data
+        Vtx2HalfFacets_REF = np.full(5, NULL_VtxHalfFacet, dtype=VtxHalfFacetType)
+        Vtx2HalfFacets_REF[0]  = (0, 3, 2)
+        Vtx2HalfFacets_REF[1]  = (1, 1, 2)
+        Vtx2HalfFacets_REF[2]  = (2, 2, 2)
+        Vtx2HalfFacets_REF[3]  = (3, 3, 2)
+        Vtx2HalfFacets_REF[4]  = (4, 0, 0)
+        #print(self.Mesh.Vtx2HalfFacets.VtxMap[0:self.Mesh.Vtx2HalfFacets.Size()])
+        #print(Vtx2HalfFacets_REF)
+        self.assertEqual(np.array_equal(self.Mesh.Vtx2HalfFacets.VtxMap[0:self.Mesh.Vtx2HalfFacets.Size()],\
+                         Vtx2HalfFacets_REF), True, "Should be True.")
+
+
+
 
     # def test_Attached_and_Connected_and_FreeBdy(self):
         # del(self.Cell)
@@ -273,6 +221,29 @@ class TestBaseSimplexMesh(unittest.TestCase):
         # self.Cell.Print_Nonmanifold_HalfFacets()
         # self.assertEqual(np.array_equal(non_man_hf,np.array([], dtype=HalfFacetType)), True, "Should be True.")
         # print("")
+
+
+    # def test_Reindex(self):
+        # del(self.Cell)
+        # del(self.VC)
+        # self.Cell = CellSimplexType(3)
+        # self.VC   = VtxCoordType(3)
+
+        # new_cell_vtx = [0, 3, 5, 1, 4, 12, 9, 6, 88, 62, 54, 72, 99, 120, 101, 154]
+        # self.Cell.Append_Batch(4, new_cell_vtx)
+        # self.Cell.Print()
+        
+        # new_indices = np.zeros(155)
+        # lin_indices = np.linspace(0, 15, num=16, dtype=VtxIndType)
+        # new_indices[new_cell_vtx] = lin_indices
+        # # print(new_indices)
+        # # print(lin_indices)
+        # self.Cell.Reindex_Vertices(new_indices)
+        # self.Cell.Print()
+        # CHK_Cell_vtx = np.array([[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15]])
+        # self.assertEqual(np.array_equal(self.Cell.vtx,CHK_Cell_vtx), True, "Should be [[ 0  1  2  3], [ 4  5  6  7], [ 8  9 10 11], [12 13 14 15]].")
+
+
 
     # def test_Nonmanifold_1(self):
         # del(self.Cell)
