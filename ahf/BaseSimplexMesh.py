@@ -386,10 +386,10 @@ class BaseSimplexMesh:
             v0 = args[0]['v0']
             v1 = args[0]['v1']
         elif len(args)==2:
-            if (args[0].dtype!=VtxIndType or args[1].dtype!=VtxIndType):
-                print("Error: two inputs should be of VtxIndType!")
-            v0 = args[0]
-            v1 = args[1]
+            if ( (not isinstance(args[0], int)) or (not isinstance(args[1], int)) ):
+                print("Error: two inputs should be integers!")
+            v0 = np.array(args[0], dtype=VtxIndType)
+            v1 = np.array(args[1], dtype=VtxIndType)
         else:
             print("incorrect number of arguments!")
 
@@ -424,10 +424,10 @@ class BaseSimplexMesh:
             v0 = args[0]['v0']
             v1 = args[0]['v1']
         elif len(args)==2:
-            if (args[0].dtype!=VtxIndType or args[1].dtype!=VtxIndType):
-                print("Error: two inputs should be of VtxIndType!")
-            v0 = args[0]
-            v1 = args[1]
+            if ( (not isinstance(args[0], int)) or (not isinstance(args[1], int)) ):
+                print("Error: two inputs should be integers!")
+            v0 = np.array(args[0], dtype=VtxIndType)
+            v1 = np.array(args[1], dtype=VtxIndType)
         else:
             print("incorrect number of arguments!")
 
@@ -523,11 +523,11 @@ class BaseSimplexMesh:
 
         # access the vtx-to-half-facet data
         V2HF = self.Vtx2HalfFacets.VtxMap
-
+        
         # check everything (note: V2HF is already sorted.)
         # Note: no need to check the last entry.
         for it in np.arange(0, self.Vtx2HalfFacets.Size()-1, dtype=VtxIndType):
-            next_it = it+1
+            next_it = (it+1).astype(VtxIndType)
             current_vtx = V2HF[it]['vtx']
             next_vtx    = V2HF[next_it]['vtx']
             # if a vertex shows up more than once, then it is a *non-manifold* vertex
@@ -557,16 +557,16 @@ class BaseSimplexMesh:
 
     # private methods below this line.
 
-    def _Append_Half_Facets(self, ci, vtx_ind):
+    def _Append_Half_Facets(self, ci, cell_vtx):
         """Append half-facets to v2hfs struct.
-        ci = cell index, vtx_ind = array of vertex indices of the cell, ci.
+        ci = cell index, cell_vtx = array of vertex indices of the cell, ci.
         """
         vhf = np.array((ci, NULL_Small), dtype=HalfFacetType)
-        for fi in range(self.Cell._cell_dim+1):
+        for fi in np.arange(0, self.Cell._cell_dim+1, dtype=SmallIndType):
             # associate (local #fi) half-facet with the vertex with largest index
             #           within that half-facet
-            vhf['fi'] = fi;
-            VTX = self.Cell.Get_Vertex_With_Largest_Index_In_Facet(vtx_ind, fi)
+            vhf['fi'] = fi
+            VTX = self.Cell.Get_Vertex_With_Largest_Index_In_Facet(cell_vtx, fi)
             self._v2hfs.Append(VTX, vhf)
 
     def _Finalize_v2hfs(self, Build_From_Scratch=True):
@@ -591,7 +591,7 @@ class BaseSimplexMesh:
         Note: this updates the internal data of "self.Cell.halffacet".
         """
         CELL_DIM = self.Top_Dim()
-        if ( (not self.Is_Mesh_Open()) or (CELL_DIM==0) ):
+        if (not self.Is_Mesh_Open()):
             return
 
         # go thru all the elements
@@ -608,7 +608,7 @@ class BaseSimplexMesh:
 
                     # find all half-facets that are attached to MaxVtx
                     HF_1st, Num_HF = self._v2hfs.Get_Half_Facets(MaxVtx)
-                    
+
                     # update sibling half-facets in Cell to be a cyclic mapping...
                     if (Num_HF > 0): 
                         # then there is at least one half-facet attached to MaxVtx
@@ -695,11 +695,10 @@ class BaseSimplexMesh:
 
         # store one-to-one mapping from local vertices to local facets
         lv_to_lf = np.zeros(CELL_DIM+1, dtype=SmallIndType)
-        if (CELL_DIM==1):
-            lv_to_lf[0] = 0
-            lv_to_lf[1] = 1
-        else:
-            for kk in range(CELL_DIM):
+        if (CELL_DIM>=1):
+            # lv_to_lf[0] = 1
+            # lv_to_lf[1] = 0
+            for kk in np.arange(0, CELL_DIM, dtype=SmallIndType):
                 lv_to_lf[kk] = kk+1
             lv_to_lf[CELL_DIM] = 0
 

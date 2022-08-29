@@ -820,7 +820,7 @@ class CellSimplexType:
 
         return adj_vtx
 
-    def Get_Vertex_With_Largest_Index_In_Facet(self, vtx_ind, fi):
+    def Get_Vertex_With_Largest_Index_In_Facet(self, cell_vtx, fi):
         """Given the global vertex indices of a cell and local facet index,
         find the vertex index in that facet with the largest index.
         """
@@ -828,15 +828,18 @@ class CellSimplexType:
             print("Error: facet index fi is negative or bigger than cell dimension!")
         assert ((fi >= 0) and (fi <= self._cell_dim)), "Facet index is invalid!"
         
-        # note: vertex fi is opposite facet fi
+        # note: vertex fi is opposite facet fi (when self._cell_dim > 0)
         #       so, facet fi does NOT contain vertex fi
         
         # only take valid values
-        vtx_sub = vtx_ind[0:self._cell_dim+1]
         if (self._cell_dim==0):
-            MAX_vi = NULL_Vtx
+            # the only option
+            MAX_vi = cell_vtx[0]
         else:
-            MAX_vi = np.max([vi for vi in vtx_sub if vi != vtx_sub[fi]])
+            sub_ind = np.arange(0, self._cell_dim+1, dtype=SmallIndType)
+            sub_ind = np.delete(sub_ind, fi)
+            vtx_sub = cell_vtx[sub_ind]
+            MAX_vi  = np.amax(vtx_sub)
         return MAX_vi
 
     def Adj_Vertices_In_Facet_Equal(self, a, b):
@@ -845,7 +848,6 @@ class CellSimplexType:
         This routine is used when the arrays contain the vertices in a facet of a cell.
         Note: if the arrays have zero length, this returns true.
         """
-        
         if (a.size < self._cell_dim - 1) or (b.size < self._cell_dim - 1):
             print("Error: one of the adjacent vertex arrays is too short!")
         assert ((a.size >= self._cell_dim - 1) and (b.size >= self._cell_dim - 1)), "Adjacent vertex arrays too short!"

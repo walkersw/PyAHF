@@ -106,11 +106,13 @@ class Vtx2HalfFacetMap:
          The _size attribute is unchanged."""
         # compute the space needed (with extra) to allocate
         Desired_Size = np.rint(np.ceil((1.0 + self._reserve_buffer) * num_VM))
-        if self.VtxMap is None:
+        if (self.VtxMap is None) or (self.VtxMap.size==self._size):
             # fill the array with null values to start
             self.VtxMap = np.full(Desired_Size.astype(VtxIndType), NULL_VtxHalfFacet, dtype=VtxHalfFacetType)
         elif self.VtxMap.size < Desired_Size:
             old_size = self.VtxMap.size
+            print(self.VtxMap)
+            print(Desired_Size)
             self.VtxMap = np.resize(self.VtxMap,Desired_Size)
             # put in NULL values
             self.VtxMap[old_size:Desired_Size] = NULL_VtxHalfFacet
@@ -134,7 +136,7 @@ class Vtx2HalfFacetMap:
         
         if (self.VtxMap is None) or (self.VtxMap.size==self._size):
             # need to reserve space
-            Reserve(self, self._size+10)
+            self.Reserve(self._size+10)
         
         if len(args)==1:
             if args[0].dtype!=VtxHalfFacetType:

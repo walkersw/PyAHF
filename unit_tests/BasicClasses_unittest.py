@@ -176,7 +176,7 @@ class TestBasicClasses(unittest.TestCase):
         Cell_0D.Append(np.array([88, 4, 21, 14]))
         print(Cell_0D)
         self.assertEqual(Cell_0D.Adj_Vertices_In_Facet_Equal(np.array([]), np.array([])), True, "Should be True.")
-        self.assertEqual(Cell_0D.Get_Vertex_With_Largest_Index_In_Facet(np.array([88]), 0)==NULL_Vtx, True, "Should be True.")
+        self.assertEqual(Cell_0D.Get_Vertex_With_Largest_Index_In_Facet(np.array([88]), 0), 88, "Should be 88.")
         self.assertEqual(np.array_equal(Cell_0D.Get_Adj_Vertices_In_Facet(np.array([]), 34),np.array([])), True, "Should be True.")
         self.assertEqual(np.array_equal(Cell_0D.Get_Global_Vertices_In_Facet(np.array([88]), 0),np.array([])), \
                          True, "Should be True.")
