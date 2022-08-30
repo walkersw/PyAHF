@@ -200,6 +200,9 @@ class Vtx2HalfFacetMap:
         for kk in range(self._size):
             self.VtxMap[kk]['vtx'] = new_indices[self.VtxMap[kk]['vtx']]
 
+        # don't forget to sort!
+        self.Sort()
+
     def Sort(self):
         """Sort the VtxMap so it is useable."""
         self.VtxMap = np.sort(self.VtxMap, order=['vtx', 'ci', 'fi'])
@@ -252,7 +255,7 @@ class Vtx2HalfFacetMap:
             # we want all the half-facet(s) for all the stored vertices
             Prev_Vtx    = NULL_Vtx
             Current_Vtx = NULL_Vtx
-            print("Vertex and attached half-facets, (cell index, local facet index):")
+            print("Vertex #: attached half-facets (cell index, local facet index):")
             for kk in range(self._size):
                 # get the current vertex
                 vhf = self.VtxMap[kk]

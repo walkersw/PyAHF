@@ -341,6 +341,14 @@ class BaseSimplexMesh:
     #     structure, and filling out the Vtx2HalfFacets mapping. All of this is
     #     automatically done by the "Finalize_Mesh_Connectivity" method.
 
+    def Print_Cell(self, ci=NULL_Cell):
+        """Print cell connectivity and sibling half-facets. "ci" is the index of a
+        specific cell; if ci=NULL_Cell, then print all cells.  If no cell index is
+        given, then print all cells.
+        """
+        print("'Cell':")
+        self.Cell.Print(ci)
+
     def Print_v2hfs(self, vi=NULL_Vtx):
         """Print (multiple) half-facets attached to a given vertex
         (from intermediate data structure).
@@ -353,6 +361,13 @@ class BaseSimplexMesh:
         """
         print("'Vtx2HalfFacets':")
         self.Vtx2HalfFacets.Print_Half_Facets(vi)
+
+    def Print(self):
+        """Print cell connectivity, sibling half-facets, and the Vtx2HalfFacets data
+        structure.
+        """
+        self.Print_Cell()
+        self.Print_Vtx2HalfFacets()
 
     def Reindex_Vertices(self, new_indices):
         """Re-index the vertices in the mesh.
@@ -696,8 +711,6 @@ class BaseSimplexMesh:
         # store one-to-one mapping from local vertices to local facets
         lv_to_lf = np.zeros(CELL_DIM+1, dtype=SmallIndType)
         if (CELL_DIM>=1):
-            # lv_to_lf[0] = 1
-            # lv_to_lf[1] = 0
             for kk in np.arange(0, CELL_DIM, dtype=SmallIndType):
                 lv_to_lf[kk] = kk+1
             lv_to_lf[CELL_DIM] = 0

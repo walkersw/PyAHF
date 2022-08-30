@@ -271,7 +271,7 @@ class CellSimplexType:
             # then print all the cells
             print("Cell connectivity data:")
             print("-----------------------")
-            print("cell # :        vertices        |   sibling half-facets")
+            print("cell #:        vertices        |   sibling half-facets")
             NC = self.Size()
             for kk in np.arange(0, NC, dtype=CellIndType):
                 cell_str = self._get_cell_string(kk)
