@@ -459,7 +459,8 @@ class BaseSimplexMesh:
         return attached_cells
 
     def Get_Cells_Attached_To_Vertex(self, vi):
-        """Returns all cell indices (a numpy array) that are attached to vertex "vi".
+        """Returns all cell indices (a numpy array) that are attached to vertex "vi",
+        and the array is *not* sorted.
         WARNING: this requires the sibling half-facet data (see self.Cell.halffacet)
         to be built, and self.Vtx2HalfFacets must be completed as well, before this
         method can be used.

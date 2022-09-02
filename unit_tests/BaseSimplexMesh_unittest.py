@@ -532,48 +532,253 @@ class TestBaseSimplexMesh(unittest.TestCase):
         self.Mesh.Print_Nonmanifold_Vertices()
         self.assertEqual(np.array_equal(non_man_vtx,np.array([], dtype=VtxIndType)), True, "Should be [].")
 
+    def test_2D_Nonmanifold_Mesh_2(self):
+        """
+        This example stores a 2-D non-manifold mesh (consisting of 7 triangles) that has 2
+        non-manifold edges and 1 non-manifold vertex.  It also does some basic processing.
+        See 'Non_Manifold_Triangle_Mesh_2.jpg' for a picture of the mesh embedded in 3-D.
+        """
+        del(self.Mesh)
+        self.Mesh = BaseSimplexMesh(2)
 
-    # def test_2D_Nonmanifold_Mesh_2(self):
-        # del(self.Cell)
-        # del(self.VC)
-        # self.Cell = CellSimplexType(2)
-        # self.VC   = VtxCoordType(3)
+        # see Nonmanifold_Triangle_Mesh_2.jpg
+        cv = np.array([0,1,5, 5,2,1, 1,5,3, 4,5,1, 9,6,5, 9,5,7, 8,9,5])
+        cv.shape = (7,3)
+        self.Mesh.Append_Cell(cv)
 
-        # # see Nonmanifold_Triangle_Mesh_2.jpg
-        # self.Cell.Append_Batch(7, [0,1,5, 5,2,1, 1,5,3, 4,5,1, 9,6,5, 9,5,7, 8,9,5])
-        # hfs = np.full(3, NULL_HalfFacet, dtype=HalfFacetType)
-        # hfs[0] = (1, 1)
-        # self.Cell.halffacet[0][:] = hfs[:] # Cell #0
-        # hfs[0] = NULL_HalfFacet
-        # hfs[1] = (2, 2)
-        # hfs[2] = NULL_HalfFacet
-        # self.Cell.halffacet[1][:] = hfs[:] # Cell #1
-        # hfs[0] = NULL_HalfFacet
-        # hfs[1] = NULL_HalfFacet
-        # hfs[2] = (3, 0)
-        # self.Cell.halffacet[2][:] = hfs[:] # Cell #2
-        # hfs[0] = (0, 0)
-        # hfs[1] = NULL_HalfFacet
-        # hfs[2] = NULL_HalfFacet
-        # self.Cell.halffacet[3][:] = hfs[:] # Cell #3
-        # hfs[0] = NULL_HalfFacet
-        # hfs[1] = (5, 2)
-        # hfs[2] = NULL_HalfFacet
-        # self.Cell.halffacet[4][:] = hfs[:] # Cell #4
-        # hfs[0] = NULL_HalfFacet
-        # hfs[1] = NULL_HalfFacet
-        # hfs[2] = (6, 0)
-        # self.Cell.halffacet[5][:] = hfs[:] # Cell #5
-        # hfs[0] = (4, 1)
-        # hfs[1] = NULL_HalfFacet
-        # hfs[2] = NULL_HalfFacet
-        # self.Cell.halffacet[6][:] = hfs[:] # Cell #6
-        # self.Cell.Print()
+        self.Mesh.Finalize_Mesh_Connectivity()
+        self.Mesh.Cell.Print()
+        self.Mesh.Print_Vtx2HalfFacets()
 
-        # non_man_hf = self.Cell.Get_Nonmanifold_HalfFacets()
-        # self.Cell.Print_Nonmanifold_HalfFacets()
-        # self.assertEqual(np.array_equal(non_man_hf,np.array([(3, 0), (6, 0)], dtype=HalfFacetType)), True, "Should be True.")
-        # print("")
+        # check 'Cell.halffacet' against reference data
+        Cell_HF_REF = np.full((7,3), NULL_HalfFacet, dtype=HalfFacetType)
+        Cell_HF_REF[0][0] = (1, 1)
+        Cell_HF_REF[1][1] = (2, 2)
+        Cell_HF_REF[2][2] = (3, 0)
+        Cell_HF_REF[3][0] = (0, 0)
+        Cell_HF_REF[4][1] = (5, 2)
+        Cell_HF_REF[5][2] = (6, 0)
+        Cell_HF_REF[6][0] = (4, 1)
+        # print(self.Mesh.Cell.halffacet[0:self.Mesh.Num_Cell()])
+        # print(Cell_HF_REF)
+        self.assertEqual(np.array_equal(self.Mesh.Cell.halffacet[0:self.Mesh.Num_Cell()],Cell_HF_REF), True, "Should be True.")
+
+        # check 'Vtx2HalfFacets' against reference data
+        Vtx2HalfFacets_REF = np.full(11, NULL_VtxHalfFacet, dtype=VtxHalfFacetType)
+        Vtx2HalfFacets_REF[0]  = (0, 0, 2)
+        Vtx2HalfFacets_REF[1]  = (1, 3, 1)
+        Vtx2HalfFacets_REF[2]  = (2, 1, 2)
+        Vtx2HalfFacets_REF[3]  = (3, 2, 1)
+        Vtx2HalfFacets_REF[4]  = (4, 3, 2)
+        Vtx2HalfFacets_REF[5]  = (5, 3, 2)
+        Vtx2HalfFacets_REF[6]  = (5, 6, 1)
+        Vtx2HalfFacets_REF[7]  = (6, 4, 2)
+        Vtx2HalfFacets_REF[8]  = (7, 5, 1)
+        Vtx2HalfFacets_REF[9]  = (8, 6, 2)
+        Vtx2HalfFacets_REF[10] = (9, 6, 2)
+        # print(self.Mesh.Vtx2HalfFacets.VtxMap[0:self.Mesh.Vtx2HalfFacets.Size()])
+        # print(Vtx2HalfFacets_REF)
+        self.assertEqual(np.array_equal(self.Mesh.Vtx2HalfFacets.VtxMap[0:self.Mesh.Vtx2HalfFacets.Size()],\
+                         Vtx2HalfFacets_REF), True, "Should be True.")
+
+        hf_in = np.array((1, 1), dtype=HalfFacetType)
+        attached0 = self.Mesh.Cell.Get_HalfFacets_Attached_To_HalfFacet(hf_in)
+        self.Mesh.Cell.Print_HalfFacets_Attached_To_HalfFacet(hf_in)
+        self.assertEqual(np.array_equal(attached0,np.array([(1,1), (2,2), (3,0), (0,0)], dtype=HalfFacetType)), True, "Should be [(1,1), (2,2), (3,0), (0,0)].")
+        hf_in[['ci','fi']] = (4, 2)
+        attached1 = self.Mesh.Cell.Get_HalfFacets_Attached_To_HalfFacet(hf_in)
+        self.Mesh.Cell.Print_HalfFacets_Attached_To_HalfFacet(hf_in)
+        self.assertEqual(np.array_equal(attached1,np.array([(4,2)], dtype=HalfFacetType)), True, "Should be [(4,2)].")
+        print("")
+
+        attached_cl0 = self.Mesh.Get_Cells_Attached_To_Vertex(5)
+        #print(attached_cl0)
+        self.assertEqual(np.array_equal(attached_cl0,np.array([3, 0, 1, 2, 6, 4, 5], dtype=CellIndType)), True, "Should be [3, 0, 1, 2, 6, 4, 5].")
+        attached_cl1 = self.Mesh.Get_Cells_Attached_To_Vertex(9)
+        #print(attached_cl1)
+        self.assertEqual(np.array_equal(attached_cl1,np.array([6, 4, 5], dtype=CellIndType)), True, "Should be [6, 4, 5].")
+        self.assertEqual(self.Mesh.Is_Connected(5, 9), True,  "Should be True.")
+        self.assertEqual(self.Mesh.Is_Connected(7, 2), False, "Should be False.")
+
+        EE = self.Mesh.Cell.Get_Edges()
+        self.Mesh.Cell.Print_Edges()
+        
+        Edge_CHK = np.full(16, NULL_MeshEdge, dtype=MeshEdgeType)
+        Edge_CHK[0]  = (0, 1)
+        Edge_CHK[1]  = (0, 5)
+        Edge_CHK[2]  = (1, 2)
+        Edge_CHK[3]  = (1, 3)
+        Edge_CHK[4]  = (1, 4)
+        Edge_CHK[5]  = (1, 5)
+        Edge_CHK[6]  = (2, 5)
+        Edge_CHK[7]  = (3, 5)
+        Edge_CHK[8]  = (4, 5)
+        Edge_CHK[9]  = (5, 6)
+        Edge_CHK[10] = (5, 7)
+        Edge_CHK[11] = (5, 8)
+        Edge_CHK[12] = (5, 9)
+        Edge_CHK[13] = (6, 9)
+        Edge_CHK[14] = (7, 9)
+        Edge_CHK[15] = (8, 9)
+        self.assertEqual(np.array_equal(Edge_CHK,EE), True, "Should be True.")
+
+        cell_attached_edge = self.Mesh.Get_Cells_Attached_To_Edge(1, 5)
+        #print(cell_attached_edge)
+        self.assertEqual(np.array_equal(cell_attached_edge,np.array([0, 1, 2, 3], dtype=CellIndType)), True, "Should be [0, 1, 2, 3].")
+        cell_attached_edge = self.Mesh.Get_Cells_Attached_To_Edge(5, 6)
+        #print(cell_attached_edge)
+        self.assertEqual(np.array_equal(cell_attached_edge,np.array([4], dtype=CellIndType)), True, "Should be [4].")
+        cell_attached_edge = self.Mesh.Get_Cells_Attached_To_Edge(9, 5)
+        #print(cell_attached_edge)
+        self.assertEqual(np.array_equal(cell_attached_edge,np.array([4,5,6], dtype=CellIndType)), True, "Should be [4,5,6].")
+
+        uv = self.Mesh.Get_Unique_Vertices()
+        self.Mesh.Print_Unique_Vertices()
+        self.assertEqual(np.array_equal(uv,np.array([0, 1, 2, 3, 4, 5, 6, 7, 8, 9], dtype=VtxIndType)), True, "Should be [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].")
+
+        free_bdy = self.Mesh.Cell.Get_FreeBoundary()
+        print("free boundary of the mesh:")
+        print(free_bdy)
+        free_bdy_CHK = np.full(14, NULL_HalfFacet, dtype=HalfFacetType)
+        free_bdy_CHK[0]  = (0, 1)
+        free_bdy_CHK[1]  = (0, 2)
+        free_bdy_CHK[2]  = (1, 0)
+        free_bdy_CHK[3]  = (1, 2)
+        free_bdy_CHK[4]  = (2, 0)
+        free_bdy_CHK[5]  = (2, 1)
+        free_bdy_CHK[6]  = (3, 1)
+        free_bdy_CHK[7]  = (3, 2)
+        free_bdy_CHK[8]  = (4, 0)
+        free_bdy_CHK[9]  = (4, 2)
+        free_bdy_CHK[10] = (5, 0)
+        free_bdy_CHK[11] = (5, 1)
+        free_bdy_CHK[12] = (6, 1)
+        free_bdy_CHK[13] = (6, 2)
+        self.assertEqual(np.array_equal(free_bdy,free_bdy_CHK), True, "Should be True.")
+        print("")
+
+        non_man_hf = self.Mesh.Get_Nonmanifold_HalfFacets()
+        self.Mesh.Print_Nonmanifold_HalfFacets()
+        self.assertEqual(np.array_equal(non_man_hf,np.array([(3, 0), (6, 0)], dtype=HalfFacetType)), True, "Should be [(3, 0), (6, 0)].")
+
+        non_man_vtx = self.Mesh.Get_Nonmanifold_Vertices()
+        self.Mesh.Print_Nonmanifold_Vertices()
+        self.assertEqual(np.array_equal(non_man_vtx,np.array([5], dtype=VtxIndType)), True, "Should be [5].")
+
+    def test_3D_Nonmanifold_Mesh_1(self):
+        """
+        This example stores a 3-D non-manifold mesh (consisting of 3 tetrahedra) that has 1
+        non-manifold facet and 0 non-manifold vertices.  It also does some basic processing.
+        See 'Non_Manifold_Tetrahedra_1.jpg' for a picture of the mesh embedded in 3-D.
+        """
+        del(self.Mesh)
+        self.Mesh = BaseSimplexMesh(3)
+
+        # see Non_Manifold_Tetrahedra_1.jpg
+        cv = np.array([0,1,5,3, 1,4,5,3, 1,3,2,5])
+        cv.shape = (3,4)
+        self.Mesh.Append_Cell(cv)
+
+        self.Mesh.Finalize_Mesh_Connectivity()
+        self.Mesh.Cell.Print()
+        self.Mesh.Print_Vtx2HalfFacets()
+
+        # check 'Cell.halffacet' against reference data
+        Cell_HF_REF = np.full((3,4), NULL_HalfFacet, dtype=HalfFacetType)
+        Cell_HF_REF[0][0] = (1, 1)
+        Cell_HF_REF[1][1] = (2, 2)
+        Cell_HF_REF[2][2] = (0, 0)
+        # print(self.Mesh.Cell.halffacet[0:self.Mesh.Num_Cell()])
+        # print(Cell_HF_REF)
+        self.assertEqual(np.array_equal(self.Mesh.Cell.halffacet[0:self.Mesh.Num_Cell()],Cell_HF_REF), True, "Should be True.")
+
+        # check 'Vtx2HalfFacets' against reference data
+        Vtx2HalfFacets_REF = np.full(6, NULL_VtxHalfFacet, dtype=VtxHalfFacetType)
+        Vtx2HalfFacets_REF[0]  = (0, 0, 3)
+        Vtx2HalfFacets_REF[1]  = (1, 2, 3)
+        Vtx2HalfFacets_REF[2]  = (2, 2, 3)
+        Vtx2HalfFacets_REF[3]  = (3, 2, 3)
+        Vtx2HalfFacets_REF[4]  = (4, 1, 3)
+        Vtx2HalfFacets_REF[5]  = (5, 2, 1)
+        # print(self.Mesh.Vtx2HalfFacets.VtxMap[0:self.Mesh.Vtx2HalfFacets.Size()])
+        # print(Vtx2HalfFacets_REF)
+        self.assertEqual(np.array_equal(self.Mesh.Vtx2HalfFacets.VtxMap[0:self.Mesh.Vtx2HalfFacets.Size()],\
+                         Vtx2HalfFacets_REF), True, "Should be True.")
+
+        hf_in = np.array((0, 0), dtype=HalfFacetType)
+        attached0 = self.Mesh.Cell.Get_HalfFacets_Attached_To_HalfFacet(hf_in)
+        self.Mesh.Cell.Print_HalfFacets_Attached_To_HalfFacet(hf_in)
+        self.assertEqual(np.array_equal(attached0,np.array([(0,0), (1,1), (2,2)], dtype=HalfFacetType)), True, "Should be [(0,0), (1,1), (2,2)].")
+        hf_in[['ci','fi']] = (2, 3)
+        attached1 = self.Mesh.Cell.Get_HalfFacets_Attached_To_HalfFacet(hf_in)
+        self.Mesh.Cell.Print_HalfFacets_Attached_To_HalfFacet(hf_in)
+        self.assertEqual(np.array_equal(attached1,np.array([(2,3)], dtype=HalfFacetType)), True, "Should be [(2,3)].")
+        print("")
+
+        attached_cl0 = self.Mesh.Get_Cells_Attached_To_Vertex(5)
+        #print(attached_cl0)
+        self.assertEqual(np.array_equal(attached_cl0,np.array([2, 0, 1], dtype=CellIndType)), True, "Should be [2, 0, 1].")
+        attached_cl1 = self.Mesh.Get_Cells_Attached_To_Vertex(2)
+        #print(attached_cl1)
+        self.assertEqual(np.array_equal(attached_cl1,np.array([2], dtype=CellIndType)), True, "Should be [2].")
+        self.assertEqual(self.Mesh.Is_Connected(1, 4), True,  "Should be True.")
+        self.assertEqual(self.Mesh.Is_Connected(0, 2), False, "Should be False.")
+
+        EE = self.Mesh.Cell.Get_Edges()
+        self.Mesh.Cell.Print_Edges()
+        
+        Edge_CHK = np.full(12, NULL_MeshEdge, dtype=MeshEdgeType)
+        Edge_CHK[0]  = (0, 1)
+        Edge_CHK[1]  = (0, 3)
+        Edge_CHK[2]  = (0, 5)
+        Edge_CHK[3]  = (1, 2)
+        Edge_CHK[4]  = (1, 3)
+        Edge_CHK[5]  = (1, 4)
+        Edge_CHK[6]  = (1, 5)
+        Edge_CHK[7]  = (2, 3)
+        Edge_CHK[8]  = (2, 5)
+        Edge_CHK[9]  = (3, 4)
+        Edge_CHK[10] = (3, 5)
+        Edge_CHK[11] = (4, 5)
+        self.assertEqual(np.array_equal(Edge_CHK,EE), True, "Should be True.")
+
+        cell_attached_edge = self.Mesh.Get_Cells_Attached_To_Edge(1, 5)
+        #print(cell_attached_edge)
+        self.assertEqual(np.array_equal(cell_attached_edge,np.array([0, 1, 2], dtype=CellIndType)), True, "Should be [0, 1, 2].")
+        cell_attached_edge = self.Mesh.Get_Cells_Attached_To_Edge(3, 4)
+        #print(cell_attached_edge)
+        self.assertEqual(np.array_equal(cell_attached_edge,np.array([1], dtype=CellIndType)), True, "Should be [1].")
+        cell_attached_edge = self.Mesh.Get_Cells_Attached_To_Edge(1, 3)
+        #print(cell_attached_edge)
+        self.assertEqual(np.array_equal(cell_attached_edge,np.array([0,1,2], dtype=CellIndType)), True, "Should be [0,1,2].")
+
+        uv = self.Mesh.Get_Unique_Vertices()
+        self.Mesh.Print_Unique_Vertices()
+        self.assertEqual(np.array_equal(uv,np.array([0, 1, 2, 3, 4, 5], dtype=VtxIndType)), True, "Should be [0, 1, 2, 3, 4, 5].")
+
+        free_bdy = self.Mesh.Cell.Get_FreeBoundary()
+        print("free boundary of the mesh:")
+        print(free_bdy)
+        free_bdy_CHK = np.full(9, NULL_HalfFacet, dtype=HalfFacetType)
+        free_bdy_CHK[0]  = (0, 1)
+        free_bdy_CHK[1]  = (0, 2)
+        free_bdy_CHK[2]  = (0, 3)
+        free_bdy_CHK[3]  = (1, 0)
+        free_bdy_CHK[4]  = (1, 2)
+        free_bdy_CHK[5]  = (1, 3)
+        free_bdy_CHK[6]  = (2, 0)
+        free_bdy_CHK[7]  = (2, 1)
+        free_bdy_CHK[8]  = (2, 3)
+        self.assertEqual(np.array_equal(free_bdy,free_bdy_CHK), True, "Should be True.")
+        print("")
+
+        non_man_hf = self.Mesh.Get_Nonmanifold_HalfFacets()
+        self.Mesh.Print_Nonmanifold_HalfFacets()
+        self.assertEqual(np.array_equal(non_man_hf,np.array([(2,2)], dtype=HalfFacetType)), True, "Should be [(2,2)].")
+
+        non_man_vtx = self.Mesh.Get_Nonmanifold_Vertices()
+        self.Mesh.Print_Nonmanifold_Vertices()
+        self.assertEqual(np.array_equal(non_man_vtx,np.array([], dtype=VtxIndType)), True, "Should be [].")
 
 if __name__ == '__main__':
     unittest.main()
