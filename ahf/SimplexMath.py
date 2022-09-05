@@ -37,14 +37,14 @@ def Affine_Map(vtx_coord):
         GD = dim_vc[1]
 
     # translation vector
-    b = np.copy(vtx_coord[0][:])
-    b.shape = (GD,1)
+    b = np.zeros((GD,1), dtype=CoordType)
+    b[:] = (vtx_coord[[0],:]).T
     
     # Jacobian matrix
-    A = np.zeros((GD,TD), dtype=RealType)
+    A = np.zeros((GD,TD), dtype=CoordType)
     for tt in np.arange(1, TD+1, dtype=SmallIndType):
         # special case of a linear simplex:
-        A[:,tt-1] = vtx_coord[tt][:] - b[:]
+        A[:,[tt-1]] = (vtx_coord[[tt],:]).T - b
 
     return A, b
 

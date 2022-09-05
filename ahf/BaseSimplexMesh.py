@@ -20,7 +20,7 @@ from ahf.BasicClasses import *
 
 
 class BaseSimplexMesh:
-    """
+    r"""
     Base class for array based half-facet (AHF) data structure to store and process meshes.
     This base class is used in deriving the 0-D, 1-D, 2-D, and 3-D mesh classes,
     as well as arbitrarily higher dimensions (all *simplex* meshes).

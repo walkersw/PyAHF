@@ -909,7 +909,7 @@ class VtxCoordType:
         self._coord_open = True
 
     def Close(self):
-        """This sets the _mesh_open flag to False to indicate that
+        """This sets the _coord_open flag to False to indicate that
         the coordinates cannot be modified."""
         self._coord_open = False
 
