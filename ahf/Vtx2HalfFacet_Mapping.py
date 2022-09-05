@@ -12,7 +12,7 @@ Copyright (c) 08-11-2022,  Shawn W. Walker
 import numpy as np
 # from ahf import SmallIndType, MedIndType, VtxIndType, CellIndType
 # from ahf import NULL_Small, NULL_Med, NULL_Vtx, NULL_Cell
-# from ahf import RealType, PointType
+# from ahf import RealType, CoordType
 from ahf import *
 
 # define data types

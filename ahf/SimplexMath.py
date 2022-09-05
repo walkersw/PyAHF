@@ -12,7 +12,7 @@ Copyright (c) 09-04-2022,  Shawn W. Walker
 import numpy as np
 # from ahf import SmallIndType, MedIndType, VtxIndType, CellIndType
 # from ahf import NULL_Small, NULL_Med, NULL_Vtx, NULL_Cell
-# from ahf import RealType, PointType
+# from ahf import RealType, CoordType
 from ahf import *
 
 
@@ -30,8 +30,8 @@ def Affine_Map(vtx_coord):
 
     dim_vc = vtx_coord.shape
     if len(dim_vc)==1:
-        TD = 0
-        GD = dim_vc[0]
+        print("Error: input must be a numpy array with a 2-D shape!")
+        return
     else:
         TD = dim_vc[0]-1
         GD = dim_vc[1]
