@@ -53,7 +53,7 @@ class TestSimplexMath(unittest.TestCase):
         self.assertEqual(np.array_equal(A2_CHK,A2), True, "Should be True.")
         self.assertEqual(np.array_equal(b2_CHK,b2), True, "Should be True.")
 
-    def test_Reference_To_Cartesian(self):
+    def test_Ref2Cart_and_back(self):
         vc0 = np.array([[0.0, 0.0, 1.1], [2.0, 3.0, 1.1], [0.0, 5.0, 1.1]])
         print(vc0)
         rc0 = np.array([0.3, 0.2])
@@ -63,6 +63,10 @@ class TestSimplexMath(unittest.TestCase):
         print(cart0)
         diff0 = np.amax(np.abs(cart0 - np.array([0.6, 1.9, 1.1], dtype=CoordType)))
         self.assertEqual(diff0 < 1e-15, True, "Should be True.")
+        rc0_CHK = Cartesian_To_Reference(vc0, cart0)
+        diff_rc0 = np.amax(np.abs(rc0 - rc0_CHK))
+        self.assertEqual(diff_rc0 < 1e-15, True, "Should be True.")
+        #print(rc0_CHK)
         
         vc1 = np.array([[0.2, 0.3, -0.4], [1.2, 2.4, 0.5], [3.1, 0.7, 4.5]])
         print(vc1)
@@ -73,6 +77,10 @@ class TestSimplexMath(unittest.TestCase):
         print(cart1)
         diff1 = np.amax(np.abs(cart1 - np.array([2.33, 0.79, 3.12], dtype=CoordType)))
         self.assertEqual(diff1 < 1e-15, True, "Should be True.")
+        rc1_CHK = Cartesian_To_Reference(vc1, cart1)
+        diff_rc1 = np.amax(np.abs(rc1 - rc1_CHK))
+        self.assertEqual(diff_rc1 < 1e-15, True, "Should be True.")
+        #print(rc1_CHK)
 
         vc2 = np.array([vc0, vc1])
         rc2 = np.array([rc0, rc1])
@@ -81,6 +89,78 @@ class TestSimplexMath(unittest.TestCase):
         cart2_CHK = np.array([cart0, cart1])
         self.assertEqual(np.array_equal(cart2_CHK,cart2), True, "Should be True.")
 
+        rc2_CHK = Cartesian_To_Reference(vc2, cart2)
+        diff_rc2 = np.amax(np.abs(rc2 - rc2_CHK))
+        self.assertEqual(diff_rc2 < 1e-15, True, "Should be True.")
+
+    def test_Bary2Ref_and_back(self):
+        bc0 = np.array([0.5, 0.3, 0.2])
+        print(bc0)
+        rc0 = Barycentric_To_Reference(bc0)
+        print(rc0)
+        self.assertEqual(np.array_equal(bc0[1:],rc0), True, "Should be True.")
+        bc0_CHK = Reference_To_Barycentric(rc0)
+        diff_bc0 = np.amax(np.abs(bc0 - bc0_CHK))
+        self.assertEqual(diff_bc0 < 1e-15, True, "Should be True.")
+
+        bc1 = np.array([0.2, 0.1, 0.7])
+        print(bc1)
+        rc1 = Barycentric_To_Reference(bc1)
+        print(rc1)
+        self.assertEqual(np.array_equal(bc1[1:],rc1), True, "Should be True.")
+        bc1_CHK = Reference_To_Barycentric(rc1)
+        diff_bc1 = np.amax(np.abs(bc1 - bc1_CHK))
+        self.assertEqual(diff_bc1 < 1e-15, True, "Should be True.")
+
+        bc2 = np.array([bc0, bc1])
+        rc2 = Barycentric_To_Reference(bc2)
+        #print(rc2)
+        rc2_CHK = np.array([rc0, rc1])
+        diff_rc2 = np.amax(np.abs(rc2 - rc2_CHK))
+        self.assertEqual(diff_rc2 < 1e-15, True, "Should be True.")
+        bc2_CHK = Reference_To_Barycentric(rc2)
+        diff_bc2 = np.amax(np.abs(bc2 - bc2_CHK))
+        self.assertEqual(diff_bc2 < 1e-15, True, "Should be True.")
+
+    def test_Bary2Cart_and_back(self):
+        vc0 = np.array([[0.0, 0.0, 1.1], [2.0, 3.0, 1.1], [0.0, 5.0, 1.1]])
+        print(vc0)
+        bc0 = np.array([0.5, 0.3, 0.2])
+        print(bc0)
+
+        cart0 = Barycentric_To_Cartesian(vc0, bc0)
+        print(cart0)
+        diff0 = np.amax(np.abs(cart0 - np.array([0.6, 1.9, 1.1], dtype=CoordType)))
+        self.assertEqual(diff0 < 1e-15, True, "Should be True.")
+        bc0_CHK = Cartesian_To_Barycentric(vc0, cart0)
+        diff_bc0 = np.amax(np.abs(bc0 - bc0_CHK))
+        self.assertEqual(diff_bc0 < 1e-15, True, "Should be True.")
+        #print(bc0_CHK)
+        
+        vc1 = np.array([[0.2, 0.3, -0.4], [1.2, 2.4, 0.5], [3.1, 0.7, 4.5]])
+        print(vc1)
+        bc1 = np.array([0.2, 0.1, 0.7])
+        print(bc1)
+
+        cart1 = Barycentric_To_Cartesian(vc1, bc1)
+        print(cart1)
+        diff1 = np.amax(np.abs(cart1 - np.array([2.33, 0.79, 3.12], dtype=CoordType)))
+        self.assertEqual(diff1 < 1e-15, True, "Should be True.")
+        bc1_CHK = Cartesian_To_Barycentric(vc1, cart1)
+        diff_bc1 = np.amax(np.abs(bc1 - bc1_CHK))
+        self.assertEqual(diff_bc1 < 1e-15, True, "Should be True.")
+        #print(bc1_CHK)
+
+        vc2 = np.array([vc0, vc1])
+        bc2 = np.array([bc0, bc1])
+        cart2 = Barycentric_To_Cartesian(vc2, bc2)
+        #print(cart2)
+        cart2_CHK = np.array([cart0, cart1])
+        self.assertEqual(np.array_equal(cart2_CHK,cart2), True, "Should be True.")
+
+        bc2_CHK = Cartesian_To_Barycentric(vc2, cart2)
+        diff_bc2 = np.amax(np.abs(bc2 - bc2_CHK))
+        self.assertEqual(diff_bc2 < 1e-15, True, "Should be True.")
 
 
 

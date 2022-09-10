@@ -42,6 +42,7 @@ def Affine_Map(vtx_coord):
         print("Error: input must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
         return
     elif ndim==2:
+        # computing only 1 affine map
         TD = dim_vc[0]-1
         GD = dim_vc[1]
 
@@ -55,6 +56,7 @@ def Affine_Map(vtx_coord):
             # special case of a linear simplex:
             A[:,[tt-1]] = (vtx_coord[[tt],:]).T - b
     else:
+        # computing M affine maps
         M  = dim_vc[0]
         TD = dim_vc[1]-1
         GD = dim_vc[2]
@@ -102,6 +104,7 @@ def Reference_To_Cartesian(vtx_coord, ref_coord):
         print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
         return
     elif ndim==2:
+        # converting only 1 point
         TD = dim_vc[0]-1
         GD = dim_vc[1]
 
@@ -124,6 +127,7 @@ def Reference_To_Cartesian(vtx_coord, ref_coord):
             cart_coord[:] += ref_coord[tt-1] * vtx_coord[tt,:]
 
     else:
+        # converting M points
         M  = dim_vc[0]
         TD = dim_vc[1]-1
         GD = dim_vc[2]
@@ -148,6 +152,252 @@ def Reference_To_Cartesian(vtx_coord, ref_coord):
 
     return cart_coord
 
+def Cartesian_To_Reference(vtx_coord, cart_coord):
+    """Convert cartesian coordinates to reference element coordinates, where the reference
+    element is the "standard" reference simplex.  Note: a projection is used to make
+    sure the points are actually on the simplex.
+    There are two ways to call this function:
+    Inputs: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+            vertices of a single simplex of topological dimension TD embedded in
+            a Euclidean space of dimension GD;
+            cart_coord: (GD,) numpy array that gives the cartesian coordinates of
+            the given point.
+    Output: (TD,) numpy array that gives the coordinates of the point in the
+            reference simplex.
+    OR
+    Inputs: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+            vertices of M simplices of topological dimension TD embedded in
+            a Euclidean space of dimension GD;
+            cart_coord: (M,GD) numpy array that gives the cartesian coordinates of
+            the given M points.
+    Output: (M,TD) numpy array that gives the coordinates of the M points in the
+            reference simplex.
+    """
+    if type(vtx_coord) is not np.ndarray:
+        print("Error: vtx_coord must be a numpy array!")
+        return
+    if type(cart_coord) is not np.ndarray:
+        print("Error: cart_coord must be a numpy array!")
+        return
 
+    ndim   = vtx_coord.ndim
+    dim_vc = vtx_coord.shape
+    if ndim==1:
+        print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
+        return
+    elif ndim==2:
+        # converting only 1 point
+        TD = dim_vc[0]-1
+        GD = dim_vc[1]
+
+        dim_cc = cart_coord.shape
+        if dim_cc[0]!=GD:
+            print("Error: cart_coord must be a numpy array of shape (GD,) if vtx_coord is (TD+1,GD)!")
+            return
+
+        # get the affine map for the given simplex
+        A, b = Affine_Map(vtx_coord)
+
+        # compute A' * (xc - b)
+        xd = np.zeros((GD,), dtype=CoordType)
+        xd[:] = cart_coord[:] - b[:,0]
+        r = np.matmul(A.T, xd)
+        # compute M = A'*A
+        M = np.matmul(A.T, A)
+        # solve for reference coordinates
+        ref_coord = np.linalg.solve(M, r)
+
+    else:
+        # converting M points
+        M  = dim_vc[0]
+        TD = dim_vc[1]-1
+        GD = dim_vc[2]
+        
+        dim_cc = cart_coord.shape
+        if (dim_cc[0]!=M) or (dim_cc[1]!=GD):
+            print("Error: cart_coord must be a numpy array of shape (M,GD) if vtx_coord is (M,TD+1,GD)!")
+            return
+
+        # get the affine maps for the given simplices
+        A, b = Affine_Map(vtx_coord)
+
+        # compute A' * (xc - b)
+        xd = np.zeros((M,GD,1), dtype=CoordType)
+        xd[:,:,0] = cart_coord[:,:] - b[:,:,0]
+        A_T = np.transpose(A, (0, 2, 1))
+        r = np.matmul(A_T, xd[:,:,[0]])
+        
+        # compute M = A'*A
+        M = np.matmul(A_T, A)
+        # solve for reference coordinates
+        ref_coord = np.linalg.solve(M, r)
+        # leave off extraneous dimension
+        ref_coord = ref_coord[:,:,0]
+
+    return ref_coord
+
+def Barycentric_To_Reference(bary_coord):
+    """Convert barycentric coordinates to reference element coordinates, where the reference
+    element is the "standard" reference simplex.
+    There are two ways to call this function:
+    Input: bary_coord: (TD+1,) numpy array that gives the barycentric coordinates of
+           the given point.
+    Output: (TD,) numpy array that gives the coordinates of the point in the
+            reference simplex.
+    OR
+    Input: bary_coord: (M,TD+1) numpy array that gives the barycentric coordinates of
+           the given M points.
+    Output: (M,TD) numpy array that gives the coordinates of the M points in the
+            reference simplex.
+    """
+    if type(bary_coord) is not np.ndarray:
+        print("Error: bary_coord must be a numpy array!")
+        return
+
+    ndim   = bary_coord.ndim
+    dim_bc = bary_coord.shape
+    if ndim==1:
+        # converting only 1 point
+        TD = dim_bc[0]-1
+        ref_coord = bary_coord[1:]
+        ref_coord = np.reshape(ref_coord, (TD,))
+    else:
+        # converting M points
+        M  = dim_bc[0]
+        TD = dim_bc[1]-1
+        
+        ref_coord = bary_coord[:,1:]
+        ref_coord = np.reshape(ref_coord, (M,TD))
+
+    return ref_coord
+
+def Reference_To_Barycentric(ref_coord):
+    """Convert reference element coordinates to barycentric coordinates, where the reference
+    element is the "standard" reference simplex.
+    There are two ways to call this function:
+    Input: ref_coord: (TD,) numpy array that gives the coordinates of the point in the
+           reference simplex.
+    Output: (TD+1,) numpy array that gives the barycentric coordinates of the given point.
+    OR
+    Input: ref_coord: (M,TD) numpy array that gives the coordinates of the M points in the
+           reference simplex.
+    Output: (M,TD+1) numpy array that gives the barycentric coordinates of the given M points.
+    """
+    if type(ref_coord) is not np.ndarray:
+        print("Error: ref_coord must be a numpy array!")
+        return
+
+    ndim   = ref_coord.ndim
+    dim_rc = ref_coord.shape
+    if ndim==1:
+        # converting only 1 point
+        TD = dim_rc[0]
+        bary_coord = np.zeros((TD+1,), dtype=CoordType)
+        
+        bary_coord[1:] = ref_coord[:]
+        bary_coord[0]  = 1.0 - np.sum(ref_coord)
+    else:
+        # converting M points
+        M  = dim_rc[0]
+        TD = dim_rc[1]
+        bary_coord = np.zeros((M,TD+1), dtype=CoordType)
+        
+        bary_coord[:,1:] = ref_coord[:,:]
+        bary_coord[:,0]  = 1.0 - np.sum(ref_coord, axis=1)
+
+    return bary_coord
+
+def Barycentric_To_Cartesian(vtx_coord, bary_coord):
+    """Convert barycentric (simplex) coordinates to cartesian coordinates.
+    There are two ways to call this function:
+    Inputs: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+            vertices of a single simplex of topological dimension TD embedded in
+            a Euclidean space of dimension GD;
+            bary_coord: a (TD+1,) numpy array that gives the barycentric
+            coordinates of the point w.r.t. the given simplex coordinates.
+    Output: (GD,) numpy array that gives the cartesian coordinates of the given point.
+    OR
+    Inputs: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+            vertices of M simplices of topological dimension TD embedded in
+            a Euclidean space of dimension GD;
+            bary_coord: a (M,TD+1) numpy array that gives the barycentric
+            coordinates of M points w.r.t. the corresponding simplex coordinates.
+    Output: (M,GD) numpy array that gives the cartesian coordinates of the given M points.
+    """
+    if type(vtx_coord) is not np.ndarray:
+        print("Error: vtx_coord must be a numpy array!")
+        return
+    if type(bary_coord) is not np.ndarray:
+        print("Error: bary_coord must be a numpy array!")
+        return
+
+    ndim   = vtx_coord.ndim
+    dim_vc = vtx_coord.shape
+    if ndim==1:
+        print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
+        return
+    elif ndim==2:
+        # converting only 1 point
+        TD = dim_vc[0]-1
+        GD = dim_vc[1]
+
+        dim_bc = bary_coord.shape
+        if dim_bc[0]!=TD+1:
+            print("Error: bary_coord must be a numpy array of shape (TD+1,) if vtx_coord is (TD+1,GD)!")
+            return
+
+        cart_coord = np.zeros((GD,), dtype=CoordType)
+        for tt in np.arange(0, (TD+1), dtype=SmallIndType):
+            # add contributions
+            cart_coord[:] += bary_coord[tt] * vtx_coord[tt,:]
+
+    else:
+        # converting M points
+        M  = dim_vc[0]
+        TD = dim_vc[1]-1
+        GD = dim_vc[2]
+        
+        dim_bc = bary_coord.shape
+        if (dim_bc[0]!=M) or (dim_bc[1]!=TD+1):
+            print("Error: bary_coord must be a numpy array of shape (M,TD+1) if vtx_coord is (M,TD+1,GD)!")
+            return
+
+        cart_coord = np.zeros((M,GD), dtype=CoordType)
+        for tt in np.arange(0, (TD+1), dtype=SmallIndType):
+            # add contributions
+            cart_coord[:,:] += vtx_coord[:,tt,:] * bary_coord[:, [tt]]
+
+    return cart_coord
+
+def Cartesian_To_Barycentric(vtx_coord, cart_coord):
+    """Convert cartesian coordinates to barycentric (simplex) coordinates.
+    Note: a projection is used to make sure the points are actually on the simplex.
+    There are two ways to call this function:
+    Inputs: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+            vertices of a single simplex of topological dimension TD embedded in
+            a Euclidean space of dimension GD;
+            cart_coord: (GD,) numpy array that gives the cartesian coordinates of
+            the given point.
+    Output: (TD+1,) numpy array that gives the barycentric coordinates of the given point.
+    OR
+    Inputs: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+            vertices of M simplices of topological dimension TD embedded in
+            a Euclidean space of dimension GD;
+            cart_coord: (M,GD) numpy array that gives the cartesian coordinates of
+            the given M points.
+    Output: (M,TD+1) numpy array that gives the barycentric coordinates of the given M points.
+    """
+    if type(vtx_coord) is not np.ndarray:
+        print("Error: vtx_coord must be a numpy array!")
+        return
+    if type(cart_coord) is not np.ndarray:
+        print("Error: cart_coord must be a numpy array!")
+        return
+
+    # first, convert from cartesian to reference domain coordinates
+    ref_coord  = Cartesian_To_Reference(vtx_coord, cart_coord)
+    bary_coord = Reference_To_Barycentric(ref_coord)
+
+    return bary_coord
 
 
