@@ -162,6 +162,46 @@ class TestSimplexMath(unittest.TestCase):
         diff_bc2 = np.amax(np.abs(bc2 - bc2_CHK))
         self.assertEqual(diff_bc2 < 1e-15, True, "Should be True.")
 
+    def test_Measures(self):
+        vc0 = np.array([[0.0, 0.0, 1.1], [2.0, 3.0, 1.1], [0.0, 5.0, 1.1]])
+        print(vc0)
+        D0 = Diameter(vc0)
+        self.assertEqual(np.abs(D0 - 5.0) < 1e-15, True, "Should be True.")
+        BB_min0, BB_max0 = Bounding_Box(vc0)
+        self.assertEqual(np.array_equal(BB_min0,np.array([0.0, 0.0, 1.1])), True, "Should be True.")
+        self.assertEqual(np.array_equal(BB_max0,np.array([2.0, 5.0, 1.1])), True, "Should be True.")
+        V0 = Volume(vc0)
+        #print(V0)
+        self.assertEqual(np.abs(V0 - 5.0) < 1e-15, True, "Should be True.")
+        
+        vc1 = np.array([[0.2, 0.3, -0.4], [1.2, 2.4, 0.5], [3.1, 0.7, 4.5]])
+        print(vc1)
+        D1 = Diameter(vc1)
+        self.assertEqual(np.abs(D1 - 5.707889277132134) < 1e-15, True, "Should be True.")
+        BB_min1, BB_max1 = Bounding_Box(vc1)
+        self.assertEqual(np.array_equal(BB_min1,np.array([0.2, 0.3, -0.4])), True, "Should be True.")
+        self.assertEqual(np.array_equal(BB_max1,np.array([3.1, 2.4, 4.5])), True, "Should be True.")
+        V1 = Volume(vc1)
+        #print(V1)
+        self.assertEqual(np.abs(V1 - 5.835775441190314) < 1e-15, True, "Should be True.")
+
+        vc2 = np.array([vc0, vc1])
+        D2 = Diameter(vc2)
+        D2_CHK = np.array([D0, D1])
+        diff_D2 = np.amax(np.abs(D2 - D2_CHK))
+        self.assertEqual(diff_D2 < 1e-15, True, "Should be True.")
+        BB_min2, BB_max2 = Bounding_Box(vc2)
+        self.assertEqual(np.array_equal(BB_min2,np.array([BB_min0, BB_min1])), True, "Should be True.")
+        self.assertEqual(np.array_equal(BB_max2,np.array([BB_max0, BB_max1])), True, "Should be True.")
+        V2 = Volume(vc2)
+        V2_CHK = np.array([V0, V1])
+        diff_V2 = np.amax(np.abs(V2 - V2_CHK))
+        self.assertEqual(diff_V2 < 1e-15, True, "Should be True.")
+
+
+
+
+        print("HERE!")
 
 
 if __name__ == '__main__':

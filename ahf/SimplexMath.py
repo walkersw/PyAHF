@@ -400,4 +400,168 @@ def Cartesian_To_Barycentric(vtx_coord, cart_coord):
 
     return bary_coord
 
+def Diameter(vtx_coord):
+    """Compute the diameter of a simplex.
+    There are two ways to call this function:
+    Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+           vertices of a single simplex of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Output: a number that gives the diameter of the simplex (max edge length).
+    OR
+    Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+           vertices of M simplices of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Output: (M,) numpy array that gives the diameters of the given M simplices.
+    """
+    if type(vtx_coord) is not np.ndarray:
+        print("Error: vtx_coord must be a numpy array!")
+        return
+
+    ndim   = vtx_coord.ndim
+    dim_vc = vtx_coord.shape
+    if ndim==1:
+        print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
+        return
+    elif ndim==2:
+        # computing diameter for one simplex
+        TD = dim_vc[0]-1
+        GD = dim_vc[1]
+
+        # compute all edge lengths, and take the MAX
+        MAX_Edge_Length = 0.0
+        for rr in np.arange(0, (TD+1), dtype=SmallIndType):
+            for cc in np.arange(rr+1, (TD+1), dtype=SmallIndType):
+                diff_xc = vtx_coord[rr,:] - vtx_coord[cc,:]
+                L0 = np.sqrt(np.sum(diff_xc**2))
+                if (L0 > MAX_Edge_Length):
+                    MAX_Edge_Length = L0
+    else:
+        # computing diameter for M simplices
+        M  = dim_vc[0]
+        TD = dim_vc[1]-1
+        GD = dim_vc[2]
+
+        # compute all edge lengths, and take the MAX
+        MAX_Edge_Length = np.zeros((M,), dtype=RealType)
+        for rr in np.arange(0, (TD+1), dtype=SmallIndType):
+            for cc in np.arange(rr+1, (TD+1), dtype=SmallIndType):
+                diff_xc = vtx_coord[:,rr,:] - vtx_coord[:,cc,:]
+                L0 = np.sqrt(np.sum(diff_xc**2, axis=1))
+                MAX_Edge_Length = np.where(L0 < MAX_Edge_Length, MAX_Edge_Length, L0)
+
+    return MAX_Edge_Length
+
+def Bounding_Box(vtx_coord):
+    """Compute the bounding (cartesian) box of a simplex.
+    There are two ways to call this function:
+    Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+           vertices of a single simplex of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Outputs: BB_min, BB_max.  Both are (GD,) numpy arrays that contain the minimum
+             and maximum coordinates of the "box".
+       Example:  if GD==3, then
+             BB_min[:] = [X_min, Y_min, Z_min], (numpy array),
+             BB_max[:] = [X_max, Y_max, Z_max], (numpy array).
+    OR
+    Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+           vertices of M simplices of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Outputs: BB_min, BB_max.  Both are (M,GD) numpy arrays that contain the minimum
+             and maximum coordinates of the "box".
+    """
+    if type(vtx_coord) is not np.ndarray:
+        print("Error: vtx_coord must be a numpy array!")
+        return
+
+    ndim   = vtx_coord.ndim
+    dim_vc = vtx_coord.shape
+    if ndim==1:
+        print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
+        return
+    elif ndim==2:
+        # computing bounding for one simplex
+        # TD = dim_vc[0]-1
+        # GD = dim_vc[1]
+        
+        # compute the box
+        BB_min = np.amin(vtx_coord, axis=0)
+        BB_max = np.amax(vtx_coord, axis=0)
+
+    else:
+        # computing diameter for M simplices
+        # M  = dim_vc[0]
+        # TD = dim_vc[1]-1
+        # GD = dim_vc[2]
+
+        # compute the box
+        BB_min = np.amin(vtx_coord, axis=1)
+        BB_max = np.amax(vtx_coord, axis=1)
+
+    return BB_min, BB_max
+
+def Volume(vtx_coord):
+    """Compute the volume of a simplex.
+    There are two ways to call this function:
+    Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+           vertices of a single simplex of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Output: a number that gives the (TD)-dimensional volume of the simplex.
+    OR
+    Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+           vertices of M simplices of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Output: (M,) numpy array that gives the (TD)-dimensional volumes of the M simplices.
+    """
+    if type(vtx_coord) is not np.ndarray:
+        print("Error: vtx_coord must be a numpy array!")
+        return
+
+    ndim   = vtx_coord.ndim
+    dim_vc = vtx_coord.shape
+    if ndim==1:
+        print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
+        return
+    elif ndim==2:
+        # computing diameter for one simplex
+        TD = dim_vc[0]-1
+        GD = dim_vc[1]
+
+        # get the affine map for the simplex
+        A, b = Affine_Map(vtx_coord)
+
+        if (TD==0):
+            # nothing to do!
+            det_A = 0.0
+        elif (GD==TD):
+            det_A = np.linalg.det(A)
+        else:
+            # must use the metric, compute G = A'*A
+            G = np.matmul(A.T, A)
+            det_G = np.linalg.det(G)
+            det_A = np.sqrt(det_G)
+    else:
+        # computing diameter for M simplices
+        M  = dim_vc[0]
+        TD = dim_vc[1]-1
+        GD = dim_vc[2]
+
+        # get the affine map for the simplex
+        A, b = Affine_Map(vtx_coord)
+
+        if (TD==0):
+            # nothing to do!
+            det_A = np.zeros((M,), dtype=RealType)
+        elif (GD==TD):
+            det_A = np.linalg.det(A)
+        else:
+            # must use the metric, compute G = A'*A
+            A_T = np.transpose(A, (0, 2, 1))
+            # compute G = A'*A
+            G = np.matmul(A_T, A)
+            det_G = np.linalg.det(G)
+            det_A = np.sqrt(det_G)
+
+    Fact0 = np.math.factorial(TD)
+    Vol = (1.0/Fact0) * det_A
+    return Vol
 

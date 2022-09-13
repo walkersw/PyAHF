@@ -669,12 +669,12 @@ class TestBaseSimplexMesh(unittest.TestCase):
         """
         This example stores a 3-D non-manifold mesh (consisting of 3 tetrahedra) that has 1
         non-manifold facet and 0 non-manifold vertices.  It also does some basic processing.
-        See 'Non_Manifold_Tetrahedra_1.jpg' for a picture of the mesh embedded in 3-D.
+        See 'Nonmanifold_Tetrahedra_1.jpg' for a picture of the mesh embedded in 3-D.
         """
         del(self.Mesh)
         self.Mesh = BaseSimplexMesh(3)
 
-        # see Non_Manifold_Tetrahedra_1.jpg
+        # see Nonmanifold_Tetrahedra_1.jpg
         cv = np.array([0,1,5,3, 1,4,5,3, 1,3,2,5])
         cv.shape = (3,4)
         self.Mesh.Append_Cell(cv)
