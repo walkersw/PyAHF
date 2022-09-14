@@ -522,7 +522,7 @@ def Volume(vtx_coord):
         print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
         return
     elif ndim==2:
-        # computing diameter for one simplex
+        # computing volume for one simplex
         TD = dim_vc[0]-1
         GD = dim_vc[1]
 
@@ -540,12 +540,12 @@ def Volume(vtx_coord):
             det_G = np.linalg.det(G)
             det_A = np.sqrt(det_G)
     else:
-        # computing diameter for M simplices
+        # computing volume for M simplices
         M  = dim_vc[0]
         TD = dim_vc[1]-1
         GD = dim_vc[2]
 
-        # get the affine map for the simplex
+        # get the affine maps for the simplices
         A, b = Affine_Map(vtx_coord)
 
         if (TD==0):
@@ -564,4 +564,78 @@ def Volume(vtx_coord):
     Fact0 = np.math.factorial(TD)
     Vol = (1.0/Fact0) * det_A
     return Vol
+
+def Perimeter(vtx_coord):
+    """Compute the perimeter of a simplex.
+    There are two ways to call this function:
+    Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+           vertices of a single simplex of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Outputs: Perimeter: a number giving the total (TD-1)-dimensional volume
+             ("surface area") of the boundary of the simplex;
+             Facet_Vol: (TD+1,) numpy array that gives the (TD-1)-dimensional
+             volume of each of the TD+1 facets of the simplex.
+    OR
+    Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+           vertices of M simplices of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Outputs: Perimeter: (M,) numpy array giving the total (TD-1)-dimensional volume
+             ("surface area") of the boundary of the M simplices;
+             Facet_Vol: (M,TD+1) numpy array that gives the (TD-1)-dimensional volume
+             of each of the TD+1 facets of the M simplices.
+    """
+    if type(vtx_coord) is not np.ndarray:
+        print("Error: vtx_coord must be a numpy array!")
+        return
+
+    ndim   = vtx_coord.ndim
+    dim_vc = vtx_coord.shape
+    if ndim==1:
+        print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
+        return
+    elif ndim==2:
+        # computing perimeter for one simplex
+        TD = dim_vc[0]-1
+        GD = dim_vc[1]
+
+        Facet_Vol = np.zeros((TD+1,), dtype=RealType)
+        if (TD==1):
+            # counting measure
+            Facet_Vol[0] = 1.0
+            Facet_Vol[1] = 1.0
+        else:
+            # loop through each facet of the simplex
+            All_VI = np.arange(0, (TD+1), dtype=SmallIndType)
+            for ff in All_VI:
+                # get the vertex indices of the current facet
+                Facet_VI = np.delete(All_VI, ff)
+                Facet_vc = vtx_coord[Facet_VI,:]
+                # compute it's volume (or "surface area")
+                Facet_Vol[ff] = Volume(Facet_vc)
+
+        Perimeter = np.sum(Facet_Vol)
+    else:
+        # computing diameter for M simplices
+        M  = dim_vc[0]
+        TD = dim_vc[1]-1
+        GD = dim_vc[2]
+
+        Facet_Vol = np.zeros((M,TD+1), dtype=RealType)
+        if (TD==1):
+            # counting measure
+            Facet_Vol[:,0] = 1.0
+            Facet_Vol[:,1] = 1.0
+        else:
+            # loop through each facet of the simplex
+            All_VI = np.arange(0, (TD+1), dtype=SmallIndType)
+            for ff in All_VI:
+                # get the vertex indices of the current facet
+                Facet_VI = np.delete(All_VI, ff)
+                Facet_vc = vtx_coord[:,Facet_VI,:]
+                # compute it's volume (or "surface area")
+                Facet_Vol[:,ff] = Volume(Facet_vc)
+
+        Perimeter = np.sum(Facet_Vol, axis=1)
+
+    return Perimeter, Facet_Vol
 

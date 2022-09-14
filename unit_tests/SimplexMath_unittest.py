@@ -173,6 +173,11 @@ class TestSimplexMath(unittest.TestCase):
         V0 = Volume(vc0)
         #print(V0)
         self.assertEqual(np.abs(V0 - 5.0) < 1e-15, True, "Should be True.")
+        P0, Facet_V0 = Perimeter(vc0)
+        Facet_V0_CHK = np.array([np.sqrt(8), 5.0, np.sqrt(13)])
+        diff_Facet_V0 = np.amax(np.abs(Facet_V0 - Facet_V0_CHK))
+        self.assertEqual(diff_Facet_V0 < 1e-15, True, "Should be True.")
+        self.assertEqual(np.abs(P0 - np.sum(Facet_V0_CHK)) < 1e-15, True, "Should be True.")
         
         vc1 = np.array([[0.2, 0.3, -0.4], [1.2, 2.4, 0.5], [3.1, 0.7, 4.5]])
         print(vc1)
@@ -184,6 +189,11 @@ class TestSimplexMath(unittest.TestCase):
         V1 = Volume(vc1)
         #print(V1)
         self.assertEqual(np.abs(V1 - 5.835775441190314) < 1e-15, True, "Should be True.")
+        P1, Facet_V1 = Perimeter(vc1)
+        Facet_V1_CHK = np.array([4.743416490252569, 5.707889277132135, 2.493992782667986])
+        diff_Facet_V1 = np.amax(np.abs(Facet_V1 - Facet_V1_CHK))
+        self.assertEqual(diff_Facet_V1 < 1e-15, True, "Should be True.")
+        self.assertEqual(np.abs(P1 - np.sum(Facet_V1_CHK)) < 1e-15, True, "Should be True.")
 
         vc2 = np.array([vc0, vc1])
         D2 = Diameter(vc2)
@@ -197,7 +207,12 @@ class TestSimplexMath(unittest.TestCase):
         V2_CHK = np.array([V0, V1])
         diff_V2 = np.amax(np.abs(V2 - V2_CHK))
         self.assertEqual(diff_V2 < 1e-15, True, "Should be True.")
-
+        P2, Facet_V2 = Perimeter(vc2)
+        Facet_V2_CHK = np.array([[np.sqrt(8), 5.0, np.sqrt(13)], \
+                                [4.743416490252569, 5.707889277132135, 2.493992782667986]])
+        diff_Facet_V2 = np.amax(np.abs(Facet_V2 - Facet_V2_CHK))
+        self.assertEqual(diff_Facet_V2 < 1e-15, True, "Should be True.")
+        self.assertEqual(np.amax(np.abs(P2 - np.sum(Facet_V2_CHK, axis=1))) < 1e-15, True, "Should be True.")
 
 
 
