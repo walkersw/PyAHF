@@ -639,3 +639,48 @@ def Perimeter(vtx_coord):
 
     return Perimeter, Facet_Vol
 
+def Barycenter(vtx_coord):
+    """Compute the barycenter of a simplex.
+    There are two ways to call this function:
+    Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+           vertices of a single simplex of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Output: (GD,) numpy array that gives the cartesian coordinates of the barycenter
+            of the simplex.
+    OR
+    Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+           vertices of M simplices of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Output: (M,GD) numpy array that gives the cartesian coordinates of the barycenters
+            of the given M simplices.
+    """
+    if type(vtx_coord) is not np.ndarray:
+        print("Error: vtx_coord must be a numpy array!")
+        return
+
+    ndim   = vtx_coord.ndim
+    dim_vc = vtx_coord.shape
+    if ndim==1:
+        print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
+        return
+    elif ndim==2:
+        # computing for only 1 simplex
+        TD = dim_vc[0]-1
+        GD = dim_vc[1]
+
+        bary_coord = (1.0/(TD+1)) * np.ones((TD+1,), dtype=CoordType)
+        cart_coord = Barycentric_To_Cartesian(vtx_coord, bary_coord)
+
+    else:
+        # computing for M simplices
+        M  = dim_vc[0]
+        TD = dim_vc[1]-1
+        GD = dim_vc[2]
+        
+        bary_coord = (1.0/(TD+1)) * np.ones((M,TD+1), dtype=CoordType)
+        cart_coord = Barycentric_To_Cartesian(vtx_coord, bary_coord)
+        
+    return cart_coord
+
+
+

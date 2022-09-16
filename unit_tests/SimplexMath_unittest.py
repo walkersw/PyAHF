@@ -214,7 +214,27 @@ class TestSimplexMath(unittest.TestCase):
         self.assertEqual(diff_Facet_V2 < 1e-15, True, "Should be True.")
         self.assertEqual(np.amax(np.abs(P2 - np.sum(Facet_V2_CHK, axis=1))) < 1e-15, True, "Should be True.")
 
+    def test_Centers(self):
+        vc0 = np.array([[0.0, 0.0, 1.1], [2.0, 3.0, 1.1], [0.0, 5.0, 1.1]])
+        print(vc0)
+        bc0 = Barycenter(vc0)
+        #print(bc0)
+        bc0_CHK = np.array([(2.0/3), (8.0/3), 1.1])
+        self.assertEqual(np.amax(np.abs(bc0 - bc0_CHK)) < 1e-15, True, "Should be True.")
 
+        vc1 = np.array([[0.2, 0.3, -0.4], [1.2, 2.4, 0.5], [3.1, 0.7, 4.5]])
+        print(vc1)
+        bc1 = Barycenter(vc1)
+        #print(bc1)
+        bc1_CHK = np.array([(4.5/3), (3.4/3), (4.6/3)])
+        self.assertEqual(np.amax(np.abs(bc1 - bc1_CHK)) < 1e-15, True, "Should be True.")
+
+        vc2 = np.array([vc0, vc1])
+        print(vc2)
+        bc2 = Barycenter(vc2)
+        print(bc2)
+        bc2_CHK = np.array([bc0_CHK, bc1_CHK])
+        self.assertEqual(np.amax(np.abs(bc2 - bc2_CHK)) < 1e-15, True, "Should be True.")
 
         print("HERE!")
 
