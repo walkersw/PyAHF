@@ -639,6 +639,11 @@ def Perimeter(vtx_coord):
 
     return Perimeter, Facet_Vol
 
+# put in ortho frame, normal space, etc...
+
+
+
+
 def Barycenter(vtx_coord):
     """Compute the barycenter of a simplex.
     There are two ways to call this function:
