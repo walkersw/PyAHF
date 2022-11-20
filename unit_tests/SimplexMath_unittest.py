@@ -236,7 +236,37 @@ class TestSimplexMath(unittest.TestCase):
         bc2_CHK = np.array([bc0_CHK, bc1_CHK])
         self.assertEqual(np.amax(np.abs(bc2 - bc2_CHK)) < 1e-15, True, "Should be True.")
 
-        print("HERE!")
+
+
+    def test_Frames(self):
+        vc0 = np.array([[0.0, 0.0, 1.1], [2.0, 3.0, 1.1], [0.0, 5.0, 1.1]])
+        print(vc0)
+        Ortho_0 = Orthogonal_Frame(vc0)
+        print(Ortho_0)
+        normal_0_CHK = np.array([[0.0], [0.0], [1.0]])
+        self.assertEqual(np.amax(np.abs(Ortho_0[:,[-1]] - normal_0_CHK)) < 1e-15, True, "Should be True.")
+
+        vc1 = np.array([[0.2, 0.3, -0.4], [1.2, 2.4, 0.5], [3.1, 0.7, 4.5]])
+        print(vc1)
+        Ortho_1 = Orthogonal_Frame(vc1)
+        print(Ortho_1)
+        A1, b1 = Affine_Map(vc1)
+        normal_1_CHK = np.cross(A1[:,0], A1[:,1])
+        normal_1_CHK = normal_1_CHK.reshape((3,1))
+        normal_1_CHK = normal_1_CHK * (1.0/np.linalg.norm(normal_1_CHK,2))
+        self.assertEqual(np.amax(np.abs(Ortho_1[:,[-1]] - normal_1_CHK)) < 1e-15, True, "Should be True.")
+
+        vc2 = np.array([vc0, vc1])
+        print(vc2)
+        Ortho_2 = Orthogonal_Frame(vc2)
+        print(Ortho_2)
+        normal_2_CHK = np.array([normal_0_CHK, normal_1_CHK])
+        self.assertEqual(np.amax(np.abs(Ortho_2[:,:,[-1]] - normal_2_CHK)) < 1e-15, True, "Should be True.")
+
+
+        print("In 'test_Frames'!")
+
+
 
 
 if __name__ == '__main__':

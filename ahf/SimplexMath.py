@@ -639,7 +639,126 @@ def Perimeter(vtx_coord):
 
     return Perimeter, Facet_Vol
 
-# put in ortho frame, normal space, etc...
+def Orthogonal_Frame(vtx_coord,frame_type="all"):
+    """Get orthonormal column vectors that describe a frame for a set of given
+    simplices.  If the keyword "all" is given, then the orthonormal vectors
+    span all of \R^{GD}, where the first TD vectors span the *tangent* space
+    of the simplex, and the last (GD - TD) vectors span the space *orthogonal*
+    to the tangent space (i.e. the *normal* space).  The keyword "tangent" only
+    gives the vectors in the tangent space; the keyword "normal" only gives the
+    vectors in the normal space.
+
+    There are two ways to call this function:
+    Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+           vertices of a single simplex of topological dimension TD embedded in
+           a Euclidean space of dimension GD;
+           frame_type: a string = "all", "tangent", or "normal".  If omitted,
+           then default it "all".  "all" gives a complete frame of \R^{GD},
+           "tangent" gives the tangent space, and "normal" gives the normal space.
+    Outputs: Ortho: numpy matrix (GD,GD), whose column vectors are the (unit)
+             basis vectors of the frame.
+    OR
+    Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+           vertices of M simplices of topological dimension TD embedded in
+           a Euclidean space of dimension GD;
+           frame_type: see above.
+    Outputs: Ortho: numpy array (M,GD,GD), which is a stack of M matrices, each
+             of whose column vectors are the (unit) basis vectors of the frame.
+    """
+    if type(vtx_coord) is not np.ndarray:
+        print("Error: vtx_coord must be a numpy array!")
+        return
+
+    if frame_type.lower() == "tangent":
+        qr_type = "reduced"
+    else:
+        qr_type = "complete"
+
+    ndim   = vtx_coord.ndim
+    dim_vc = vtx_coord.shape
+    if ndim==1:
+        print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
+        return
+    elif ndim==2:
+        # computing only 1 frame
+        TD = dim_vc[0]-1
+        GD = dim_vc[1]
+
+        # get the affine map for the given simplex
+        A, b = Affine_Map(vtx_coord)
+        #A_rank = np.linalg.matrix_rank(A)
+        
+        # QR it!
+        Ortho, R = np.linalg.qr(A, mode=qr_type)
+        if qr_type == "complete":
+            # make it have positive determinant
+            O_det = np.linalg.det(Ortho)
+            if (O_det < 0.0):
+                Ortho[:,0] = -Ortho[:,0]
+            # adjust for orientation when GD==TD+1, i.e. keep the orientation consistent with A.
+            if (GD==TD+1):
+                # append the normal vector to the Jacobian matrix
+                Test_Mat = np.hstack((A, Ortho[:,[-1]]))
+                Test_det = np.linalg.det(Test_Mat)
+                if (Test_det < 0.0):
+                    # flip the orientation of the normal vector...
+                    Ortho[:,-1] = -Ortho[:,-1]
+                    # ... and the tangent space
+                    Ortho[:,0] = -Ortho[:,0]
+
+        if frame_type.lower() == "normal":
+            # only give the last column vectors
+            Ortho = Ortho[:,TD:GD]
+
+    else:
+        # computing M frames
+        M  = dim_vc[0]
+        TD = dim_vc[1]-1
+        GD = dim_vc[2]
+        
+        # get the affine maps for the given simplices
+        A, b = Affine_Map(vtx_coord)
+        #A_rank = np.linalg.matrix_rank(A)
+        
+        # QR it!
+        Ortho, R = np.linalg.qr(A, mode=qr_type)
+        if qr_type == "complete":
+            # make it have positive determinant
+            O_det = np.linalg.det(Ortho)
+            
+            sign_det = np.sign(O_det)
+            sign_det = sign_det.reshape((M,1))
+            sign_det_rep = np.tile(sign_det, (1, GD))
+            Ortho[:,:,0] = sign_det_rep[:,:] * Ortho[:,:,0]
+
+            # adjust for orientation when GD==TD+1, i.e. keep the orientation consistent with A.
+            if (GD==TD+1):
+                # append the normal vector to the Jacobian matrix
+                Test_Mat = 0*Ortho
+                Test_Mat[:,:,0:GD-1] = A[:,:,0:GD-1]
+                Test_Mat[:,:,-1] = Ortho[:,:,-1]
+                Test_det = np.linalg.det(Test_Mat)
+
+                # adjust based on the sign
+                sign_det = np.sign(Test_det)
+                sign_det = sign_det.reshape((M,1))
+                sign_det_rep = np.tile(sign_det, (1, GD))
+                # flip the orientation of the normal vector...
+                Ortho[:,:,-1] = sign_det_rep[:,:] * Ortho[:,:,-1]
+                # ... and the tangent space
+                Ortho[:,:,0] = sign_det_rep[:,:] * Ortho[:,:,0]
+
+        if frame_type.lower() == "normal":
+            # only give the last column vectors
+            Ortho = Ortho[:,:,TD:GD]
+
+    return Ortho
+
+
+
+
+
+# put in ortho frame, normal space, tangent space, etc...
 
 
 
