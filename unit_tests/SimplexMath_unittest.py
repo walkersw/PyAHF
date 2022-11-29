@@ -268,28 +268,78 @@ class TestSimplexMath(unittest.TestCase):
         # test the tangent space
         TS_0 = Tangent_Space(vc0)
         print(TS_0)
-        # build tangent space projection
-        TS_0_proj = np.identity(3) - (np.outer(TS_0[:,0],TS_0[:,0]) + np.outer(TS_0[:,1],TS_0[:,1]))
-        TS_0_CHK = np.outer(normal_0_CHK[:,0],normal_0_CHK[:,0])
-        self.assertEqual(np.amax(np.abs(TS_0_proj - TS_0_CHK)) < 1e-15, True, "Should be True.")
+        # build normal space projection
+        NS_0_proj = np.identity(3) - (np.outer(TS_0[:,0],TS_0[:,0]) + np.outer(TS_0[:,1],TS_0[:,1]))
+        NS_0_CHK = np.outer(normal_0_CHK[:,0],normal_0_CHK[:,0])
+        self.assertEqual(np.amax(np.abs(NS_0_proj - NS_0_CHK)) < 1e-15, True, "Should be True.")
         
         TS_1 = Tangent_Space(vc1)
         print(TS_1)
-        # build tangent space projection
-        TS_1_proj = np.identity(3) - (np.outer(TS_1[:,0],TS_1[:,0]) + np.outer(TS_1[:,1],TS_1[:,1]))
-        TS_1_CHK = np.outer(normal_1_CHK[:,0],normal_1_CHK[:,0])
-        self.assertEqual(np.amax(np.abs(TS_1_proj - TS_1_CHK)) < 1e-15, True, "Should be True.")
+        # build normal space projection
+        NS_1_proj = np.identity(3) - (np.outer(TS_1[:,0],TS_1[:,0]) + np.outer(TS_1[:,1],TS_1[:,1]))
+        NS_1_CHK = np.outer(normal_1_CHK[:,0],normal_1_CHK[:,0])
+        self.assertEqual(np.amax(np.abs(NS_1_proj - NS_1_CHK)) < 1e-15, True, "Should be True.")
         
         TS_2 = Tangent_Space(vc2)
         print(TS_2)
-        # build tangent space projection
-        TS_2_proj = np.array([0*TS_0_proj, 0*TS_1_proj])
-        TS_2_proj[0,:,:] = np.identity(3) - (np.outer(TS_2[0,:,0],TS_2[0,:,0]) + np.outer(TS_2[0,:,1],TS_2[0,:,1]))
-        TS_2_proj[1,:,:] = np.identity(3) - (np.outer(TS_2[1,:,0],TS_2[1,:,0]) + np.outer(TS_2[1,:,1],TS_2[1,:,1]))
-        TS_2_CHK = np.array([TS_0_CHK, TS_1_CHK])
-        self.assertEqual(np.amax(np.abs(TS_2_proj - TS_2_CHK)) < 1e-15, True, "Should be True.")
+        # build normal space projection
+        NS_2_proj = np.array([0*NS_0_proj, 0*NS_1_proj])
+        NS_2_proj[0,:,:] = np.identity(3) - (np.outer(TS_2[0,:,0],TS_2[0,:,0]) + np.outer(TS_2[0,:,1],TS_2[0,:,1]))
+        NS_2_proj[1,:,:] = np.identity(3) - (np.outer(TS_2[1,:,0],TS_2[1,:,0]) + np.outer(TS_2[1,:,1],TS_2[1,:,1]))
+        NS_2_CHK = np.array([NS_0_CHK, NS_1_CHK])
+        self.assertEqual(np.amax(np.abs(NS_2_proj - NS_2_CHK)) < 1e-15, True, "Should be True.")
+
+        # test the normal space
+        NS_0 = Normal_Space(vc0)
+        print(NS_0)
+        # build normal space projection
+        NS_0_proj_alt = np.outer(NS_0[:,0],NS_0[:,0])
+        self.assertEqual(np.amax(np.abs(NS_0_proj_alt - NS_0_CHK)) < 1e-15, True, "Should be True.")
         
-        print("In 'test_Frames'!")
+        NS_1 = Normal_Space(vc1)
+        print(NS_1)
+        # build normal space projection
+        NS_1_proj_alt = np.outer(NS_1[:,0],NS_1[:,0])
+        self.assertEqual(np.amax(np.abs(NS_1_proj_alt - NS_1_CHK)) < 1e-15, True, "Should be True.")
+        
+        NS_2 = Normal_Space(vc2)
+        print(NS_2)
+        # build normal space projection
+        NS_2_proj_alt = np.array([0*NS_0_proj_alt, 0*NS_1_proj_alt])
+        NS_2_proj_alt[0,:,:] = np.outer(NS_2[0,:,0],NS_2[0,:,0])
+        NS_2_proj_alt[1,:,:] = np.outer(NS_2[1,:,0],NS_2[1,:,0])
+        self.assertEqual(np.amax(np.abs(NS_2_proj_alt - NS_2_CHK)) < 1e-15, True, "Should be True.")
+
+
+
+    # def test_Hyperplane(self):
+        # # test hyperplane/closest point methods
+        # vc0 = np.array([[0.0, 0.0, 1.1], [2.0, 3.0, 1.1], [0.0, 5.0, 1.1]])
+        # print(vc0)
+        # Ortho_0 = Orthogonal_Frame(vc0)
+        # print(Ortho_0)
+        # normal_0_CHK = np.array([[0.0], [0.0], [1.0]])
+        # self.assertEqual(np.amax(np.abs(Ortho_0[:,[-1]] - normal_0_CHK)) < 1e-15, True, "Should be True.")
+
+        # vc1 = np.array([[0.2, 0.3, -0.4], [1.2, 2.4, 0.5], [3.1, 0.7, 4.5]])
+        # print(vc1)
+        # Ortho_1 = Orthogonal_Frame(vc1)
+        # print(Ortho_1)
+        # A1, b1 = Affine_Map(vc1)
+        # normal_1_CHK = np.cross(A1[:,0], A1[:,1])
+        # normal_1_CHK = normal_1_CHK.reshape((3,1))
+        # normal_1_CHK = normal_1_CHK * (1.0/np.linalg.norm(normal_1_CHK,2))
+        # self.assertEqual(np.amax(np.abs(Ortho_1[:,[-1]] - normal_1_CHK)) < 1e-15, True, "Should be True.")
+
+        # vc2 = np.array([vc0, vc1])
+        # print(vc2)
+        # Ortho_2 = Orthogonal_Frame(vc2)
+        # print(Ortho_2)
+        # normal_2_CHK = np.array([normal_0_CHK, normal_1_CHK])
+        # self.assertEqual(np.amax(np.abs(Ortho_2[:,:,[-1]] - normal_2_CHK)) < 1e-15, True, "Should be True.")
+
+
+        # print("In 'test_Hyperplane'!")
 
 
 

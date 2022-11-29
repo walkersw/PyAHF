@@ -900,27 +900,27 @@ def Normal_Space(vtx_coord):
             A, b = Affine_Map(vtx_coord)
             
             # rotate the column vector from A
-            V = np.zeros((M,GD,1), dtype=RealType)
-            V[:,0,0] = -A[:,1,0]
-            V[:,1,0] =  A[:,0,0]
+            NS = np.zeros((M,GD,1), dtype=RealType)
+            NS[:,0,0] = -A[:,1,0]
+            NS[:,1,0] =  A[:,0,0]
             # normalize to get the normal vector
-            V_norm = np.linalg.norm(V[:,:,0], ord=2, axis=1)
-            V_norm_rep = np.tile(V_norm, (1, GD))
-            NS = V[:,:,[0]] * (1.0 / V_norm_rep[:,:])
+            NS_norm = np.linalg.norm(NS[:,:,[0]], ord=2, axis=1)
+            NS_norm_rep = np.tile(NS_norm, (1, GD))
+            NS[:,:,0] = NS[:,:,0] * (1.0 / NS_norm_rep[:,:])
         elif ( (TD==2) and (GD==3) ):
             # special case: surface in \R^3
             A, b = Affine_Map(vtx_coord)
             
             # take cross product of the two column vectors of A
-            V = np.zeros((M,GD,1), dtype=RealType)
+            NS = np.zeros((M,GD,1), dtype=RealType)
             # compute cross-product
-            V[:,0,0] =   A[:,1,0] * A[:,2,1] - A[:,2,0] * A[:,1,1]
-            V[:,1,0] = -(A[:,0,0] * A[:,2,1] - A[:,2,0] * A[:,0,1])
-            V[:,2,0] =   A[:,0,0] * A[:,1,1] - A[:,1,0] * A[:,0,1]
+            NS[:,0,0] =   A[:,1,0] * A[:,2,1] - A[:,2,0] * A[:,1,1]
+            NS[:,1,0] = -(A[:,0,0] * A[:,2,1] - A[:,2,0] * A[:,0,1])
+            NS[:,2,0] =   A[:,0,0] * A[:,1,1] - A[:,1,0] * A[:,0,1]
             # normalize to get the normal vector
-            V_norm = np.linalg.norm(V[:,:,0], ord=2, axis=1)
-            V_norm_rep = np.tile(V_norm, (1, GD))
-            NS = V[:,:,[0]] * (1.0 / V_norm_rep[:,:])
+            NS_norm = np.linalg.norm(NS[:,:,[0]], ord=2, axis=1)
+            NS_norm_rep = np.tile(NS_norm, (1, GD))
+            NS[:,:,0] = NS[:,:,0] * (1.0 / NS_norm_rep[:,:])
         else:
             # general case
             NS = Orthogonal_Frame(vtx_coord,frame_type="normal")
@@ -930,6 +930,174 @@ def Normal_Space(vtx_coord):
 
 
 # put in Hyperplane_Closest_Point
+# implement differently depending on embedding dimension...
+
+# def Hyperplane_Normal_Diff_Vector(vtx_coord,pY):
+    # """Find the vector NV between a given point, Y, and the closest point, X_star,
+    # on a hyperplane that is spanned by the tangent space of a given simplex;
+    # i.e. NV = Y - X_star.
+    # Note: the closest point, X_star, may not lie inside the simplex.
+
+    # There are two ways to call this function:
+    # Inputs: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+            # vertices of a single simplex of topological dimension TD embedded in
+            # a Euclidean space of dimension GD.
+            # pY: a (GD,1) numpy array that gives the coordinates of the given
+            # point Y in the ambient space.
+    # Output: NV: a (GD,1) numpy array representing the components of the vector.
+    # OR
+    # Inputs: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+            # vertices of M simplices of topological dimension TD embedded in
+            # a Euclidean space of dimension GD.
+            # pY: a (M,GD,1) numpy array that gives the coordinates of M given
+            # points Y in the ambient space.
+    # Output: NV: a (M,GD,1) numpy array representing the components of the M vectors.
+    # """
+    # if type(vtx_coord) is not np.ndarray:
+        # print("Error: vtx_coord must be a numpy array!")
+        # return
+    # if type(pY) is not np.ndarray:
+        # print("Error: pY must be a numpy array!")
+        # return
+
+    # ndim   = vtx_coord.ndim
+    # dim_vc = vtx_coord.shape
+    # if ndim==1:
+        # print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
+        # return
+    # elif ndim==2:
+        # # computing for one simplex
+        # TD = dim_vc[0]-1
+        # GD = dim_vc[1]
+        # # compute the co-dimension, i.e. the dimension of the normal space
+        # ND = GD-TD
+
+        # if (ND==0):
+            # # easy case: X_star = Y
+            # NV = np.zeros((GD,1), dtype=RealType)
+        # elif (ND > TD):
+            # # normal space is too big, so use the tangent space
+        # else:
+            # # tangent space is too big, so use the normal space
+            # Eigen::Matrix<PointType, GD, (GD-TD)> NS;
+            # Simplex_Normal_Space<TD,GD>(VX, VI, NS);
+            
+            # // get one of the points of the simplex
+            # const PointType* XC_0 = VX->Get_Point_coord(VI[0]);
+            
+            # // compute the difference vector
+            # Eigen::Matrix<PointType, GD, 1> DIFF;
+            # for (SmallIndType kk=0; kk < GD; ++kk)
+            # {
+                # DIFF(kk) = XC_0[kk] - PY[kk];
+            # }
+            
+            # // project onto the normal space
+            # for (SmallIndType qq=0; qq < (GD-TD); ++qq)
+            # {
+                # PROJ += NS.col(qq).dot(DIFF) * NS.col(qq);
+            # }
+        # }
+
+
+
+
+
+
+
+
+        # Facet_Vol = np.zeros((TD+1,), dtype=RealType)
+        # if (TD==1):
+            # # counting measure
+            # Facet_Vol[0] = 1.0
+            # Facet_Vol[1] = 1.0
+        # else:
+            # # loop through each facet of the simplex
+            # All_VI = np.arange(0, (TD+1), dtype=SmallIndType)
+            # for ff in All_VI:
+                # # get the vertex indices of the current facet
+                # Facet_VI = np.delete(All_VI, ff)
+                # Facet_vc = vtx_coord[Facet_VI,:]
+                # # compute it's volume (or "surface area")
+                # Facet_Vol[ff] = Volume(Facet_vc)
+
+        # Perimeter = np.sum(Facet_Vol)
+    # else:
+        # # computing diameter for M simplices
+        # M  = dim_vc[0]
+        # TD = dim_vc[1]-1
+        # GD = dim_vc[2]
+
+        # Facet_Vol = np.zeros((M,TD+1), dtype=RealType)
+        # if (TD==1):
+            # # counting measure
+            # Facet_Vol[:,0] = 1.0
+            # Facet_Vol[:,1] = 1.0
+        # else:
+            # # loop through each facet of the simplex
+            # All_VI = np.arange(0, (TD+1), dtype=SmallIndType)
+            # for ff in All_VI:
+                # # get the vertex indices of the current facet
+                # Facet_VI = np.delete(All_VI, ff)
+                # Facet_vc = vtx_coord[:,Facet_VI,:]
+                # # compute it's volume (or "surface area")
+                # Facet_Vol[:,ff] = Volume(Facet_vc)
+
+        # Perimeter = np.sum(Facet_Vol, axis=1)
+
+    # return Perimeter, Facet_Vol
+
+
+
+
+
+
+
+
+
+# /***************************************************************************************/
+# /* find closest point, X_star, on a hyperplane to a given point, Y.
+   # inputs: global list of vertex coordinates, ordered list of vertices of the simplex
+           # that defines the hyperplane, the given point (cartesian) coordinates (as an array).
+   # output: Eigen::Vector of the projection of (X_0 - Y) onto normal space of simplex;
+           # X_0 is the 0th vertex of the simplex.
+   # Note: the closest point may not lie inside the simplex.  */
+# template <SmallIndType TD, SmallIndType GD>
+# inline void Hyperplane_Closest_Point(const BasePtCoord<GD>* const& VX, const VtxIndType* VI,
+                                     # const PointType* PY, Eigen::Matrix<PointType, GD, 1>& PROJ)
+# {
+    # PROJ.setZero(); // init
+    
+    # if (GD==TD)
+    # {
+        # // easy case: it's the same as PY
+        # // so PROJ is the zero vector
+    # }
+    # else
+    # {
+        # Eigen::Matrix<PointType, GD, (GD-TD)> NS;
+        # Simplex_Normal_Space<TD,GD>(VX, VI, NS);
+        
+        # // get one of the points of the simplex
+        # const PointType* XC_0 = VX->Get_Point_coord(VI[0]);
+        
+        # // compute the difference vector
+        # Eigen::Matrix<PointType, GD, 1> DIFF;
+        # for (SmallIndType kk=0; kk < GD; ++kk)
+        # {
+            # DIFF(kk) = XC_0[kk] - PY[kk];
+        # }
+        
+        # // project onto the normal space
+        # for (SmallIndType qq=0; qq < (GD-TD); ++qq)
+        # {
+            # PROJ += NS.col(qq).dot(DIFF) * NS.col(qq);
+        # }
+    # }
+# }
+
+
+
 
 
 
