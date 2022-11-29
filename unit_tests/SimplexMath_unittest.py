@@ -238,7 +238,9 @@ class TestSimplexMath(unittest.TestCase):
 
 
 
+
     def test_Frames(self):
+        # test full orthogonal frames
         vc0 = np.array([[0.0, 0.0, 1.1], [2.0, 3.0, 1.1], [0.0, 5.0, 1.1]])
         print(vc0)
         Ortho_0 = Orthogonal_Frame(vc0)
@@ -263,7 +265,30 @@ class TestSimplexMath(unittest.TestCase):
         normal_2_CHK = np.array([normal_0_CHK, normal_1_CHK])
         self.assertEqual(np.amax(np.abs(Ortho_2[:,:,[-1]] - normal_2_CHK)) < 1e-15, True, "Should be True.")
 
-
+        # test the tangent space
+        TS_0 = Tangent_Space(vc0)
+        print(TS_0)
+        # build tangent space projection
+        TS_0_proj = np.identity(3) - (np.outer(TS_0[:,0],TS_0[:,0]) + np.outer(TS_0[:,1],TS_0[:,1]))
+        TS_0_CHK = np.outer(normal_0_CHK[:,0],normal_0_CHK[:,0])
+        self.assertEqual(np.amax(np.abs(TS_0_proj - TS_0_CHK)) < 1e-15, True, "Should be True.")
+        
+        TS_1 = Tangent_Space(vc1)
+        print(TS_1)
+        # build tangent space projection
+        TS_1_proj = np.identity(3) - (np.outer(TS_1[:,0],TS_1[:,0]) + np.outer(TS_1[:,1],TS_1[:,1]))
+        TS_1_CHK = np.outer(normal_1_CHK[:,0],normal_1_CHK[:,0])
+        self.assertEqual(np.amax(np.abs(TS_1_proj - TS_1_CHK)) < 1e-15, True, "Should be True.")
+        
+        TS_2 = Tangent_Space(vc2)
+        print(TS_2)
+        # build tangent space projection
+        TS_2_proj = np.array([0*TS_0_proj, 0*TS_1_proj])
+        TS_2_proj[0,:,:] = np.identity(3) - (np.outer(TS_2[0,:,0],TS_2[0,:,0]) + np.outer(TS_2[0,:,1],TS_2[0,:,1]))
+        TS_2_proj[1,:,:] = np.identity(3) - (np.outer(TS_2[1,:,0],TS_2[1,:,0]) + np.outer(TS_2[1,:,1],TS_2[1,:,1]))
+        TS_2_CHK = np.array([TS_0_CHK, TS_1_CHK])
+        self.assertEqual(np.amax(np.abs(TS_2_proj - TS_2_CHK)) < 1e-15, True, "Should be True.")
+        
         print("In 'test_Frames'!")
 
 

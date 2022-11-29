@@ -703,13 +703,12 @@ def Orthogonal_Frame(vtx_coord,frame_type="all"):
                 if (Test_det < 0.0):
                     # flip the orientation of the normal vector...
                     Ortho[:,-1] = -Ortho[:,-1]
-                    # ... and the tangent space
+                    # ... and the tangent space (because we already flipped sign of determinant above)
                     Ortho[:,0] = -Ortho[:,0]
 
         if frame_type.lower() == "normal":
             # only give the last column vectors
             Ortho = Ortho[:,TD:GD]
-
     else:
         # computing M frames
         M  = dim_vc[0]
@@ -745,7 +744,7 @@ def Orthogonal_Frame(vtx_coord,frame_type="all"):
                 sign_det_rep = np.tile(sign_det, (1, GD))
                 # flip the orientation of the normal vector...
                 Ortho[:,:,-1] = sign_det_rep[:,:] * Ortho[:,:,-1]
-                # ... and the tangent space
+                # ... and the tangent space (because we already flipped sign of determinant above)
                 Ortho[:,:,0] = sign_det_rep[:,:] * Ortho[:,:,0]
 
         if frame_type.lower() == "normal":
@@ -754,11 +753,185 @@ def Orthogonal_Frame(vtx_coord,frame_type="all"):
 
     return Ortho
 
+def Tangent_Space(vtx_coord):
+    """Get orthonormal column vectors that describe the tangent space of a
+    set of given simplices.  The number of tangent vectors is TD, and they
+    live in \R^{GD}.
+
+    There are two ways to call this function:
+    Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+           vertices of a single simplex of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Outputs: TS: numpy matrix (GD,TD), whose column vectors are the (unit)
+             basis vectors of the tangent space.
+    OR
+    Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+           vertices of M simplices of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Outputs: TS: numpy array (M,GD,TD), which is a stack of M matrices, each of
+             whose column vectors are the (unit) basis vectors of the tangent space.
+    """
+    if type(vtx_coord) is not np.ndarray:
+        print("Error: vtx_coord must be a numpy array!")
+        return
+
+    ndim   = vtx_coord.ndim
+    dim_vc = vtx_coord.shape
+    if ndim==1:
+        print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
+        return
+    elif ndim==2:
+        # computing only 1 tangent space
+        TD = dim_vc[0]-1
+        GD = dim_vc[1]
+
+        if (TD==0):
+            # do nothing; tangent space is empty
+            TS = np.zeros((GD,0), dtype=RealType)
+        elif (TD==1):
+            # special case: 1-D space curve
+            A, b = Affine_Map(vtx_coord)
+            
+            # normalize the one column vector of A to get the tangent vector
+            TS = A * (1.0 / np.linalg.norm(A,2))
+        else:
+            # the general case
+            TS = Orthogonal_Frame(vtx_coord,frame_type="tangent")
+    else:
+        # computing M tangent spaces
+        M  = dim_vc[0]
+        TD = dim_vc[1]-1
+        GD = dim_vc[2]
+        
+        if (TD==0):
+            # do nothing; tangent space is empty
+            TS = np.zeros((M,GD,0), dtype=RealType)
+        elif (TD==1):
+            # special case: 1-D space curve
+            A, b = Affine_Map(vtx_coord)
+            
+            # normalize the one column vector of A to get the tangent vector
+            A_norm = np.linalg.norm(A[:,:,0], ord=2, axis=1)
+            A_norm_rep = np.tile(A_norm, (1, GD))
+            TS = A[:,:,[0]] * (1.0 / A_norm_rep[:,:])
+        else:
+            # the general case
+            TS = Orthogonal_Frame(vtx_coord,frame_type="tangent")
+
+    return TS
+
+def Normal_Space(vtx_coord):
+    """Get orthonormal column vectors that describe the space *orthogonal*
+    to the tangent space of a set of given simplices (i.e. the normal space).
+    The number of normal vectors is GD-TD, and they live in \R^{GD}.
+
+    There are two ways to call this function:
+    Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+           vertices of a single simplex of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Outputs: NS: numpy matrix (GD,GD-TD), whose column vectors are the (unit)
+             basis vectors of the normal space.
+    OR
+    Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+           vertices of M simplices of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Outputs: NS: numpy array (M,GD,GD-TD), which is a stack of M matrices, each of
+             whose column vectors are the (unit) basis vectors of the normal space.
+    """
+    if type(vtx_coord) is not np.ndarray:
+        print("Error: vtx_coord must be a numpy array!")
+        return
+
+    ndim   = vtx_coord.ndim
+    dim_vc = vtx_coord.shape
+    if ndim==1:
+        print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
+        return
+    elif ndim==2:
+        # computing only 1 normal space
+        TD = dim_vc[0]-1
+        GD = dim_vc[1]
+
+        if (TD==0):
+            # its all of \R^{GD}
+            NS = np.identity(GD, dtype=RealType)
+        elif (TD==GD):
+            # do nothing; normal space is empty
+            NS = np.zeros((GD,0), dtype=RealType)
+        elif ( (TD==1) and (GD==2) ):
+            # special case: curve in \R^2
+            A, b = Affine_Map(vtx_coord)
+            
+            # rotate the column vector from A
+            V = np.array([ [-A[1,0]], [A[0,0]] ], dtype=RealType)
+            # normalize to get the normal vector
+            NS = V * (1.0 / np.linalg.norm(V,2))
+        elif ( (TD==2) and (GD==3) ):
+            # special case: surface in \R^3
+            A, b = Affine_Map(vtx_coord)
+            
+            # take cross product of the two column vectors of A
+            V = np.zeros((GD,1), dtype=RealType)
+            # compute cross-product
+            V[0,0] =   A[1,0] * A[2,1] - A[2,0] * A[1,1]
+            V[1,0] = -(A[0,0] * A[2,1] - A[2,0] * A[0,1])
+            V[2,0] =   A[0,0] * A[1,1] - A[1,0] * A[0,1]
+            
+            # normalize to get the normal vector
+            NS = V * (1.0 / np.linalg.norm(V,2))
+        else:
+            # general case
+            NS = Orthogonal_Frame(vtx_coord,frame_type="normal")
+    else:
+        # computing M normal spaces
+        M  = dim_vc[0]
+        TD = dim_vc[1]-1
+        GD = dim_vc[2]
+        
+        if (TD==0):
+            # its all of \R^{GD}
+            I0 = np.identity(GD, dtype=RealType)
+            NS = np.tile(I0, (M,1,1))
+        elif (TD==GD):
+            # do nothing; normal space is empty
+            NS = np.zeros((M,GD,0), dtype=RealType)
+        elif ( (TD==1) and (GD==2) ):
+            # special case: curve in \R^2
+            A, b = Affine_Map(vtx_coord)
+            
+            # rotate the column vector from A
+            V = np.zeros((M,GD,1), dtype=RealType)
+            V[:,0,0] = -A[:,1,0]
+            V[:,1,0] =  A[:,0,0]
+            # normalize to get the normal vector
+            V_norm = np.linalg.norm(V[:,:,0], ord=2, axis=1)
+            V_norm_rep = np.tile(V_norm, (1, GD))
+            NS = V[:,:,[0]] * (1.0 / V_norm_rep[:,:])
+        elif ( (TD==2) and (GD==3) ):
+            # special case: surface in \R^3
+            A, b = Affine_Map(vtx_coord)
+            
+            # take cross product of the two column vectors of A
+            V = np.zeros((M,GD,1), dtype=RealType)
+            # compute cross-product
+            V[:,0,0] =   A[:,1,0] * A[:,2,1] - A[:,2,0] * A[:,1,1]
+            V[:,1,0] = -(A[:,0,0] * A[:,2,1] - A[:,2,0] * A[:,0,1])
+            V[:,2,0] =   A[:,0,0] * A[:,1,1] - A[:,1,0] * A[:,0,1]
+            # normalize to get the normal vector
+            V_norm = np.linalg.norm(V[:,:,0], ord=2, axis=1)
+            V_norm_rep = np.tile(V_norm, (1, GD))
+            NS = V[:,:,[0]] * (1.0 / V_norm_rep[:,:])
+        else:
+            # general case
+            NS = Orthogonal_Frame(vtx_coord,frame_type="normal")
+
+    return NS
 
 
 
+# put in Hyperplane_Closest_Point
 
-# put in ortho frame, normal space, tangent space, etc...
+
 
 
 
