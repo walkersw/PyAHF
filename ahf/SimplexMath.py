@@ -927,182 +927,143 @@ def Normal_Space(vtx_coord):
 
     return NS
 
+def Hyperplane_Closest_Point(vtx_coord,pY):
+    """Find the closest point, X_star, on a hyperplane to a given point, Y.
+    The hyperplane is spanned by the tangent space of a given simplex.
+    This also returns the difference vector:  NV = Y - X_star.
+    Note: the closest point, X_star, may not lie inside the simplex.
 
+    There are two ways to call this function:
+    Inputs: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+            vertices of a single simplex of topological dimension TD embedded in
+            a Euclidean space of dimension GD;
+            pY: a (GD,1) numpy array that gives the coordinates of the given
+            point Y in the ambient space.
+    Outputs: X_star: a (GD,1) numpy array representing the coordinates of the
+             closest point;
+             NV: a (GD,1) numpy array representing the components of NV.
+    OR
+    Inputs: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+            vertices of M simplices of topological dimension TD embedded in
+            a Euclidean space of dimension GD;
+            pY: a (M,GD,1) numpy array that gives the coordinates of M given
+            points Y in the ambient space.
+    Outputs: X_star: a (M,GD,1) numpy array representing the coordinates of the
+             M closest points;
+             NV: a (M,GD,1) numpy array representing the components of the M
+             difference vectors, NV.
+    """
+    if type(vtx_coord) is not np.ndarray:
+        print("Error: vtx_coord must be a numpy array!")
+        return
+    if type(pY) is not np.ndarray:
+        print("Error: pY must be a numpy array!")
+        return
 
-# put in Hyperplane_Closest_Point
-# implement differently depending on embedding dimension...
+    ndim   = vtx_coord.ndim
+    dim_vc = vtx_coord.shape
+    if ndim==1:
+        print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
+        return
+    elif ndim==2:
+        # computing for one simplex
+        TD = dim_vc[0]-1
+        GD = dim_vc[1]
+        # compute the co-dimension, i.e. the dimension of the normal space
+        ND = GD-TD
 
-# def Hyperplane_Normal_Diff_Vector(vtx_coord,pY):
-    # """Find the vector NV between a given point, Y, and the closest point, X_star,
-    # on a hyperplane that is spanned by the tangent space of a given simplex;
-    # i.e. NV = Y - X_star.
-    # Note: the closest point, X_star, may not lie inside the simplex.
-
-    # There are two ways to call this function:
-    # Inputs: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
-            # vertices of a single simplex of topological dimension TD embedded in
-            # a Euclidean space of dimension GD.
-            # pY: a (GD,1) numpy array that gives the coordinates of the given
-            # point Y in the ambient space.
-    # Output: NV: a (GD,1) numpy array representing the components of the vector.
-    # OR
-    # Inputs: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
-            # vertices of M simplices of topological dimension TD embedded in
-            # a Euclidean space of dimension GD.
-            # pY: a (M,GD,1) numpy array that gives the coordinates of M given
-            # points Y in the ambient space.
-    # Output: NV: a (M,GD,1) numpy array representing the components of the M vectors.
-    # """
-    # if type(vtx_coord) is not np.ndarray:
-        # print("Error: vtx_coord must be a numpy array!")
-        # return
-    # if type(pY) is not np.ndarray:
-        # print("Error: pY must be a numpy array!")
-        # return
-
-    # ndim   = vtx_coord.ndim
-    # dim_vc = vtx_coord.shape
-    # if ndim==1:
-        # print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
-        # return
-    # elif ndim==2:
-        # # computing for one simplex
-        # TD = dim_vc[0]-1
-        # GD = dim_vc[1]
-        # # compute the co-dimension, i.e. the dimension of the normal space
-        # ND = GD-TD
-
-        # if (ND==0):
-            # # easy case: X_star = Y
-            # NV = np.zeros((GD,1), dtype=RealType)
-        # elif (ND > TD):
-            # # normal space is too big, so use the tangent space
-        # else:
-            # # tangent space is too big, so use the normal space
-            # Eigen::Matrix<PointType, GD, (GD-TD)> NS;
-            # Simplex_Normal_Space<TD,GD>(VX, VI, NS);
+        if (ND==0):
+            # easy case: X_star = Y
+            X_star = np.zeros((GD,1), dtype=CoordType)
+            X_star[:,0] = pY[:,0]
+            NV     = np.zeros((GD,1), dtype=RealType)
+        elif (ND > TD):
+            # normal space is too big, so use the tangent space
+            TS = Tangent_Space(vtx_coord)
             
-            # // get one of the points of the simplex
-            # const PointType* XC_0 = VX->Get_Point_coord(VI[0]);
+            # compute the difference vector between Y and
+            #    one of the points of the simplex
+            DIFF = np.zeros((GD,1), dtype=RealType)
+            DIFF[:,0] = pY[:,0] - vtx_coord[0,:]
             
-            # // compute the difference vector
-            # Eigen::Matrix<PointType, GD, 1> DIFF;
-            # for (SmallIndType kk=0; kk < GD; ++kk)
-            # {
-                # DIFF(kk) = XC_0[kk] - PY[kk];
-            # }
+            # project onto the tangent space
+            TV = np.zeros((GD,1), dtype=RealType)
+            for jj in range(TD):
+                TV[:,0] += np.dot(DIFF[:,0],TS[:,jj]) * TS[:,jj]
+
+            # now compute the normal vector
+            X_star = np.zeros((GD,1), dtype=CoordType)
+            X_star[:,0] = vtx_coord[0,:] + TV[:,0]
+            NV = pY - X_star
+        else:
+            # tangent space is too big, so use the normal space
+            NS = Normal_Space(vtx_coord)
+
+            # compute the difference vector between Y and
+            #    one of the points of the simplex
+            DIFF = np.zeros((GD,1), dtype=RealType)
+            DIFF[:,0] = pY[:,0] - vtx_coord[0,:]
+
+            # project onto the normal space
+            NV = np.zeros((GD,1), dtype=RealType)
+            for jj in range(ND):
+                NV[:,0] += np.dot(DIFF[:,0],NS[:,jj]) * NS[:,jj]
+            # compute X_star
+            X_star = pY - NV
+    else:
+        # computing for M simplices
+        M  = dim_vc[0]
+        TD = dim_vc[1]-1
+        GD = dim_vc[2]
+        # compute the co-dimension, i.e. the dimension of the normal space
+        ND = GD-TD
+
+        if (ND==0):
+            # easy case: X_star = Y
+            X_star = np.zeros((M,GD,1), dtype=CoordType)
+            X_star[:,:,0] = pY[:,:,0]
+            NV = np.zeros((M,GD,1), dtype=RealType)
+        elif (ND > TD):
+            # normal space is too big, so use the tangent space
+            TS = Tangent_Space(vtx_coord)
             
-            # // project onto the normal space
-            # for (SmallIndType qq=0; qq < (GD-TD); ++qq)
-            # {
-                # PROJ += NS.col(qq).dot(DIFF) * NS.col(qq);
-            # }
-        # }
+            # compute the difference vector between Y and
+            #    one of the points of the simplex
+            DIFF = np.zeros((M,GD,1), dtype=RealType)
+            DIFF[:,:,0] = pY[:,:,0] - vtx_coord[:,0,:]
+            
+            # project onto the tangent space
+            TV = np.zeros((M,GD,1), dtype=RealType)
+            for jj in range(TD):
+                dot_prod = np.sum(TS[:,:,jj] * DIFF[:,:,0], axis=1)
+                dot_prod = dot_prod.reshape((M,1))
+                dot_prod_rep = np.tile(dot_prod, (1, GD))
+                TV[:,:,0] += dot_prod_rep[:,:] * TS[:,:,jj]
 
+            # now compute the normal vector
+            X_star = np.zeros((M,GD,1), dtype=CoordType)
+            X_star[:,:,0] = vtx_coord[:,0,:] + TV[:,:,0]
+            NV = pY - X_star
+        else:
+            # tangent space is too big, so use the normal space
+            NS = Normal_Space(vtx_coord)
 
+            # compute the difference vector between Y and
+            #    one of the points of the simplex
+            DIFF = np.zeros((M,GD,1), dtype=RealType)
+            DIFF[:,:,0] = pY[:,:,0] - vtx_coord[:,0,:]
 
+            # project onto the normal space
+            NV = np.zeros((M,GD,1), dtype=RealType)
+            for jj in range(ND):
+                dot_prod = np.sum(NS[:,:,jj] * DIFF[:,:,0], axis=1)
+                dot_prod = dot_prod.reshape((M,1))
+                dot_prod_rep = np.tile(dot_prod, (1, GD))
+                NV[:,:,0] += dot_prod_rep[:,:] * NS[:,:,jj]
+            # compute X_star
+            X_star = pY - NV
 
-
-
-
-
-        # Facet_Vol = np.zeros((TD+1,), dtype=RealType)
-        # if (TD==1):
-            # # counting measure
-            # Facet_Vol[0] = 1.0
-            # Facet_Vol[1] = 1.0
-        # else:
-            # # loop through each facet of the simplex
-            # All_VI = np.arange(0, (TD+1), dtype=SmallIndType)
-            # for ff in All_VI:
-                # # get the vertex indices of the current facet
-                # Facet_VI = np.delete(All_VI, ff)
-                # Facet_vc = vtx_coord[Facet_VI,:]
-                # # compute it's volume (or "surface area")
-                # Facet_Vol[ff] = Volume(Facet_vc)
-
-        # Perimeter = np.sum(Facet_Vol)
-    # else:
-        # # computing diameter for M simplices
-        # M  = dim_vc[0]
-        # TD = dim_vc[1]-1
-        # GD = dim_vc[2]
-
-        # Facet_Vol = np.zeros((M,TD+1), dtype=RealType)
-        # if (TD==1):
-            # # counting measure
-            # Facet_Vol[:,0] = 1.0
-            # Facet_Vol[:,1] = 1.0
-        # else:
-            # # loop through each facet of the simplex
-            # All_VI = np.arange(0, (TD+1), dtype=SmallIndType)
-            # for ff in All_VI:
-                # # get the vertex indices of the current facet
-                # Facet_VI = np.delete(All_VI, ff)
-                # Facet_vc = vtx_coord[:,Facet_VI,:]
-                # # compute it's volume (or "surface area")
-                # Facet_Vol[:,ff] = Volume(Facet_vc)
-
-        # Perimeter = np.sum(Facet_Vol, axis=1)
-
-    # return Perimeter, Facet_Vol
-
-
-
-
-
-
-
-
-
-# /***************************************************************************************/
-# /* find closest point, X_star, on a hyperplane to a given point, Y.
-   # inputs: global list of vertex coordinates, ordered list of vertices of the simplex
-           # that defines the hyperplane, the given point (cartesian) coordinates (as an array).
-   # output: Eigen::Vector of the projection of (X_0 - Y) onto normal space of simplex;
-           # X_0 is the 0th vertex of the simplex.
-   # Note: the closest point may not lie inside the simplex.  */
-# template <SmallIndType TD, SmallIndType GD>
-# inline void Hyperplane_Closest_Point(const BasePtCoord<GD>* const& VX, const VtxIndType* VI,
-                                     # const PointType* PY, Eigen::Matrix<PointType, GD, 1>& PROJ)
-# {
-    # PROJ.setZero(); // init
-    
-    # if (GD==TD)
-    # {
-        # // easy case: it's the same as PY
-        # // so PROJ is the zero vector
-    # }
-    # else
-    # {
-        # Eigen::Matrix<PointType, GD, (GD-TD)> NS;
-        # Simplex_Normal_Space<TD,GD>(VX, VI, NS);
-        
-        # // get one of the points of the simplex
-        # const PointType* XC_0 = VX->Get_Point_coord(VI[0]);
-        
-        # // compute the difference vector
-        # Eigen::Matrix<PointType, GD, 1> DIFF;
-        # for (SmallIndType kk=0; kk < GD; ++kk)
-        # {
-            # DIFF(kk) = XC_0[kk] - PY[kk];
-        # }
-        
-        # // project onto the normal space
-        # for (SmallIndType qq=0; qq < (GD-TD); ++qq)
-        # {
-            # PROJ += NS.col(qq).dot(DIFF) * NS.col(qq);
-        # }
-    # }
-# }
-
-
-
-
-
-
-
-
+    return X_star, NV
 
 def Barycenter(vtx_coord):
     """Compute the barycenter of a simplex.
@@ -1147,5 +1108,125 @@ def Barycenter(vtx_coord):
         
     return cart_coord
 
+def Circumcenter(vtx_coord):
+    """Compute the circumcenter and circumradius of a simplex.
+    see:  https://westy31.home.xs4all.nl/Circumsphere/ncircumsphere.htm#Coxeter
+    for the method.
+    There are two ways to call this function:
+    Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+           vertices of a single simplex of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Outputs: CB: (TD+1,) numpy array that gives the barycentric coordinates of the
+             circumcenter of the simplex;
+             CR: a single number that gives the circumradius.
+    OR
+    Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+           vertices of M simplices of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Outputs: CB: (M,TD+1) numpy array that gives the barycentric coordinates of the
+             circumcenters of the given M simplices;
+             CR: (M,) numpy array that gives the corresponding circumradii.
+    """
+    if type(vtx_coord) is not np.ndarray:
+        print("Error: vtx_coord must be a numpy array!")
+        return
+
+    ndim   = vtx_coord.ndim
+    dim_vc = vtx_coord.shape
+    if ndim==1:
+        print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
+        return
+    elif ndim==2:
+        # computing for only 1 simplex
+        TD = dim_vc[0]-1
+        GD = dim_vc[1]
+
+        # allocate (Cayley-Menger) matrix
+        MM = np.zeros((TD+2,TD+2), dtype=RealType)
+
+        # set the first row (first entry is zero)
+        MM[0,1:] = 1.0
+
+        # now set the rest, based on length of simplex edges (squared)
+        for rr in range(TD+1):
+            # get the (rr)-th vertex
+            P_rr = vtx_coord[rr,:]
+            for cc in range(rr+1,TD+1):
+                # get the (cc)-th vertex
+                P_cc = vtx_coord[cc,:]
+                # take the difference
+                DD = P_rr - P_cc
+                # length squared
+                MM[rr+1,cc+1] = np.sum(DD**2)
+
+        # now set the lower triangular part (it is a symmetric matrix)
+        for rr in range(TD+2):
+            for cc in range(rr+1,TD+2):
+                MM[cc,rr] = MM[rr,cc]
+
+        # compute the inverse
+        MM_inv = np.linalg.inv(MM)
+        # error check
+        if (MM_inv[0,0] > 0.0):
+            print("Error: Fatal error in 'Simplex_Circumcenter'!")
+            print("       The circumradius was invalid!")
+            return
+
+        # output barycentric coordinates
+        CB = np.zeros((TD+1,), dtype=CoordType)
+        CB[0:] = MM_inv[0,1:]
+        # output circumradius
+        CR = np.sqrt(-MM_inv[0,0] / 2.0)
+
+    else:
+        # computing for M simplices
+        M  = dim_vc[0]
+        TD = dim_vc[1]-1
+        GD = dim_vc[2]
+        
+        # allocate M (Cayley-Menger) matrices
+        MM = np.zeros((M,TD+2,TD+2), dtype=RealType)
+
+        # set the first row (first entry is zero)
+        MM[:,0,1:] = 1.0
+
+        # now set the rest, based on length of simplex edges (squared)
+        for rr in range(TD+1):
+            # get the (rr)-th vertex
+            P_rr = vtx_coord[:,rr,:]
+            for cc in range(rr+1,TD+1):
+                # get the (cc)-th vertex
+                P_cc = vtx_coord[:,cc,:]
+                # take the difference
+                DD = P_rr - P_cc
+                # length squared
+                len_sq = np.sum(DD**2, axis=1)
+                MM[:,rr+1,cc+1] = len_sq[:]
+
+        # now set the lower triangular part (it is a symmetric matrix)
+        for rr in range(TD+2):
+            for cc in range(rr+1,TD+2):
+                MM[:,cc,rr] = MM[:,rr,cc]
+
+        # compute the inverse
+        MM_inv = np.linalg.inv(MM)
+        # error check
+        if (np.amax(MM_inv[:,0,0]) > 0.0):
+            print("Error: Fatal error in 'Simplex_Circumcenter'!")
+            print("       The circumradius was invalid!")
+            return
+
+        # output barycentric coordinates
+        CB = np.zeros((M,TD+1), dtype=CoordType)
+        CB[:,0:] = MM_inv[:,0,1:]
+        # output circumradius
+        CR = np.zeros((M,), dtype=CoordType)
+        CR[:] = np.sqrt(-MM_inv[:,0,0] / 2.0)
+        
+    return CB, CR
+
+
+
+# next center...
 
 

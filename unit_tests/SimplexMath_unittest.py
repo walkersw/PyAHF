@@ -214,31 +214,6 @@ class TestSimplexMath(unittest.TestCase):
         self.assertEqual(diff_Facet_V2 < 1e-15, True, "Should be True.")
         self.assertEqual(np.amax(np.abs(P2 - np.sum(Facet_V2_CHK, axis=1))) < 1e-15, True, "Should be True.")
 
-    def test_Centers(self):
-        vc0 = np.array([[0.0, 0.0, 1.1], [2.0, 3.0, 1.1], [0.0, 5.0, 1.1]])
-        print(vc0)
-        bc0 = Barycenter(vc0)
-        #print(bc0)
-        bc0_CHK = np.array([(2.0/3), (8.0/3), 1.1])
-        self.assertEqual(np.amax(np.abs(bc0 - bc0_CHK)) < 1e-15, True, "Should be True.")
-
-        vc1 = np.array([[0.2, 0.3, -0.4], [1.2, 2.4, 0.5], [3.1, 0.7, 4.5]])
-        print(vc1)
-        bc1 = Barycenter(vc1)
-        #print(bc1)
-        bc1_CHK = np.array([(4.5/3), (3.4/3), (4.6/3)])
-        self.assertEqual(np.amax(np.abs(bc1 - bc1_CHK)) < 1e-15, True, "Should be True.")
-
-        vc2 = np.array([vc0, vc1])
-        print(vc2)
-        bc2 = Barycenter(vc2)
-        print(bc2)
-        bc2_CHK = np.array([bc0_CHK, bc1_CHK])
-        self.assertEqual(np.amax(np.abs(bc2 - bc2_CHK)) < 1e-15, True, "Should be True.")
-
-
-
-
     def test_Frames(self):
         # test full orthogonal frames
         vc0 = np.array([[0.0, 0.0, 1.1], [2.0, 3.0, 1.1], [0.0, 5.0, 1.1]])
@@ -310,38 +285,100 @@ class TestSimplexMath(unittest.TestCase):
         NS_2_proj_alt[1,:,:] = np.outer(NS_2[1,:,0],NS_2[1,:,0])
         self.assertEqual(np.amax(np.abs(NS_2_proj_alt - NS_2_CHK)) < 1e-15, True, "Should be True.")
 
+    def test_Hyperplane(self):
+        # test hyperplane/closest point methods
+        vc0 = np.array([[0.0, 0.0, 1.1], [2.0, 3.0, 1.1], [0.0, 5.0, 1.1]])
+        pY0 = np.array([[-8.2], [5.6], [-2.3]])
+        print(vc0)
+        print(pY0)
+        X_star_0, Diff_Vec_0 = Hyperplane_Closest_Point(vc0,pY0)
+        print(X_star_0)
+        print(Diff_Vec_0)
+        X_star_0_CHK = np.array([[-8.2], [5.6], [1.1]])
+        DV_0_CHK = pY0 - X_star_0_CHK
+        self.assertEqual(np.amax(np.abs(X_star_0 - X_star_0_CHK)) < 1e-15, True, "Should be True.")
+        self.assertEqual(np.amax(np.abs(Diff_Vec_0 - DV_0_CHK)) < 1e-15, True, "Should be True.")
+
+        vc1 = np.array([[0.2, 0.3, -0.4], [1.2, 2.4, 0.5], [3.1, 0.7, 4.5]])
+        pY1 = np.array([[-3.7], [4.9], [5.1]])
+        print(vc1)
+        print(pY1)
+        X_star_1, Diff_Vec_1 = Hyperplane_Closest_Point(vc1,pY1)
+        print(X_star_1)
+        print(Diff_Vec_1)
+        A1, b1 = Affine_Map(vc1)
+        normal_1_CHK = np.cross(A1[:,0], A1[:,1])
+        normal_1_CHK = normal_1_CHK.reshape((3,1))
+        normal_1_CHK = normal_1_CHK * (1.0/np.linalg.norm(normal_1_CHK,2))
+        # we can compute the difference w.r.t. any of the simplex vertices
+        DV_1_CHK = np.dot((pY1[:,0] - vc1[1,:]),normal_1_CHK) * normal_1_CHK
+        X_star_1_CHK = pY1 - DV_1_CHK
+        #print(DV_1_CHK)
+        self.assertEqual(np.amax(np.abs(X_star_1 - X_star_1_CHK)) < 1e-15, True, "Should be True.")
+        self.assertEqual(np.amax(np.abs(Diff_Vec_1 - DV_1_CHK)) < 1e-15, True, "Should be True.")
+
+        vc2 = np.array([vc0, vc1])
+        pY2 = np.array([pY0, pY1])
+        print(vc2)
+        print(pY2)
+        X_star_2, Diff_Vec_2 = Hyperplane_Closest_Point(vc2,pY2)
+        print(X_star_2)
+        print(Diff_Vec_2)
+        X_star_2_CHK = np.array([X_star_0_CHK, X_star_1_CHK])
+        DV_2_CHK = np.array([DV_0_CHK, DV_1_CHK])
+        #print(DV_2_CHK)
+        self.assertEqual(np.amax(np.abs(X_star_2 - X_star_2_CHK)) < 1e-15, True, "Should be True.")
+        self.assertEqual(np.amax(np.abs(Diff_Vec_2 - DV_2_CHK)) < 1e-15, True, "Should be True.")
+
+    def test_Centers(self):
+        vc0 = np.array([[0.0, 0.0, 1.1], [2.0, 3.0, 1.1], [0.0, 5.0, 1.1]])
+        print(vc0)
+        bc0 = Barycenter(vc0)
+        #print(bc0)
+        bc0_CHK = np.array([(2.0/3), (8.0/3), 1.1])
+        self.assertEqual(np.amax(np.abs(bc0 - bc0_CHK)) < 1e-15, True, "Should be True.")
+
+        vc1 = np.array([[0.2, 0.3, -0.4], [1.2, 2.4, 0.5], [3.1, 0.7, 4.5]])
+        print(vc1)
+        bc1 = Barycenter(vc1)
+        #print(bc1)
+        bc1_CHK = np.array([(4.5/3), (3.4/3), (4.6/3)])
+        self.assertEqual(np.amax(np.abs(bc1 - bc1_CHK)) < 1e-15, True, "Should be True.")
+
+        vc2 = np.array([vc0, vc1])
+        print(vc2)
+        bc2 = Barycenter(vc2)
+        #print(bc2)
+        bc2_CHK = np.array([bc0_CHK, bc1_CHK])
+        self.assertEqual(np.amax(np.abs(bc2 - bc2_CHK)) < 1e-15, True, "Should be True.")
+
+        CB0, CR0 = Circumcenter(vc0)
+        #print(CB0)
+        #print(CR0)
+        CB0_CHK = np.array([0.6, -0.25, 0.65])
+        CR0_CHK = 2.5495097567963922
+        self.assertEqual(np.amax(np.abs(CB0 - CB0_CHK)) < 1e-15, True, "Should be True.")
+        self.assertEqual(np.amax(np.abs(CR0 - CR0_CHK)) < 1e-15, True, "Should be True.")
+
+        CB1, CR1 = Circumcenter(vc1)
+        #print(CB1)
+        #print(CR1)
+        CB1_CHK = np.array([0.6730587828527932, -0.2307922695597216, 0.5577334867069286])
+        CR1_CHK = 2.8927002160827406
+        self.assertEqual(np.amax(np.abs(CB1 - CB1_CHK)) < 1e-15, True, "Should be True.")
+        self.assertEqual(np.amax(np.abs(CR1 - CR1_CHK)) < 1e-15, True, "Should be True.")
+
+        CB2, CR2 = Circumcenter(vc2)
+        #print(CB2)
+        #print(CR2)
+        CB2_CHK = np.array([CB0_CHK, CB1_CHK])
+        CR2_CHK = np.array([CR0_CHK, CR1_CHK])
+        self.assertEqual(np.amax(np.abs(CB2 - CB2_CHK)) < 1e-15, True, "Should be True.")
+        self.assertEqual(np.amax(np.abs(CR2 - CR2_CHK)) < 1e-15, True, "Should be True.")
 
 
-    # def test_Hyperplane(self):
-        # # test hyperplane/closest point methods
-        # vc0 = np.array([[0.0, 0.0, 1.1], [2.0, 3.0, 1.1], [0.0, 5.0, 1.1]])
-        # print(vc0)
-        # Ortho_0 = Orthogonal_Frame(vc0)
-        # print(Ortho_0)
-        # normal_0_CHK = np.array([[0.0], [0.0], [1.0]])
-        # self.assertEqual(np.amax(np.abs(Ortho_0[:,[-1]] - normal_0_CHK)) < 1e-15, True, "Should be True.")
 
-        # vc1 = np.array([[0.2, 0.3, -0.4], [1.2, 2.4, 0.5], [3.1, 0.7, 4.5]])
-        # print(vc1)
-        # Ortho_1 = Orthogonal_Frame(vc1)
-        # print(Ortho_1)
-        # A1, b1 = Affine_Map(vc1)
-        # normal_1_CHK = np.cross(A1[:,0], A1[:,1])
-        # normal_1_CHK = normal_1_CHK.reshape((3,1))
-        # normal_1_CHK = normal_1_CHK * (1.0/np.linalg.norm(normal_1_CHK,2))
-        # self.assertEqual(np.amax(np.abs(Ortho_1[:,[-1]] - normal_1_CHK)) < 1e-15, True, "Should be True.")
-
-        # vc2 = np.array([vc0, vc1])
-        # print(vc2)
-        # Ortho_2 = Orthogonal_Frame(vc2)
-        # print(Ortho_2)
-        # normal_2_CHK = np.array([normal_0_CHK, normal_1_CHK])
-        # self.assertEqual(np.amax(np.abs(Ortho_2[:,:,[-1]] - normal_2_CHK)) < 1e-15, True, "Should be True.")
-
-
-        # print("In 'test_Hyperplane'!")
-
-
+        print("In 'test_Centers'!")
 
 
 if __name__ == '__main__':
