@@ -648,22 +648,31 @@ def Orthogonal_Frame(vtx_coord,frame_type="all"):
     gives the vectors in the tangent space; the keyword "normal" only gives the
     vectors in the normal space.
 
+    Remark: when "all" is used, the (GD,GD) orthogonal matrix, Ortho, has
+    positive determinant.  In addition, if (GD==TD+1), then the last column of
+    Ortho is a unit normal vector of the simplex with the same orientation
+    as that of the simplex.  Note:  if the set of simplices represents a closed
+    polygonal curve (TD==1,GD==2), that is *positively* oriented, the normal
+    vector computed here is the "inward" pointing normal (not the outward!).
+
     There are two ways to call this function:
     Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
            vertices of a single simplex of topological dimension TD embedded in
            a Euclidean space of dimension GD;
            frame_type: a string = "all", "tangent", or "normal".  If omitted,
-           then default it "all".  "all" gives a complete frame of \R^{GD},
+           then default is "all".  "all" gives a complete frame of \R^{GD},
            "tangent" gives the tangent space, and "normal" gives the normal space.
-    Outputs: Ortho: numpy matrix (GD,GD), whose column vectors are the (unit)
-             basis vectors of the frame.
+    Output: Ortho: numpy matrix (GD,qD), whose column vectors are the (unit)
+            basis vectors of the frame.
+            Note: "all" ==> qD==GD; "tangent" ==> qD==TD; "normal" ==> qD==GD-TD.
     OR
     Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
            vertices of M simplices of topological dimension TD embedded in
            a Euclidean space of dimension GD;
            frame_type: see above.
-    Outputs: Ortho: numpy array (M,GD,GD), which is a stack of M matrices, each
-             of whose column vectors are the (unit) basis vectors of the frame.
+    Output: Ortho: numpy array (M,GD,qD), which is a stack of M matrices, each
+            of whose column vectors are the (unit) basis vectors of the frame.
+            Note: see above, for qD.
     """
     if type(vtx_coord) is not np.ndarray:
         print("Error: vtx_coord must be a numpy array!")
@@ -811,9 +820,10 @@ def Tangent_Space(vtx_coord):
             A, b = Affine_Map(vtx_coord)
             
             # normalize the one column vector of A to get the tangent vector
-            A_norm = np.linalg.norm(A[:,:,0], ord=2, axis=1)
+            A_norm = np.linalg.norm(A, ord=2, axis=1)
             A_norm_rep = np.tile(A_norm, (1, GD))
-            TS = A[:,:,[0]] * (1.0 / A_norm_rep[:,:])
+            A_norm_rep = A_norm_rep.reshape((M,GD,1))
+            TS = A * (1.0 / A_norm_rep)
         else:
             # the general case
             TS = Orthogonal_Frame(vtx_coord,frame_type="tangent")
@@ -824,6 +834,11 @@ def Normal_Space(vtx_coord):
     """Get orthonormal column vectors that describe the space *orthogonal*
     to the tangent space of a set of given simplices (i.e. the normal space).
     The number of normal vectors is GD-TD, and they live in \R^{GD}.
+
+    Remark: when (TD==1,GD==2), the unit normal is simply a +90 degree rotation
+    of the (oriented) tangent vector taken vtx#1 - vtx#0.  When (TD==2,GD==3), the
+    unit normal is the oriented normal of the simplex, which is obtained by the
+    cross-product of the edges of the simplex: (vtx#1 - vtx#0) x (vtx#2 - vtx#0).
 
     There are two ways to call this function:
     Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
@@ -862,7 +877,7 @@ def Normal_Space(vtx_coord):
             # special case: curve in \R^2
             A, b = Affine_Map(vtx_coord)
             
-            # rotate the column vector from A
+            # rotate (by +90 deg) the column vector from A
             V = np.array([ [-A[1,0]], [A[0,0]] ], dtype=RealType)
             # normalize to get the normal vector
             NS = V * (1.0 / np.linalg.norm(V,2))
@@ -899,7 +914,7 @@ def Normal_Space(vtx_coord):
             # special case: curve in \R^2
             A, b = Affine_Map(vtx_coord)
             
-            # rotate the column vector from A
+            # rotate (by +90 deg) the column vector from A
             NS = np.zeros((M,GD,1), dtype=RealType)
             NS[:,0,0] = -A[:,1,0]
             NS[:,1,0] =  A[:,0,0]
@@ -980,7 +995,7 @@ def Hyperplane_Closest_Point(vtx_coord,pY):
         elif (ND > TD):
             # normal space is too big, so use the tangent space
             TS = Tangent_Space(vtx_coord)
-            
+
             # compute the difference vector between Y and
             #    one of the points of the simplex
             DIFF = np.zeros((GD,1), dtype=RealType)
@@ -991,7 +1006,7 @@ def Hyperplane_Closest_Point(vtx_coord,pY):
             for jj in range(TD):
                 TV[:,0] += np.dot(DIFF[:,0],TS[:,jj]) * TS[:,jj]
 
-            # now compute the normal vector
+            # now compute X_star and the normal vector
             X_star = np.zeros((GD,1), dtype=CoordType)
             X_star[:,0] = vtx_coord[0,:] + TV[:,0]
             NV = pY - X_star
@@ -1026,7 +1041,7 @@ def Hyperplane_Closest_Point(vtx_coord,pY):
         elif (ND > TD):
             # normal space is too big, so use the tangent space
             TS = Tangent_Space(vtx_coord)
-            
+
             # compute the difference vector between Y and
             #    one of the points of the simplex
             DIFF = np.zeros((M,GD,1), dtype=RealType)
@@ -1040,7 +1055,7 @@ def Hyperplane_Closest_Point(vtx_coord,pY):
                 dot_prod_rep = np.tile(dot_prod, (1, GD))
                 TV[:,:,0] += dot_prod_rep[:,:] * TS[:,:,jj]
 
-            # now compute the normal vector
+            # now compute X_star and the normal vector
             X_star = np.zeros((M,GD,1), dtype=CoordType)
             X_star[:,:,0] = vtx_coord[:,0,:] + TV[:,:,0]
             NV = pY - X_star
@@ -1225,8 +1240,151 @@ def Circumcenter(vtx_coord):
         
     return CB, CR
 
+def Incenter(vtx_coord):
+    """Compute the incenter and inradius of of a simplex; See:
+    "Coincidences of simplex centers and related facial structures" by Edmonds, et al.
+
+    There are two ways to call this function:
+    Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+           vertices of a single simplex of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Outputs: CB: (TD+1,) numpy array that gives the barycentric coordinates of the
+             incenter of the simplex;
+             CR: a single number that gives the inradius.
+    OR
+    Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+           vertices of M simplices of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Outputs: CB: (M,TD+1) numpy array that gives the barycentric coordinates of the
+             incenters of the given M simplices;
+             CR: (M,) numpy array that gives the corresponding inradii.
+    """
+    if type(vtx_coord) is not np.ndarray:
+        print("Error: vtx_coord must be a numpy array!")
+        return
+
+    ndim   = vtx_coord.ndim
+    dim_vc = vtx_coord.shape
+    if ndim==1:
+        print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
+        return
+    elif ndim==2:
+        # computing for only 1 simplex
+        TD = dim_vc[0]-1
+        GD = dim_vc[1]
+
+        # get perimeter of boundary of simplex
+        Total_Area, SA = Perimeter(vtx_coord)
+        # init
+        CB = np.zeros((TD+1,), dtype=CoordType)
+        
+        if (TD==0):
+            # the incenter must coincide with the sole point
+            CB[0] = 1.0
+        else:
+            # output barycentric coordinates (convert to barycentric)
+            SA = SA / Total_Area
+            CB[:] = SA[:]
+
+        CR = 0.0
+        if (TD==0):
+            # a point has zero radius
+            CR = 0.0
+        elif (TD==1):
+            # radius is half the length of the cell
+            CR = (1.0/2.0) * Volume(vtx_coord)
+        else:
+            # convert barycentric incenter to cartesian incenter
+            # init to 0th contribution
+            XC_0 = vtx_coord[0,:]
+            IC_cart = SA[0] * XC_0
+
+            for tt in range(1,TD+1):
+                # get one of the point coordinates
+                XC_tt = vtx_coord[tt,:]
+                # add contribution
+                IC_cart += SA[tt] * XC_tt
+
+            # compute distance from incenter to the 0th facet of the simplex (any facet would do)
+            # note: we remove the 0th vertex, which just leaves the 0th facet vertices
+            # this is the inradius:
+            IC_cart = np.reshape(IC_cart, (GD,1))
+            X_star_0, DV = Hyperplane_Closest_Point(vtx_coord[1:TD+1,:],IC_cart)
+            CR = np.linalg.norm(DV,ord=2)
+    else:
+        # computing for M simplices
+        M  = dim_vc[0]
+        TD = dim_vc[1]-1
+        GD = dim_vc[2]
+        
+        # get perimeter of boundary of simplex
+        Total_Area, SA = Perimeter(vtx_coord)
+        Total_Area = Total_Area.reshape((M,1))
+        # init
+        CB = np.zeros((M,TD+1), dtype=CoordType)
+        
+        if (TD==0):
+            # the incenter must coincide with the sole point
+            CB[:,0] = 1.0
+        else:
+            # output barycentric coordinates (convert to barycentric)
+            Total_Area_rep = np.tile(Total_Area, (1, TD+1))
+            SA[:,:] = SA[:,:] / Total_Area_rep[:,:]
+            CB[:,:] = SA[:,:]
+
+        CR = np.zeros((M,), dtype=RealType)
+        if (TD==0):
+            # a point has zero radius
+            CR[:] = 0.0
+        elif (TD==1):
+            # radius is half the length of the cell
+            CR[:] = (1.0/2.0) * Volume(vtx_coord)
+        else:
+            # convert barycentric incenter to cartesian incenter
+            IC_cart = np.zeros((M,GD,1), dtype=CoordType)
+            for tt in np.arange(0, (TD+1), dtype=SmallIndType):
+                # add contributions
+                IC_cart[:,:,0] += vtx_coord[:,tt,:] * SA[:, [tt]]
+
+            # compute distance from incenter to the 0th facet of the simplex (any facet would do)
+            # note: we remove the 0th vertex, which just leaves the 0th facet vertices
+            # this is the inradius:
+            X_star_0, DV = Hyperplane_Closest_Point(vtx_coord[:,1:TD+1,:],IC_cart)
+            DV_norm = np.linalg.norm(DV, ord=2, axis=1)
+            CR[:] = DV_norm[:,0]
+            #CR = np.reshape(CR, (M,))
+
+    return CB, CR
+
+def Shape_Regularity(vtx_coord):
+    """Compute the "shape regularity" of a simplex,
+    i.e. the ratio of the circumradius to the inradius.
+
+    There are two ways to call this function:
+    Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+           vertices of a single simplex of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Output: RATIO: a single number representing the "shape regularity" ratio.
+    OR
+    Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+           vertices of M simplices of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Output: RATIO: (M,) numpy array that gives the "shape regularity" ratios.
+    """
+    if type(vtx_coord) is not np.ndarray:
+        print("Error: vtx_coord must be a numpy array!")
+        return
+        
+    CC, CR = Circumcenter(vtx_coord)
+    IC, IR = Incenter(vtx_coord)
+    
+    # output shape regularity ratio
+    RATIO = CR / IR
+    return RATIO
 
 
-# next center...
 
+
+
+# then add method for angles...
 

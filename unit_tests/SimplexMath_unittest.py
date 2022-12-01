@@ -240,6 +240,36 @@ class TestSimplexMath(unittest.TestCase):
         normal_2_CHK = np.array([normal_0_CHK, normal_1_CHK])
         self.assertEqual(np.amax(np.abs(Ortho_2[:,:,[-1]] - normal_2_CHK)) < 1e-15, True, "Should be True.")
 
+        # test full orthogonal frames (1-D line in 2-D)
+        pc0 = np.array([[0.2, 0.1], [0.8, 0.6]])
+        print(pc0)
+        Ortho_pc0 = Orthogonal_Frame(pc0)
+        #print(Ortho_pc0)
+        tan_pc0_CHK = pc0[1,:] - pc0[0,:]
+        tan_pc0_CHK = tan_pc0_CHK.reshape((2,1))
+        tan_pc0_CHK = tan_pc0_CHK * (1.0/np.linalg.norm(tan_pc0_CHK,2))
+        nor_pc0_CHK = np.array([-tan_pc0_CHK[1], tan_pc0_CHK[0]])
+        Ortho_pc0_CHK = np.hstack((tan_pc0_CHK, nor_pc0_CHK))
+        self.assertEqual(np.amax(np.abs(Ortho_pc0 - Ortho_pc0_CHK)) < 1e-15, True, "Should be True.")
+
+        pc1 = np.array([[-0.3, 0.3], [0.1, 1.1]])
+        print(pc1)
+        Ortho_pc1 = Orthogonal_Frame(pc1)
+        #print(Ortho_pc1)
+        tan_pc1_CHK = pc1[1,:] - pc1[0,:]
+        tan_pc1_CHK = tan_pc1_CHK.reshape((2,1))
+        tan_pc1_CHK = tan_pc1_CHK * (1.0/np.linalg.norm(tan_pc1_CHK,2))
+        nor_pc1_CHK = np.array([-tan_pc1_CHK[1], tan_pc1_CHK[0]])
+        Ortho_pc1_CHK = np.hstack((tan_pc1_CHK, nor_pc1_CHK))
+        self.assertEqual(np.amax(np.abs(Ortho_pc1 - Ortho_pc1_CHK)) < 1e-15, True, "Should be True.")
+
+        pc2 = np.array([pc0, pc1])
+        print(pc2)
+        Ortho_pc2 = Orthogonal_Frame(pc2)
+        #print(Ortho_pc2)
+        Ortho_pc2_CHK = np.array([Ortho_pc0_CHK, Ortho_pc1_CHK])
+        self.assertEqual(np.amax(np.abs(Ortho_pc2 - Ortho_pc2_CHK)) < 1e-15, True, "Should be True.")
+
         # test the tangent space
         TS_0 = Tangent_Space(vc0)
         print(TS_0)
@@ -264,6 +294,17 @@ class TestSimplexMath(unittest.TestCase):
         NS_2_CHK = np.array([NS_0_CHK, NS_1_CHK])
         self.assertEqual(np.amax(np.abs(NS_2_proj - NS_2_CHK)) < 1e-15, True, "Should be True.")
 
+        # test tangent space (1-D line in 2-D)
+        TS_pc0 = Tangent_Space(pc0)
+        self.assertEqual(np.amax(np.abs(TS_pc0 - tan_pc0_CHK)) < 1e-15, True, "Should be True.")
+
+        TS_pc1 = Tangent_Space(pc1)
+        self.assertEqual(np.amax(np.abs(TS_pc1 - tan_pc1_CHK)) < 1e-15, True, "Should be True.")
+
+        TS_pc2 = Tangent_Space(pc2)
+        tan_pc2_CHK = np.array([tan_pc0_CHK, tan_pc1_CHK])
+        self.assertEqual(np.amax(np.abs(TS_pc2 - tan_pc2_CHK)) < 1e-15, True, "Should be True.")
+
         # test the normal space
         NS_0 = Normal_Space(vc0)
         print(NS_0)
@@ -285,7 +326,18 @@ class TestSimplexMath(unittest.TestCase):
         NS_2_proj_alt[1,:,:] = np.outer(NS_2[1,:,0],NS_2[1,:,0])
         self.assertEqual(np.amax(np.abs(NS_2_proj_alt - NS_2_CHK)) < 1e-15, True, "Should be True.")
 
-    def test_Hyperplane(self):
+        # test normal space (1-D line in 2-D)
+        NS_pc0 = Normal_Space(pc0)
+        self.assertEqual(np.amax(np.abs(NS_pc0 - nor_pc0_CHK)) < 1e-15, True, "Should be True.")
+
+        NS_pc1 = Normal_Space(pc1)
+        self.assertEqual(np.amax(np.abs(NS_pc1 - nor_pc1_CHK)) < 1e-15, True, "Should be True.")
+
+        NS_pc2 = Normal_Space(pc2)
+        nor_pc2_CHK = np.array([nor_pc0_CHK, nor_pc1_CHK])
+        self.assertEqual(np.amax(np.abs(NS_pc2 - nor_pc2_CHK)) < 1e-15, True, "Should be True.")
+
+    def test_Hyperplane_Closest_Point(self):
         # test hyperplane/closest point methods
         vc0 = np.array([[0.0, 0.0, 1.1], [2.0, 3.0, 1.1], [0.0, 5.0, 1.1]])
         pY0 = np.array([[-8.2], [5.6], [-2.3]])
@@ -376,9 +428,38 @@ class TestSimplexMath(unittest.TestCase):
         self.assertEqual(np.amax(np.abs(CB2 - CB2_CHK)) < 1e-15, True, "Should be True.")
         self.assertEqual(np.amax(np.abs(CR2 - CR2_CHK)) < 1e-15, True, "Should be True.")
 
+        IB0, IR0 = Incenter(vc0)
+        #print(IB0)
+        #print(IR0)
+        IB0_CHK = np.array([0.2473703400291712, 0.4372931122476224, 0.3153365477232065])
+        IR0_CHK = 0.8745862244952449
+        self.assertEqual(np.amax(np.abs(IB0 - IB0_CHK)) < 1e-15, True, "Should be True.")
+        self.assertEqual(np.amax(np.abs(IR0 - IR0_CHK)) < 1e-15, True, "Should be True.")
 
+        IB1, IR1 = Incenter(vc1)
+        #print(IB1)
+        #print(IR1)
+        IB1_CHK = np.array([0.3664200151052727, 0.4409237264836121, 0.1926562584111152])
+        IR1_CHK = 0.9016053849397796
+        self.assertEqual(np.amax(np.abs(IB1 - IB1_CHK)) < 1e-15, True, "Should be True.")
+        self.assertEqual(np.amax(np.abs(IR1 - IR1_CHK)) < 1e-15, True, "Should be True.")
 
-        print("In 'test_Centers'!")
+        IB2, IR2 = Incenter(vc2)
+        #print(IB2)
+        #print(IR2)
+        IB2_CHK = np.array([IB0_CHK, IB1_CHK])
+        IR2_CHK = np.array([IR0_CHK, IR1_CHK])
+        self.assertEqual(np.amax(np.abs(IB2 - IB2_CHK)) < 1e-15, True, "Should be True.")
+        self.assertEqual(np.amax(np.abs(IR2 - IR2_CHK)) < 1e-15, True, "Should be True.")
+
+        # test shape regularity
+        SR0 = Shape_Regularity(vc0)
+        self.assertEqual(np.abs(SR0 - (CR0/IR0)) < 1e-15, True, "Should be True.")
+        SR1 = Shape_Regularity(vc1)
+        self.assertEqual(np.abs(SR1 - (CR1/IR1)) < 1e-15, True, "Should be True.")
+        SR2 = Shape_Regularity(vc2)
+        self.assertEqual(np.amax(np.abs(SR2 - (CR2/IR2))) < 1e-15, True, "Should be True.")
+
 
 
 if __name__ == '__main__':
