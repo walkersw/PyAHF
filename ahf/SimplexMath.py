@@ -1227,7 +1227,7 @@ def Circumcenter(vtx_coord):
         MM_inv = np.linalg.inv(MM)
         # error check
         if (np.amax(MM_inv[:,0,0]) > 0.0):
-            print("Error: Fatal error in 'Simplex_Circumcenter'!")
+            print("Error: Fatal error in 'Circumcenter'!")
             print("       The circumradius was invalid!")
             return
 
@@ -1382,9 +1382,184 @@ def Shape_Regularity(vtx_coord):
     RATIO = CR / IR
     return RATIO
 
+def angle_dot_prod_normalize(DP):
+    """Saturation for dot product.
 
+    Input: DP: a (R,) numpy array that contains numbers that should be
+           between -1 and 1.
+    Output: DP_sat: a (R,) numpy array equal to min(max(DP,-1),1).
+    """
+    if type(DP) is not np.ndarray:
+        print("Error: DP must be a numpy array!")
+        return
 
+    DP_sat = np.copy(DP)
+    too_neg = DP < -1.0
+    too_pos = DP > 1.0
+    DP_sat[too_neg] = -1.0
+    DP_sat[too_pos] = 1.0
 
+    return DP_sat
 
-# then add method for angles...
+def Angles(vtx_coord):
+    """Get the angles (in radians) that the facets of the simplex make with
+    respect to each other.
+    NOTE: this only works when TD <= 3; the rest is to be implemented.
+    SWW: should be able to do general dimensions by projecting to the
+         tangent space of the simplex.
+
+    There are two ways to call this function:
+    Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
+           vertices of a single simplex of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Output: Ang: (Q,) numpy array, where Q=TD*(TD+1)/2, where each entry contains
+            the angle (radians) between two facets.
+    Example:
+        TD==0:  Ang = {}
+        TD==1:  Ang = {PI}
+        TD==2:  Ang = {(0, 1), (0, 2), (1, 2)},
+                       where "(i, j)" means the angle between facet i and facet j.
+        TD==3:  Ang = {(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)}
+        TD==4:  Ang = {(0, 1), (0, 2), (0, 3), (0, 4),
+                       (1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4)}
+        etc...
+    OR
+    Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+           vertices of M simplices of topological dimension TD embedded in
+           a Euclidean space of dimension GD.
+    Output: Ang: (M,Q) numpy array that gives the angles (radians) for each of
+            the given M simplices (see above).
+    """
+    if type(vtx_coord) is not np.ndarray:
+        print("Error: vtx_coord must be a numpy array!")
+        return
+
+    ndim   = vtx_coord.ndim
+    dim_vc = vtx_coord.shape
+    if ndim==1:
+        print("Error: vtx_coord must be a numpy array of shape (TD+1,GD) or (M,TD+1,GD)!")
+        return
+    elif ndim==2:
+        # computing for only 1 simplex
+        TD = dim_vc[0]-1
+        GD = dim_vc[1]
+
+        if (TD==0):
+            # there are no facets!
+            Ang = np.zeros((0,), dtype=RealType)
+        elif (TD==1):
+            # special case: line segment
+            Ang = np.array([np.pi], dtype=RealType)
+        elif (TD==2):
+            # special case: a triangle
+            
+            # can just use the angles between the tangent vectors
+            
+            # compute the edge tangent vectors
+            TV_0 = vtx_coord[2,:] - vtx_coord[1,:]
+            TV_1 = vtx_coord[0,:] - vtx_coord[2,:]
+            TV_2 = vtx_coord[1,:] - vtx_coord[0,:]
+            TV_0 = TV_0 / np.linalg.norm(TV_0, ord=2)
+            TV_1 = TV_1 / np.linalg.norm(TV_1, ord=2)
+            TV_2 = TV_2 / np.linalg.norm(TV_2, ord=2)
+            
+            # note: need minus signs because of orientation of tangent vectors
+            DP_tilde = np.array([-np.dot(TV_0,TV_1), -np.dot(TV_0,TV_2), -np.dot(TV_1,TV_2)], dtype=RealType)
+            DP = angle_dot_prod_normalize(DP_tilde)
+            Ang = np.arccos(DP)
+
+        elif ( (TD==3) and (GD==3) ):
+            # a tetrahedron in \R^{3}
+            
+            # get the (outer) normal vectors of each facet
+            NS_0 = Normal_Space(vtx_coord[[1, 2, 3],:])
+            NS_1 = Normal_Space(vtx_coord[[2, 0, 3],:])
+            NS_2 = Normal_Space(vtx_coord[[0, 1, 3],:])
+            NS_3 = Normal_Space(vtx_coord[[0, 2, 1],:])
+            
+            # note: need minus signs because of orientation of normal vectors
+            DP_tilde = -np.array([np.dot(NS_0[:,0],NS_1[:,0]), np.dot(NS_0[:,0],NS_2[:,0]), np.dot(NS_0[:,0],NS_3[:,0]), \
+                                  np.dot(NS_1[:,0],NS_2[:,0]), np.dot(NS_1[:,0],NS_3[:,0]), np.dot(NS_2[:,0],NS_3[:,0])], dtype=RealType)
+            DP = angle_dot_prod_normalize(DP_tilde)
+            Ang = np.arccos(DP)
+            
+        else:
+            print("Error: Fatal error in 'Angles'!")
+            print("       Topological (and/or geometric) dimension above 3 not implemented!")
+            return
+
+    else:
+        # computing for M simplices
+        M  = dim_vc[0]
+        TD = dim_vc[1]-1
+        GD = dim_vc[2]
+        
+        if (TD==0):
+            # there are no facets!
+            Ang = np.zeros((M,0), dtype=RealType)
+        elif (TD==1):
+            # special case: line segment
+            Ang = np.pi * np.ones((M,1), dtype=RealType)
+        elif (TD==2):
+            # special case: a triangle
+            
+            # can just use the angles between the tangent vectors
+            
+            # compute the edge tangent vectors
+            TV_0 = vtx_coord[:,2,:] - vtx_coord[:,1,:]
+            TV_0_norm = np.linalg.norm(TV_0, ord=2, axis=1)
+            TV_0_norm = TV_0_norm.reshape((M,1))
+            TV_0_norm_rep = np.tile(TV_0_norm, (1, GD))
+            TV_0[:,:] = TV_0[:,:] / TV_0_norm_rep[:,:]
+            
+            TV_1 = vtx_coord[:,0,:] - vtx_coord[:,2,:]
+            TV_1_norm = np.linalg.norm(TV_1, ord=2, axis=1)
+            TV_1_norm = TV_1_norm.reshape((M,1))
+            TV_1_norm_rep = np.tile(TV_1_norm, (1, GD))
+            TV_1[:,:] = TV_1[:,:] / TV_1_norm_rep[:,:]
+
+            TV_2 = vtx_coord[:,1,:] - vtx_coord[:,0,:]
+            TV_2_norm = np.linalg.norm(TV_2, ord=2, axis=1)
+            TV_2_norm = TV_2_norm.reshape((M,1))
+            TV_2_norm_rep = np.tile(TV_2_norm, (1, GD))
+            TV_2[:,:] = TV_2[:,:] / TV_2_norm_rep[:,:]
+
+            # note: need minus signs because of orientation of tangent vectors
+            TV_dot_01 = - np.sum(TV_0 * TV_1, axis=1)
+            TV_dot_01 = TV_dot_01.reshape((M,1))
+            TV_dot_02 = - np.sum(TV_0 * TV_2, axis=1)
+            TV_dot_02 = TV_dot_02.reshape((M,1))
+            TV_dot_12 = - np.sum(TV_1 * TV_2, axis=1)
+            TV_dot_12 = TV_dot_12.reshape((M,1))
+            
+            DP_tilde = np.hstack((TV_dot_01, TV_dot_02, TV_dot_12))
+            DP = angle_dot_prod_normalize(DP_tilde)
+            Ang = np.arccos(DP)
+
+        elif ( (TD==3) and (GD==3) ):
+            # a tetrahedron in \R^{3}
+            
+            # get the (outer) normal vectors of each facet
+            NS_0 = Normal_Space(vtx_coord[:,[1, 2, 3],:])
+            NS_1 = Normal_Space(vtx_coord[:,[2, 0, 3],:])
+            NS_2 = Normal_Space(vtx_coord[:,[0, 1, 3],:])
+            NS_3 = Normal_Space(vtx_coord[:,[0, 2, 1],:])
+            
+            # note: need minus signs because of orientation of normal vectors
+            NS_dot_01 = - np.sum(NS_0 * NS_1, axis=1)
+            NS_dot_02 = - np.sum(NS_0 * NS_2, axis=1)
+            NS_dot_03 = - np.sum(NS_0 * NS_3, axis=1)
+            NS_dot_12 = - np.sum(NS_1 * NS_2, axis=1)
+            NS_dot_13 = - np.sum(NS_1 * NS_3, axis=1)
+            NS_dot_23 = - np.sum(NS_2 * NS_3, axis=1)
+            DP_tilde = np.hstack((NS_dot_01, NS_dot_02, NS_dot_03, NS_dot_12, NS_dot_13, NS_dot_23))
+            DP = angle_dot_prod_normalize(DP_tilde)
+            Ang = np.arccos(DP)
+            
+        else:
+            print("Error: Fatal error in 'Angles'!")
+            print("       Topological (and/or geometric) dimension above 3 not implemented!")
+            return
+
+    return Ang
 

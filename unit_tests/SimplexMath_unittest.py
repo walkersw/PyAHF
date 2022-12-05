@@ -460,6 +460,62 @@ class TestSimplexMath(unittest.TestCase):
         SR2 = Shape_Regularity(vc2)
         self.assertEqual(np.amax(np.abs(SR2 - (CR2/IR2))) < 1e-15, True, "Should be True.")
 
+    def test_Angles(self):
+        vc0 = np.array([[0.0, 0.0, 1.1], [2.0, 3.0, 1.1], [0.0, 5.0, 1.1]])
+        print(vc0)
+        Ang0 = Angles(vc0)
+        #print(Ang0)
+        Ang0_CHK = np.array([0.7853981633974483, 1.768191886644777, 0.5880026035475675])
+        self.assertEqual(np.amax(np.abs(Ang0 - Ang0_CHK)) < 1e-15, True, "Should be True.")
+
+        vc1 = np.array([[0.2, 0.3, -0.4], [1.2, 2.4, 0.5], [3.1, 0.7, 4.5]])
+        print(vc1)
+        Ang1 = Angles(vc1)
+        #print(Ang1)
+        Ang1_CHK = np.array([0.4456936423253770, 1.734672745776647, 0.9612262654877698])
+        self.assertEqual(np.amax(np.abs(Ang1 - Ang1_CHK)) < 1e-15, True, "Should be True.")
+
+        vc2 = np.array([vc0, vc1])
+        print(vc2)
+        Ang2 = Angles(vc2)
+        #print(Ang2)
+        Ang2_CHK = np.array([Ang0_CHK, Ang1_CHK])
+        self.assertEqual(np.amax(np.abs(Ang2 - Ang2_CHK)) < 1e-15, True, "Should be True.")
+
+        # test angles in a tetrahedron
+        tc0 = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+        print(tc0)
+        TA0 = Angles(tc0)
+        #print(TA0)
+        TA0_CHK = np.array([0.9553166181245093, 0.9553166181245093, 0.9553166181245093, \
+                            1.570796326794897, 1.570796326794897, 1.570796326794897])
+        self.assertEqual(np.amax(np.abs(TA0 - TA0_CHK)) < 1e-15, True, "Should be True.")
+
+        # equilateral tetrahedron
+        tc1 = np.array([[np.sqrt(8/9), 0, -(1/3)], [-np.sqrt(2/9), np.sqrt(2/3), -(1/3)], \
+                        [-np.sqrt(2/9), -np.sqrt(2/3), -(1/3)], [0, 0, 1]])
+        print(tc1)
+        TA1 = Angles(tc1)
+        #print(TA1)
+        TA1_CHK = 1.230959417340775 * np.ones((6,))
+        self.assertEqual(np.amax(np.abs(TA1 - TA1_CHK)) < 1e-15, True, "Should be True.")
+
+        tc2 = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0], [0.5, np.sqrt(3)/2, 0.0], [0.5, np.sqrt(3)/4, 3/4]])
+        print(tc2)
+        TA2 = Angles(tc2)
+        #print(TA2)
+        TA2_CHK = np.array([1.176005207095135, 1.289761425292083, 1.289761425292083, \
+                            1.289761425292083, 1.289761425292083, 1.047197551196598])
+        self.assertEqual(np.amax(np.abs(TA2 - TA2_CHK)) < 1e-15, True, "Should be True.")
+
+        tc3 = np.array([tc0, tc1, tc2])
+        print(tc3)
+        TA3 = Angles(tc3)
+        #print(TA3)
+        TA3_CHK = np.array([TA0_CHK, TA1_CHK, TA2_CHK])
+        self.assertEqual(np.amax(np.abs(TA3 - TA3_CHK)) < 1e-15, True, "Should be True.")
+
+
 
 
 if __name__ == '__main__':
