@@ -53,41 +53,45 @@ class SimplexMesh(BaseSimplexMesh):
 
     def Affine_Map(self, cell_ind=None):
         """Get the (jacobian) matrix and translation vector for the affine map from the
-        'standard' reference simplex. This is the usual finite element affine map.
-        Input: cell_ind: numpy array (M,) of cell indices.  If set to None, then
-               defaults to cell_ind = [0, 1, 2, ..., N-1],
+        'standard' reference simplex to a simplex (cell) in the mesh. This is the usual
+        finite element affine map.  Note: TD = topological dimension, GD = ambient dimension.
+
+        There are two ways to call this function:
+        Input: cell_ind: non-negative integer being a cell index.
+        Outputs: A is the jacobian matrix of shape (GD,TD) for the given cell;
+                 b is the translation vector of shape (GD,1) for the given cell.
+        OR
+        Input: cell_ind: numpy array (M,) of cell indices.  If set to None (or omitted),
+               then defaults to cell_ind = [0, 1, 2, ..., N-1],
                where N==M is the total number of cells.
-        Outputs: A contains M jacobian matrices, with shape (M,GD,TD);
-                 b contains M translation vectors of shape (M,GD,1).
+        Outputs: A contains M jacobian matrices, with shape (M,GD,TD) for the given cells;
+                 b contains M translation vectors of shape (M,GD,1) for the given cells.
         """
         if cell_ind is None:
             cell_ind = np.arange(0, self.Num_Cell(), dtype=CellIndType)
         
-        if type(cell_ind) is not np.ndarray:
-            print("Error: input must be a numpy array!")
+        single_cell = False
+        if type(cell_ind) is int:
+            single_cell = True
+        if (not single_cell) and (type(cell_ind) is not np.ndarray):
+            print("Error: input must be a single (non-negative) integer or numpy array!")
             return
 
-        M = cell_ind.shape[0]
-        TD = self.Top_Dim()
-        GD = self._Vtx.Dim()
-        # get the grouped list of vertex coordinates
-        #vtx_coord = np.zeros((M,TD+1,GD), dtype=CoordType)
-        
-        vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind[:],:],:]
-        print(vtx_coord)
-        
-        A, b = sm.Affine_Map(vtx_coord)
-        # self.Cell.vtx.resize((Desired_Size, self._cell_dim+1))
+        if single_cell:
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind,:],:]
+            A, b = sm.Affine_Map(vtx_coord)
+        else:
+            # more than one cell
+            #M = cell_ind.shape[0]
+            #TD = self.Top_Dim()
+            #GD = self._Vtx.Dim()
 
-        # self._Vtx.coord.resize((Desired_Size, self._geo_dim))
-
-        # Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
-        # vertices of M simplices of topological dimension TD embedded in
-        # a Euclidean space of dimension GD.
+            # get the grouped list of vertex coordinates
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind[:],:],:]
+            
+            A, b = sm.Affine_Map(vtx_coord)
 
         return A, b
-
-
 
 
     # coordinate conversions
