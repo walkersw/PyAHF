@@ -9,7 +9,7 @@ various methods in a more general way.
 
 Also, see "BaseSimplexMesh.py" and "SimplexMath.py" for more explanation.
 
-Copyright (c) 12-31-2022,  Shawn W. Walker
+Copyright (c) 01-01-2023,  Shawn W. Walker
 """
 
 import numpy as np
@@ -18,7 +18,7 @@ import numpy as np
 # from ahf import RealType, CoordType
 from ahf import *
 
-from ahf.SimplexMath import *
+import ahf.SimplexMath as sm
 from ahf.BaseSimplexMesh import *
 
 class SimplexMesh(BaseSimplexMesh):
@@ -51,11 +51,52 @@ class SimplexMesh(BaseSimplexMesh):
         """This resets all mesh data, but not the vertex coordinate data."""
         super().Clear()
 
+    def Affine_Map(self, cell_ind=None):
+        """Get the (jacobian) matrix and translation vector for the affine map from the
+        'standard' reference simplex. This is the usual finite element affine map.
+        Input: cell_ind: numpy array (M,) of cell indices.  If set to None, then
+               defaults to cell_ind = [0, 1, 2, ..., N-1],
+               where N==M is the total number of cells.
+        Outputs: A contains M jacobian matrices, with shape (M,GD,TD);
+                 b contains M translation vectors of shape (M,GD,1).
+        """
+        if cell_ind is None:
+            cell_ind = np.arange(0, self.Num_Cell(), dtype=CellIndType)
+        
+        if type(cell_ind) is not np.ndarray:
+            print("Error: input must be a numpy array!")
+            return
+
+        M = cell_ind.shape[0]
+        TD = self.Top_Dim()
+        GD = self._Vtx.Dim()
+        # get the grouped list of vertex coordinates
+        #vtx_coord = np.zeros((M,TD+1,GD), dtype=CoordType)
+        
+        vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind[:],:],:]
+        print(vtx_coord)
+        
+        A, b = sm.Affine_Map(vtx_coord)
+        # self.Cell.vtx.resize((Desired_Size, self._cell_dim+1))
+
+        # self._Vtx.coord.resize((Desired_Size, self._geo_dim))
+
+        # Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
+        # vertices of M simplices of topological dimension TD embedded in
+        # a Euclidean space of dimension GD.
+
+        return A, b
 
 
 
 
-    # // coordinate conversion
+    # coordinate conversions
+
+
+
+
+
+
     # void Reference_To_Cartesian(const CellIndType&, const CellIndType*, const PointType*, PointType*);
     # void Cartesian_To_Reference(const CellIndType&, const CellIndType*, const PointType*, PointType*);
     # void Barycentric_To_Reference(const CellIndType&, const PointType*, PointType*);
