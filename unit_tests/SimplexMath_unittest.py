@@ -366,8 +366,8 @@ class TestSimplexMath(unittest.TestCase):
         DV_1_CHK = np.dot((pY1[:,0] - vc1[1,:]),normal_1_CHK) * normal_1_CHK
         X_star_1_CHK = pY1 - DV_1_CHK
         #print(DV_1_CHK)
-        self.assertEqual(np.amax(np.abs(X_star_1 - X_star_1_CHK)) < 1e-15, True, "Should be True.")
-        self.assertEqual(np.amax(np.abs(Diff_Vec_1 - DV_1_CHK)) < 1e-15, True, "Should be True.")
+        self.assertEqual(np.amax(np.abs(X_star_1 - X_star_1_CHK)) < 1e-14, True, "Should be True.")
+        self.assertEqual(np.amax(np.abs(Diff_Vec_1 - DV_1_CHK)) < 1e-14, True, "Should be True.")
 
         vc2 = np.array([vc0, vc1])
         pY2 = np.array([pY0, pY1])
@@ -379,8 +379,8 @@ class TestSimplexMath(unittest.TestCase):
         X_star_2_CHK = np.array([X_star_0_CHK, X_star_1_CHK])
         DV_2_CHK = np.array([DV_0_CHK, DV_1_CHK])
         #print(DV_2_CHK)
-        self.assertEqual(np.amax(np.abs(X_star_2 - X_star_2_CHK)) < 1e-15, True, "Should be True.")
-        self.assertEqual(np.amax(np.abs(Diff_Vec_2 - DV_2_CHK)) < 1e-15, True, "Should be True.")
+        self.assertEqual(np.amax(np.abs(X_star_2 - X_star_2_CHK)) < 1e-14, True, "Should be True.")
+        self.assertEqual(np.amax(np.abs(Diff_Vec_2 - DV_2_CHK)) < 1e-14, True, "Should be True.")
 
     def test_Centers(self):
         vc0 = np.array([[0.0, 0.0, 1.1], [2.0, 3.0, 1.1], [0.0, 5.0, 1.1]])

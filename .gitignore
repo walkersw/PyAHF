@@ -14,3 +14,12 @@ PyAHF.egg-info/requires.txt
 PyAHF.egg-info/PKG-INFO
 PyAHF.egg-info/dependency_links.txt
 PyAHF.egg-info/SOURCES.txt
+build/lib/LICENSE
+build/lib/PyAHF/__init__.py
+dist/PyAHF-0.1.0-py3.10.egg
+build/lib/PyAHF/Vtx2HalfFacet_Mapping.py
+build/lib/PyAHF/__version__.py
+build/lib/PyAHF/BaseSimplexMesh.py
+build/lib/PyAHF/BasicClasses.py
+build/lib/PyAHF/SimplexMath.py
+build/lib/PyAHF/SimplexMesh.py
