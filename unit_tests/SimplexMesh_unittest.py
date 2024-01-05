@@ -5,6 +5,7 @@ import numpy as np
 #import ahf as AHF
 
 from ahf.SimplexMesh import *
+from ahf.SimplexMath import *
 
 class TestSimplexMesh(unittest.TestCase):
 
@@ -98,6 +99,67 @@ class TestSimplexMesh(unittest.TestCase):
         b_all_CHK = np.array([b0_CHK, b1_CHK, b2_CHK])
         self.assertEqual(np.array_equal(A_all_CHK,A_all), True, "Should be True.")
         self.assertEqual(np.array_equal(b_all_CHK,b_all), True, "Should be True.")
+
+    def test_Ref2Cart_and_back(self):
+        del(self.Mesh)
+        del(self.VC)
+        self.VC   = VtxCoordType(3)
+        self.Mesh = SimplexMesh(2,self.VC)
+        
+        self.VC.Reserve(5)
+        print(" ")
+        pt_coord = np.array([0, 0, 0.1,  0.5, 0, -0.1,  0.5, 1, 0.05,  1, -1, -0.05,  3, 0.5, 0.15])
+        pt_coord.shape = (5,3)
+        self.VC.Append(pt_coord)
+        print(self.VC)
+
+        cell_vtx = np.array([0, 1, 2,  1, 3, 2,  3, 4, 2], dtype=CellIndType)
+        cell_vtx.shape = (3,3)
+        self.Mesh.Append_Cell(cell_vtx)
+        print(self.Mesh)
+
+        rc0 = np.array([0.3, 0.2])
+        print(rc0)
+        cart0 = self.Mesh.Reference_To_Cartesian(0,rc0)
+        print(cart0)
+        vc0 = self.Mesh._Vtx.coord[self.Mesh.Cell.vtx[0,:],:]
+        cart0_CHK = Reference_To_Cartesian(vc0, rc0)
+        diff0 = np.amax(np.abs(cart0 - cart0_CHK))
+        self.assertEqual(diff0 < 1e-15, True, "Should be True.")
+        
+        rc0_CHK = self.Mesh.Cartesian_To_Reference(0,cart0)
+        #print(rc0_CHK)
+        diff_rc0 = np.amax(np.abs(rc0 - rc0_CHK))
+        self.assertEqual(diff_rc0 < 1e-15, True, "Should be True.")
+
+        rc1 = np.array([0.1, 0.7])
+        print(rc1)
+        cart1 = self.Mesh.Reference_To_Cartesian(1,rc1)
+        print(cart1)
+        vc1 = self.Mesh._Vtx.coord[self.Mesh.Cell.vtx[1,:],:]
+        cart1_CHK = Reference_To_Cartesian(vc1, rc1)
+        diff1 = np.amax(np.abs(cart1 - cart1_CHK))
+        self.assertEqual(diff1 < 1e-15, True, "Should be True.")
+        
+        rc1_CHK = self.Mesh.Cartesian_To_Reference(1,cart1)
+        #print(rc1_CHK)
+        diff_rc1 = np.amax(np.abs(rc1 - rc1_CHK))
+        self.assertEqual(diff_rc1 < 1e-15, True, "Should be True.")
+
+        rc_all = np.array([rc0, rc1, np.array([0.5, 0.2])])
+        print(rc_all)
+        cart_all = self.Mesh.Reference_To_Cartesian(ref_coord=rc_all)
+        print(cart_all)
+        vc_all = self.Mesh._Vtx.coord[self.Mesh.Cell.vtx[0:3,:],:]
+        #print(vc_all)
+        cart_all_CHK = Reference_To_Cartesian(vc_all, rc_all)
+        diff_all = np.amax(np.abs(cart_all - cart_all_CHK))
+        self.assertEqual(diff_all < 1e-15, True, "Should be True.")
+        
+        rc_all_CHK = self.Mesh.Cartesian_To_Reference(cart_coord=cart_all)
+        #print(rc_all_CHK)
+        diff_rc_all = np.amax(np.abs(rc_all - rc_all_CHK))
+        self.assertEqual(diff_rc_all < 1e-15, True, "Should be True.")
 
 
 

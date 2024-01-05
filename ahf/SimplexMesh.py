@@ -93,25 +93,135 @@ class SimplexMesh(BaseSimplexMesh):
 
         return A, b
 
-
     # coordinate conversions
 
+    def Reference_To_Cartesian(self, cell_ind=None, ref_coord=None):
+        """Convert reference element coordinates to cartesian coordinates, where the reference
+        element is the "standard" reference simplex.
+        Note: TD = topological dimension, GD = ambient dimension.
+
+        There are two ways to call this function:
+        Inputs:  cell_ind: non-negative integer being a cell index.
+                ref_coord: a (TD,) numpy array that gives the coordinates of a point in the
+                reference simplex.
+        Output: (GD,) numpy array that gives the cartesian coordinates of the given point.
+        OR
+        Inputs: cell_ind: numpy array (M,) of cell indices.  If set to None (or omitted),
+                then defaults to cell_ind = [0, 1, 2, ..., N-1],
+                where N==M is the total number of cells.
+                ref_coord: a (M,TD) numpy array that gives the coordinates of M points in the
+                reference simplex.  Note: if cell_ind==None, then M must equal the
+                total number of cells.
+        Output: (M,GD) numpy array that gives the cartesian coordinates of the given M points.
+        """
+        if cell_ind is None:
+            cell_ind = np.arange(0, self.Num_Cell(), dtype=CellIndType)
+        if type(ref_coord) is not np.ndarray:
+            print("Error: ref_coord must be a numpy array!")
+            return
+
+        single_cell = False
+        if type(cell_ind) is int:
+            single_cell = True
+        if (not single_cell) and (type(cell_ind) is not np.ndarray):
+            print("Error: input must be a single (non-negative) integer or numpy array!")
+            return
+
+        TD = self.Top_Dim()
+        if single_cell:
+            dim_rc = ref_coord.shape
+            if dim_rc[0]!=TD:
+                print("Error: ref_coord must be a numpy array of shape (TD,) if cell_ind is a single int!")
+                return
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind,:],:]
+            cart_coord = sm.Reference_To_Cartesian(vtx_coord, ref_coord)
+        else:
+            # more than one cell
+            M = cell_ind.shape[0]
+            #TD = self.Top_Dim()
+            #GD = self._Vtx.Dim()
+
+            dim_rc = ref_coord.shape
+            if (dim_rc[0]!=M) or (dim_rc[1]!=TD):
+                print("Error: ref_coord must be a numpy array of shape (M,TD) if cell_ind is (M,)!")
+                return
+
+            # get the grouped list of vertex coordinates
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind[:],:],:]
+            cart_coord = sm.Reference_To_Cartesian(vtx_coord, ref_coord)
+
+        return cart_coord
+
+    def Cartesian_To_Reference(self, cell_ind=None, cart_coord=None):
+        """Convert cartesian coordinates to reference element coordinates, where the reference
+        element is the "standard" reference simplex.  Note: a projection is used to make
+        sure the points are actually on the simplex.
+        Note: TD = topological dimension, GD = ambient dimension.
+
+        There are two ways to call this function:
+        Inputs:  cell_ind: non-negative integer being a cell index.
+               cart_coord: (GD,) numpy array that gives the cartesian coordinates of
+               the given point.
+        Output: (TD,) numpy array that gives the coordinates of the point in the
+                reference simplex.
+        OR
+        Inputs: cell_ind: numpy array (M,) of cell indices.  If set to None (or omitted),
+                then defaults to cell_ind = [0, 1, 2, ..., N-1],
+                where N==M is the total number of cells.
+                cart_coord: (M,GD) numpy array that gives the cartesian coordinates of
+                the given M points.  Note: if cell_ind==None, then M must equal the
+                total number of cells.
+        Output: (M,TD) numpy array that gives the coordinates of the M points in the
+                reference simplex.
+        """
+        if cell_ind is None:
+            cell_ind = np.arange(0, self.Num_Cell(), dtype=CellIndType)
+        if type(cart_coord) is not np.ndarray:
+            print("Error: cart_coord must be a numpy array!")
+            return
+
+        single_cell = False
+        if type(cell_ind) is int:
+            single_cell = True
+        if (not single_cell) and (type(cell_ind) is not np.ndarray):
+            print("Error: input must be a single (non-negative) integer or numpy array!")
+            return
+
+        GD = self._Vtx.Dim()
+        if single_cell:
+            dim_cc = cart_coord.shape
+            if dim_cc[0]!=GD:
+                print("Error: cart_coord must be a numpy array of shape (GD,) if cell_ind is a single int!")
+                return
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind,:],:]
+            ref_coord = sm.Cartesian_To_Reference(vtx_coord, cart_coord)
+        else:
+            # more than one cell
+            M = cell_ind.shape[0]
+            #TD = self.Top_Dim()
+            #GD = self._Vtx.Dim()
+
+            dim_cc = cart_coord.shape
+            if (dim_cc[0]!=M) or (dim_cc[1]!=GD):
+                print("Error: cart_coord must be a numpy array of shape (M,GD) if cell_ind is (M,)!")
+                return
+
+            # get the grouped list of vertex coordinates
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind[:],:],:]
+            ref_coord = sm.Cartesian_To_Reference(vtx_coord, cart_coord)
+
+        return ref_coord
 
 
 
-
-
-    # void Reference_To_Cartesian(const CellIndType&, const CellIndType*, const PointType*, PointType*);
-    # void Cartesian_To_Reference(const CellIndType&, const CellIndType*, const PointType*, PointType*);
     # void Barycentric_To_Reference(const CellIndType&, const PointType*, PointType*);
     # void Reference_To_Barycentric(const CellIndType&, const PointType*, PointType*);
+
     # void Barycentric_To_Cartesian(const CellIndType&, const CellIndType*, const PointType*, PointType*);
     # void Cartesian_To_Barycentric(const CellIndType&, const CellIndType*, const PointType*, PointType*);
 
     # // cell quantities
     # void Diameter(const CellIndType&, const CellIndType*, RealType*);
-    # void Bounding_Box(const CellIndType&, const CellIndType*, PointType*, PointType*);
-    # void Bounding_Box(PointType*, PointType*);
     # void Volume(const CellIndType&, const CellIndType*, RealType*);
     # void Angles(const CellIndType&, const CellIndType*, RealType*);
 
@@ -120,6 +230,10 @@ class SimplexMesh(BaseSimplexMesh):
     # void Circumcenter(const CellIndType&, const CellIndType*, PointType*, RealType*);
     # void Incenter(const CellIndType&, const CellIndType*, PointType*, RealType*);
     
+    # for the whole mesh...
+    # void Bounding_Box(const CellIndType&, const CellIndType*, PointType*, PointType*);
+    # void Bounding_Box(PointType*, PointType*);
+
     # // others
     # void Shape_Regularity(const CellIndType&, const CellIndType*, RealType*);
 
