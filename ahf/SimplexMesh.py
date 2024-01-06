@@ -212,13 +212,160 @@ class SimplexMesh(BaseSimplexMesh):
 
         return ref_coord
 
+    def Barycentric_To_Reference(self, bary_coord):
+        """Convert barycentric coordinates to reference element coordinates, where the
+        reference element is the "standard" reference simplex.
+        Note: TD = topological dimension, GD = ambient dimension.
+
+        There are two ways to call this function:
+        Input: bary_coord: (TD+1,) numpy array that gives the barycentric coordinates of
+               the given point.
+        Output: (TD,) numpy array that gives the coordinates of the point in the
+                reference simplex.
+        OR
+        Input: bary_coord: (M,TD+1) numpy array that gives the barycentric coordinates of
+               the given M points.
+        Output: (M,TD) numpy array that gives the coordinates of the M points in the
+                reference simplex.
+        """
+
+        ref_coord = sm.Barycentric_To_Reference(bary_coord)
+        return ref_coord
+
+    def Reference_To_Barycentric(self, ref_coord):
+        """Convert reference element coordinates to barycentric coordinates, where the
+        reference element is the "standard" reference simplex.
+        Note: TD = topological dimension, GD = ambient dimension.
+        
+        There are two ways to call this function:
+        Input: ref_coord: (TD,) numpy array that gives the coordinates of the point in the
+               reference simplex.
+        Output: (TD+1,) numpy array that gives the barycentric coordinates of the given point.
+        OR
+        Input: ref_coord: (M,TD) numpy array that gives the coordinates of the M points in the
+               reference simplex.
+        Output: (M,TD+1) numpy array that gives the barycentric coordinates of the given M points.
+        """
+
+        bary_coord = sm.Reference_To_Barycentric(ref_coord)
+        return bary_coord
+
+    def Barycentric_To_Cartesian(self, cell_ind=None, bary_coord=None):
+        """Convert barycentric (simplex) coordinates to cartesian coordinates.
+        Note: TD = topological dimension, GD = ambient dimension.
+
+        There are two ways to call this function:
+        Inputs:  cell_ind: non-negative integer being a cell index.
+               bary_coord: a (TD+1,) numpy array that gives the barycentric
+               coordinates of the point w.r.t. the given simplex coordinates.
+        Output: (GD,) numpy array that gives the cartesian coordinates of the given point.
+        OR
+        Inputs: cell_ind: numpy array (M,) of cell indices.  If set to None (or omitted),
+                then defaults to cell_ind = [0, 1, 2, ..., N-1],
+                where N==M is the total number of cells.
+                bary_coord: a (M,TD+1) numpy array that gives the barycentric
+                coordinates of M points w.r.t. the corresponding simplex coordinates.
+                Note: if cell_ind==None, then M must equal the total number of cells.
+        Output: (M,GD) numpy array that gives the cartesian coordinates of the given M points.
+        """
+        if cell_ind is None:
+            cell_ind = np.arange(0, self.Num_Cell(), dtype=CellIndType)
+        if type(bary_coord) is not np.ndarray:
+            print("Error: bary_coord must be a numpy array!")
+            return
+
+        single_cell = False
+        if type(cell_ind) is int:
+            single_cell = True
+        if (not single_cell) and (type(cell_ind) is not np.ndarray):
+            print("Error: input must be a single (non-negative) integer or numpy array!")
+            return
+
+        TD = self.Top_Dim()
+        if single_cell:
+            dim_bc = bary_coord.shape
+            if dim_bc[0]!=TD+1:
+                print("Error: bary_coord must be a numpy array of shape (TD+1,) if cell_ind is a single int!")
+                return
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind,:],:]
+            cart_coord = sm.Barycentric_To_Cartesian(vtx_coord, bary_coord)
+        else:
+            # more than one cell
+            M = cell_ind.shape[0]
+            #TD = self.Top_Dim()
+            #GD = self._Vtx.Dim()
+
+            dim_bc = bary_coord.shape
+            if (dim_bc[0]!=M) or (dim_bc[1]!=TD+1):
+                print("Error: bary_coord must be a numpy array of shape (M,TD+1) if cell_ind is (M,)!")
+                return
+
+            # get the grouped list of vertex coordinates
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind[:],:],:]
+            cart_coord = sm.Barycentric_To_Cartesian(vtx_coord, bary_coord)
+
+        return cart_coord
+
+    def Cartesian_To_Barycentric(self, cell_ind=None, cart_coord=None):
+        """Convert cartesian coordinates to barycentric (simplex) coordinates.
+        Note: a projection is used to make sure the points are actually on the simplex.
+        Note: TD = topological dimension, GD = ambient dimension.
+
+        There are two ways to call this function:
+        Inputs:  cell_ind: non-negative integer being a cell index.
+               cart_coord: (GD,) numpy array that gives the cartesian coordinates of
+               the given point.
+        Output: (TD+1,) numpy array that gives the barycentric coordinates of the
+                given point.
+        OR
+        Inputs: cell_ind: numpy array (M,) of cell indices.  If set to None (or omitted),
+                then defaults to cell_ind = [0, 1, 2, ..., N-1],
+                where N==M is the total number of cells.
+                cart_coord: (M,GD) numpy array that gives the cartesian coordinates of
+                the given M points.  Note: if cell_ind==None, then M must equal the
+                total number of cells.
+        Output: (M,TD+1) numpy array that gives the barycentric coordinates of the
+                given M points.
+        """
+        if cell_ind is None:
+            cell_ind = np.arange(0, self.Num_Cell(), dtype=CellIndType)
+        if type(cart_coord) is not np.ndarray:
+            print("Error: cart_coord must be a numpy array!")
+            return
+
+        single_cell = False
+        if type(cell_ind) is int:
+            single_cell = True
+        if (not single_cell) and (type(cell_ind) is not np.ndarray):
+            print("Error: input must be a single (non-negative) integer or numpy array!")
+            return
+
+        GD = self._Vtx.Dim()
+        if single_cell:
+            dim_cc = cart_coord.shape
+            if dim_cc[0]!=GD:
+                print("Error: cart_coord must be a numpy array of shape (GD,) if cell_ind is a single int!")
+                return
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind,:],:]
+            bary_coord = sm.Cartesian_To_Barycentric(vtx_coord, cart_coord)
+        else:
+            # more than one cell
+            M = cell_ind.shape[0]
+            #TD = self.Top_Dim()
+            #GD = self._Vtx.Dim()
+
+            dim_cc = cart_coord.shape
+            if (dim_cc[0]!=M) or (dim_cc[1]!=GD):
+                print("Error: cart_coord must be a numpy array of shape (M,GD) if cell_ind is (M,)!")
+                return
+
+            # get the grouped list of vertex coordinates
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind[:],:],:]
+            bary_coord = sm.Cartesian_To_Barycentric(vtx_coord, cart_coord)
+
+        return bary_coord
 
 
-    # void Barycentric_To_Reference(const CellIndType&, const PointType*, PointType*);
-    # void Reference_To_Barycentric(const CellIndType&, const PointType*, PointType*);
-
-    # void Barycentric_To_Cartesian(const CellIndType&, const CellIndType*, const PointType*, PointType*);
-    # void Cartesian_To_Barycentric(const CellIndType&, const CellIndType*, const PointType*, PointType*);
 
     # // cell quantities
     # void Diameter(const CellIndType&, const CellIndType*, RealType*);

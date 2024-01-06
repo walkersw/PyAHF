@@ -161,6 +161,114 @@ class TestSimplexMesh(unittest.TestCase):
         diff_rc_all = np.amax(np.abs(rc_all - rc_all_CHK))
         self.assertEqual(diff_rc_all < 1e-15, True, "Should be True.")
 
+    def test_Bary2Ref_and_back(self):
+        del(self.Mesh)
+        del(self.VC)
+        self.VC   = VtxCoordType(2)
+        self.Mesh = SimplexMesh(2,self.VC)
+        
+        self.VC.Reserve(5)
+        print(" ")
+        pt_coord = np.array([0, 0,  0.5, 0,  0.5, 1,  1, -1,  3, 0.5])
+        pt_coord.shape = (5,2)
+        self.VC.Append(pt_coord)
+        print(self.VC)
+
+        cell_vtx = np.array([0, 1, 2,  1, 3, 2,  3, 4, 2], dtype=CellIndType)
+        cell_vtx.shape = (3,3)
+        self.Mesh.Append_Cell(cell_vtx)
+        print(self.Mesh)
+
+        bc0 = np.array([0.1, 0.4, 0.5])
+        print(bc0)
+        rc0 = self.Mesh.Barycentric_To_Reference(bc0)
+        print(rc0)
+        self.assertEqual(np.array_equal(bc0[1:],rc0), True, "Should be True.")
+        bc0_CHK = self.Mesh.Reference_To_Barycentric(rc0)
+        diff_bc0 = np.amax(np.abs(bc0 - bc0_CHK))
+        self.assertEqual(diff_bc0 < 1e-15, True, "Should be True.")
+
+        bc1 = np.array([0.22, 0.48, 0.3])
+        print(bc1)
+        rc1 = self.Mesh.Barycentric_To_Reference(bc1)
+        print(rc1)
+        self.assertEqual(np.array_equal(bc1[1:],rc1), True, "Should be True.")
+        bc1_CHK = self.Mesh.Reference_To_Barycentric(rc1)
+        diff_bc1 = np.amax(np.abs(bc1 - bc1_CHK))
+        self.assertEqual(diff_bc1 < 1e-15, True, "Should be True.")
+
+        bc2 = np.array([bc0, bc1])
+        rc2 = self.Mesh.Barycentric_To_Reference(bc2)
+        #print(rc2)
+        rc2_CHK = np.array([rc0, rc1])
+        diff_rc2 = np.amax(np.abs(rc2 - rc2_CHK))
+        self.assertEqual(diff_rc2 < 1e-15, True, "Should be True.")
+        bc2_CHK = self.Mesh.Reference_To_Barycentric(rc2)
+        diff_bc2 = np.amax(np.abs(bc2 - bc2_CHK))
+        self.assertEqual(diff_bc2 < 1e-15, True, "Should be True.")
+
+    def test_Bary2Cart_and_back(self):
+        del(self.Mesh)
+        del(self.VC)
+        self.VC   = VtxCoordType(3)
+        self.Mesh = SimplexMesh(2,self.VC)
+        
+        self.VC.Reserve(5)
+        print(" ")
+        pt_coord = np.array([0, 0.2, 0.4,  0.5, 0.1, -0.2,  0.5, 1, 0.15,  1, -1, -0.15,  3.1, 0.5, 0.2])
+        pt_coord.shape = (5,3)
+        self.VC.Append(pt_coord)
+        print(self.VC)
+
+        cell_vtx = np.array([0, 1, 2,  1, 3, 2,  3, 4, 2], dtype=CellIndType)
+        cell_vtx.shape = (3,3)
+        self.Mesh.Append_Cell(cell_vtx)
+        print(self.Mesh)
+
+        bc0 = np.array([0.3, 0.3, 0.4])
+        print(bc0)
+        cart0 = self.Mesh.Barycentric_To_Cartesian(0,bc0)
+        print(cart0)
+        vc0 = self.Mesh._Vtx.coord[self.Mesh.Cell.vtx[0,:],:]
+        cart0_CHK = Barycentric_To_Cartesian(vc0, bc0)
+        diff0 = np.amax(np.abs(cart0 - cart0_CHK))
+        self.assertEqual(diff0 < 1e-15, True, "Should be True.")
+        
+        bc0_CHK = self.Mesh.Cartesian_To_Barycentric(0,cart0)
+        #print(bc0_CHK)
+        diff_bc0 = np.amax(np.abs(bc0 - bc0_CHK))
+        self.assertEqual(diff_bc0 < 1e-15, True, "Should be True.")
+
+        bc1 = np.array([0.2, 0.6, 0.2])
+        print(bc1)
+        cart1 = self.Mesh.Barycentric_To_Cartesian(1,bc1)
+        print(cart1)
+        vc1 = self.Mesh._Vtx.coord[self.Mesh.Cell.vtx[1,:],:]
+        cart1_CHK = Barycentric_To_Cartesian(vc1, bc1)
+        diff1 = np.amax(np.abs(cart1 - cart1_CHK))
+        self.assertEqual(diff1 < 1e-15, True, "Should be True.")
+        
+        bc1_CHK = self.Mesh.Cartesian_To_Barycentric(1,cart1)
+        #print(bc1_CHK)
+        diff_bc1 = np.amax(np.abs(bc1 - bc1_CHK))
+        self.assertEqual(diff_bc1 < 1e-15, True, "Should be True.")
+
+        bc_all = np.array([bc0, bc1, np.array([0.5, 0.2, 0.3])])
+        print(bc_all)
+        cart_all = self.Mesh.Barycentric_To_Cartesian(bary_coord=bc_all)
+        print(cart_all)
+        vc_all = self.Mesh._Vtx.coord[self.Mesh.Cell.vtx[0:3,:],:]
+        #print(vc_all)
+        cart_all_CHK = Barycentric_To_Cartesian(vc_all, bc_all)
+        diff_all = np.amax(np.abs(cart_all - cart_all_CHK))
+        self.assertEqual(diff_all < 1e-15, True, "Should be True.")
+        
+        bc_all_CHK = self.Mesh.Cartesian_To_Barycentric(cart_coord=cart_all)
+        #print(bc_all_CHK)
+        diff_bc_all = np.amax(np.abs(bc_all - bc_all_CHK))
+        self.assertEqual(diff_bc_all < 1e-15, True, "Should be True.")
+
+
 
 
 
