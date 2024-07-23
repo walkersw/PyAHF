@@ -40,7 +40,7 @@ class TestSimplexMesh(unittest.TestCase):
         print(self.VC)
         self.assertEqual(self.VC.Size(), 5, "VC.Size() should be 5.")
 
-        cell_vtx = np.array([0, 1, 4, 1, 2, 4, 2, 3, 4, 3, 0, 4], dtype=CellIndType)
+        cell_vtx = np.array([0, 1, 4, 1, 2, 4, 2, 3, 4, 3, 0, 4], dtype=VtxIndType)
         cell_vtx.shape = (4,3)
         self.Mesh.Append_Cell(cell_vtx)
         print(self.Mesh)
@@ -65,7 +65,7 @@ class TestSimplexMesh(unittest.TestCase):
         self.VC.Append(pt_coord)
         print(self.VC)
 
-        cell_vtx = np.array([0, 1, 2,  1, 3, 2,  3, 4, 2], dtype=CellIndType)
+        cell_vtx = np.array([0, 1, 2,  1, 3, 2,  3, 4, 2], dtype=VtxIndType)
         cell_vtx.shape = (3,3)
         self.Mesh.Append_Cell(cell_vtx)
         print(self.Mesh)
@@ -113,7 +113,7 @@ class TestSimplexMesh(unittest.TestCase):
         self.VC.Append(pt_coord)
         print(self.VC)
 
-        cell_vtx = np.array([0, 1, 2,  1, 3, 2,  3, 4, 2], dtype=CellIndType)
+        cell_vtx = np.array([0, 1, 2,  1, 3, 2,  3, 4, 2], dtype=VtxIndType)
         cell_vtx.shape = (3,3)
         self.Mesh.Append_Cell(cell_vtx)
         print(self.Mesh)
@@ -174,7 +174,7 @@ class TestSimplexMesh(unittest.TestCase):
         self.VC.Append(pt_coord)
         print(self.VC)
 
-        cell_vtx = np.array([0, 1, 2,  1, 3, 2,  3, 4, 2], dtype=CellIndType)
+        cell_vtx = np.array([0, 1, 2,  1, 3, 2,  3, 4, 2], dtype=VtxIndType)
         cell_vtx.shape = (3,3)
         self.Mesh.Append_Cell(cell_vtx)
         print(self.Mesh)
@@ -220,7 +220,7 @@ class TestSimplexMesh(unittest.TestCase):
         self.VC.Append(pt_coord)
         print(self.VC)
 
-        cell_vtx = np.array([0, 1, 2,  1, 3, 2,  3, 4, 2], dtype=CellIndType)
+        cell_vtx = np.array([0, 1, 2,  1, 3, 2,  3, 4, 2], dtype=VtxIndType)
         cell_vtx.shape = (3,3)
         self.Mesh.Append_Cell(cell_vtx)
         print(self.Mesh)
@@ -268,6 +268,57 @@ class TestSimplexMesh(unittest.TestCase):
         diff_bc_all = np.amax(np.abs(bc_all - bc_all_CHK))
         self.assertEqual(diff_bc_all < 1e-15, True, "Should be True.")
 
+    def test_Measures(self):
+        del(self.Mesh)
+        del(self.VC)
+        self.VC   = VtxCoordType(3)
+        self.Mesh = SimplexMesh(2,self.VC)
+        
+        self.VC.Reserve(5)
+        print(" ")
+        pt_coord = np.array([0, 0.2, 0.4,  0.5, 0.1, -0.2,  0.5, 1, 0.15,  1, -1, -0.15,  3.1, 0.5, 0.2])
+        pt_coord.shape = (5,3)
+        self.VC.Append(pt_coord)
+        print(self.VC)
+
+        cell_vtx = np.array([0, 1, 2,  1, 3, 2,  3, 4, 2], dtype=VtxIndType)
+        cell_vtx.shape = (3,3)
+        self.Mesh.Append_Cell(cell_vtx)
+        print(self.Mesh)
+
+        D0 = self.Mesh.Diameter(0)
+        print(D0)
+        vc0 = self.Mesh._Vtx.coord[self.Mesh.Cell.vtx[0,:],:]
+        D0_CHK = Diameter(vc0)
+        err_D0 = np.amax(np.abs(D0 - D0_CHK))
+        self.assertEqual(err_D0 < 1e-15, True, "Should be True.")
+        V0 = self.Mesh.Volume(0)
+        print(V0)
+        V0_CHK = Volume(vc0)
+        err_V0 = np.amax(np.abs(V0 - V0_CHK))
+        self.assertEqual(err_V0 < 1e-15, True, "Should be True.")
+        A0 = self.Mesh.Angles(0)
+        print(A0)
+        A0_CHK = Angles(vc0)
+        err_A0 = np.amax(np.abs(A0 - A0_CHK))
+        self.assertEqual(err_A0 < 1e-15, True, "Should be True.")
+
+        D1_vec = self.Mesh.Diameter(np.array([1, 2], dtype=CellIndType))
+        print(D1_vec)
+        vc1 = self.Mesh._Vtx.coord[self.Mesh.Cell.vtx[[1, 2],:],:]
+        D1_vec_CHK = Diameter(vc1)
+        err_D1 = np.amax(np.abs(D1_vec - D1_vec_CHK))
+        self.assertEqual(err_D1 < 1e-15, True, "Should be True.")
+        V1_vec = self.Mesh.Volume(np.array([1, 2], dtype=CellIndType))
+        print(D1_vec)
+        V1_vec_CHK = Volume(vc1)
+        err_V1 = np.amax(np.abs(V1_vec - V1_vec_CHK))
+        self.assertEqual(err_V1 < 1e-15, True, "Should be True.")
+        A1_vec = self.Mesh.Angles(np.array([1, 2], dtype=CellIndType))
+        print(A1_vec)
+        A1_vec_CHK = Angles(vc1)
+        err_A1 = np.amax(np.abs(A1_vec - A1_vec_CHK))
+        self.assertEqual(err_A1 < 1e-15, True, "Should be True.")
 
 
 

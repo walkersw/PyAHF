@@ -365,23 +365,151 @@ class SimplexMesh(BaseSimplexMesh):
 
         return bary_coord
 
+    def Diameter(self, cell_ind=None):
+        """Compute the diameter of cells in the mesh.
+
+        There are two ways to call this function:
+        Input:  cell_ind: non-negative integer being a specific cell index.
+        Output: a single float that is the diameter of the queried cell.
+        OR
+        Input: cell_ind: numpy array (M,) of cell indices.  If set to None (or omitted),
+               then defaults to cell_ind = [0, 1, 2, ..., N-1],
+               where N==M is the total number of cells.
+        Output: (M,) numpy array that gives the diameters of the given M simplices.
+        """
+        if cell_ind is None:
+            cell_ind = np.arange(0, self.Num_Cell(), dtype=CellIndType)
+
+        single_cell = False
+        if type(cell_ind) is int:
+            single_cell = True
+        if (not single_cell) and (type(cell_ind) is not np.ndarray):
+            print("Error: input must be a single (non-negative) integer or numpy array!")
+            return
+
+        GD = self._Vtx.Dim()
+        if single_cell:
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind,:],:]
+            diam_0 = sm.Diameter(vtx_coord)
+        else:
+            # more than one cell
+            M = cell_ind.shape[0]
+            #TD = self.Top_Dim()
+            #GD = self._Vtx.Dim()
+
+            # get the grouped list of vertex coordinates
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind[:],:],:]
+            diam_0 = sm.Diameter(vtx_coord)
+
+        return diam_0
+
+    def Volume(self, cell_ind=None):
+        """Compute the volume of cells in the mesh.
+        Note: TD = topological dimension, GD = ambient dimension.
+
+        There are two ways to call this function:
+        Input:  cell_ind: non-negative integer being a specific cell index.
+        Output: a number that gives the (TD)-dimensional volume of the queried cell.
+        OR
+        Input: cell_ind: numpy array (M,) of cell indices.  If set to None (or omitted),
+               then defaults to cell_ind = [0, 1, 2, ..., N-1],
+               where N==M is the total number of cells.
+        Output: (M,) numpy array that gives the (TD)-dimensional volumes of the M simplices.
+        """
+        if cell_ind is None:
+            cell_ind = np.arange(0, self.Num_Cell(), dtype=CellIndType)
+
+        single_cell = False
+        if type(cell_ind) is int:
+            single_cell = True
+        if (not single_cell) and (type(cell_ind) is not np.ndarray):
+            print("Error: input must be a single (non-negative) integer or numpy array!")
+            return
+
+        GD = self._Vtx.Dim()
+        if single_cell:
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind,:],:]
+            vol_0 = sm.Volume(vtx_coord)
+        else:
+            # more than one cell
+            M = cell_ind.shape[0]
+            #TD = self.Top_Dim()
+            #GD = self._Vtx.Dim()
+
+            # get the grouped list of vertex coordinates
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind[:],:],:]
+            vol_0 = sm.Volume(vtx_coord)
+
+        return vol_0
+
+    def Angles(self, cell_ind=None):
+        """Get the angles (in radians) that the facets of the simplices make with
+        respect to each other.
+        Note: TD = topological dimension, GD = ambient dimension.
+
+        NOTE: this only works when TD <= 3; the rest is to be implemented.
+        SWW: should be able to do general dimensions by projecting to the
+             tangent space of the simplex.
+
+        There are two ways to call this function:
+        Input:  cell_ind: non-negative integer being a specific cell index.
+        Output: Ang: (Q,) numpy array, where Q=TD*(TD+1)/2, where each entry contains
+                the angle (radians) between two facets.
+        Example:
+            TD==0:  Ang = {}
+            TD==1:  Ang = {PI}
+            TD==2:  Ang = {(0, 1), (0, 2), (1, 2)},
+                           where "(i, j)" means the angle between facet i and facet j.
+            TD==3:  Ang = {(0, 1), (0, 2), (0, 3), (1, 2), (1, 3), (2, 3)}
+            TD==4:  Ang = {(0, 1), (0, 2), (0, 3), (0, 4),
+                           (1, 2), (1, 3), (1, 4), (2, 3), (2, 4), (3, 4)}
+            etc...
+        OR
+        Input: cell_ind: numpy array (M,) of cell indices.  If set to None (or omitted),
+               then defaults to cell_ind = [0, 1, 2, ..., N-1],
+               where N==M is the total number of cells.
+        Output: Ang: (M,Q) numpy array that gives the angles (radians) for each of
+                the given M simplices (see above).
+        """
+        if cell_ind is None:
+            cell_ind = np.arange(0, self.Num_Cell(), dtype=CellIndType)
+
+        single_cell = False
+        if type(cell_ind) is int:
+            single_cell = True
+        if (not single_cell) and (type(cell_ind) is not np.ndarray):
+            print("Error: input must be a single (non-negative) integer or numpy array!")
+            return
+
+        GD = self._Vtx.Dim()
+        if single_cell:
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind,:],:]
+            ang_0 = sm.Angles(vtx_coord)
+        else:
+            # more than one cell
+            M = cell_ind.shape[0]
+            #TD = self.Top_Dim()
+            #GD = self._Vtx.Dim()
+
+            # get the grouped list of vertex coordinates
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind[:],:],:]
+            ang_0 = sm.Angles(vtx_coord)
+
+        return ang_0
 
 
-    # // cell quantities
-    # void Diameter(const CellIndType&, const CellIndType*, RealType*);
-    # void Volume(const CellIndType&, const CellIndType*, RealType*);
-    # void Angles(const CellIndType&, const CellIndType*, RealType*);
+
 
     # // simplex centers
     # void Barycenter(const CellIndType&, const CellIndType*, PointType*);
     # void Circumcenter(const CellIndType&, const CellIndType*, PointType*, RealType*);
     # void Incenter(const CellIndType&, const CellIndType*, PointType*, RealType*);
+
+    # // others
+    # void Shape_Regularity(const CellIndType&, const CellIndType*, RealType*);
     
     # for the whole mesh...
     # void Bounding_Box(const CellIndType&, const CellIndType*, PointType*, PointType*);
     # void Bounding_Box(PointType*, PointType*);
-
-    # // others
-    # void Shape_Regularity(const CellIndType&, const CellIndType*, RealType*);
 
 

@@ -10,6 +10,7 @@ Copyright (c) 09-04-2022,  Shawn W. Walker
 """
 
 import numpy as np
+import math
 # from ahf import SmallIndType, MedIndType, VtxIndType, CellIndType
 # from ahf import NULL_Small, NULL_Med, NULL_Vtx, NULL_Cell
 # from ahf import RealType, CoordType
@@ -561,7 +562,7 @@ def Volume(vtx_coord):
             det_G = np.linalg.det(G)
             det_A = np.sqrt(det_G)
 
-    Fact0 = np.math.factorial(TD)
+    Fact0 = math.factorial(TD)
     Vol = (1.0/Fact0) * det_A
     return Vol
 
