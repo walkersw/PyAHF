@@ -8,101 +8,160 @@ Also, see "BaseSimplexMesh.py" and "SimplexMesh.py" for more explanation.
 Copyright (c) 07-24-2024,  Shawn W. Walker
 """
 
-FIX!!!!
-
 import numpy as np
 # from ahf import SmallIndType, MedIndType, VtxIndType, CellIndType
 # from ahf import NULL_Small, NULL_Med, NULL_Vtx, NULL_Cell
 # from ahf import RealType, CoordType
 from ahf import *
 
-#from ahf.Vtx2HalfFacet_Mapping import *
-from ahf.BasicClasses import *
-
+from ahf.SimplexMesh import *
 
 class MeshFactory:
     r"""
-    Class for 
+    Class with various methods for generating "standard" meshes.
     
     Note: 
     """
 
-    def __init__(self, CELL_DIM, res_buf=0.2):
+    # def __init__(self, CELL_DIM, res_buf=0.2):
 
-        if (CELL_DIM<0):
-            print("Error: cell dimension must be non-negative!")
-        assert(CELL_DIM>=0)
-        if np.rint(CELL_DIM).astype(SmallIndType)!=CELL_DIM:
-            print("Error: cell dimension must be a non-negative integer!")
-        assert(np.rint(CELL_DIM).astype(SmallIndType)==CELL_DIM)
+        # if (CELL_DIM<0):
+            # print("Error: cell dimension must be non-negative!")
+        # assert(CELL_DIM>=0)
+        # if np.rint(CELL_DIM).astype(SmallIndType)!=CELL_DIM:
+            # print("Error: cell dimension must be a non-negative integer!")
+        # assert(np.rint(CELL_DIM).astype(SmallIndType)==CELL_DIM)
 
-        # connectivity and sibling half-facet data
-        self.Cell = CellSimplexType(CELL_DIM, res_buf)
+        # # connectivity and sibling half-facet data
+        # self.Cell = CellSimplexType(CELL_DIM, res_buf)
         
-        # flag to indicate if mesh cells may be added or modified.
-        #  true  = cells can be added, modified
-        #  false = the mesh cells cannot be changed!
-        self._mesh_open = True
+        # # flag to indicate if mesh cells may be added or modified.
+        # #  true  = cells can be added, modified
+        # #  false = the mesh cells cannot be changed!
+        # self._mesh_open = True
         
-        # estimate of the size to allocate in Vtx2HalfFacets
-        self._estimate_size_Vtx2HalfFacets = 0
+        # # estimate of the size to allocate in Vtx2HalfFacets
+        # self._estimate_size_Vtx2HalfFacets = 0
         
-        # referenced vertices in Cell and (possibly multiple) attached half-facet(s)
-        self.Vtx2HalfFacets = Vtx2HalfFacetMap()
+        # # referenced vertices in Cell and (possibly multiple) attached half-facet(s)
+        # self.Vtx2HalfFacets = Vtx2HalfFacetMap()
         
-        # intermediate data structure for building sibling half-facet information
-        self._v2hfs = Vtx2HalfFacetMap() # for a given vertex, it references multiple half-facets.
-        # Note: this data structure will NOT NECESSARILY store all referenced vertices
-        #       in the triangulation.  This is because the vertex with smallest index
-        #       will never be referenced (for example).  This is an internal structure that
-        #       is only used to construct the sibling half-facet information (stored in Cell).
+        # # intermediate data structure for building sibling half-facet information
+        # self._v2hfs = Vtx2HalfFacetMap() # for a given vertex, it references multiple half-facets.
+        # # Note: this data structure will NOT NECESSARILY store all referenced vertices
+        # #       in the triangulation.  This is because the vertex with smallest index
+        # #       will never be referenced (for example).  This is an internal structure that
+        # #       is only used to construct the sibling half-facet information (stored in Cell).
+
+    def __init__(self):
+
+        print("")
 
     def __str__(self):
-        if self._mesh_open:
-            open_str = "The mesh is open for editing."
-        else:
-            open_str = "The mesh is currently closed and cannot be modified."
 
-        Cell_cap, Vtx2HF_cap = self.Capacity()
-        OUT_STR = ("The topological dimension is: " + str(self.Cell.Dim()) + "\n"
-                 + "The number of cells is: " + str(self.Cell.Size()) + "\n"
-                 + "The *reserved* size of cells is: " + str(Cell_cap) + "\n"
-                 + "The size of the Vertex-to-Half-Facet Map is: " + str(self.Vtx2HalfFacets.Size()) + "\n"
-                 + "The *reserved* size of the Vertex-to-Half-Facet Map is: " + str(Vtx2HF_cap) + "\n"
-                 + open_str + "\n" )
+        OUT_STR = ("This class object has various methods for generating meshes and" + "\n"
+                 + "outputting them as a (VtxCoordType, SimplexMesh) object." + "\n" )
         return OUT_STR
 
-    def Clear(self):
-        """This resets all mesh data."""
-        self.Cell.Clear()
-        self.Vtx2HalfFacets.Clear()
-        self._v2hfs.Clear()
+    # def Clear(self):
+        # """This resets all mesh data."""
+        # self.Cell.Clear()
+        # self.Vtx2HalfFacets.Clear()
+        # self._v2hfs.Clear()
         
-        self._mesh_open = True
+        # self._mesh_open = True
 
-    def Open(self):
-        """This sets the _mesh_open flag to True to indicate that
-        the mesh can be modified."""
-        self._mesh_open = True
+    # def Open(self):
+        # """This sets the _mesh_open flag to True to indicate that
+        # the mesh can be modified."""
+        # self._mesh_open = True
 
-    def Close(self):
-        """This sets the _mesh_open flag to False to indicate that
-        the mesh cannot be modified."""
-        self._mesh_open = False
+    # def Close(self):
+        # """This sets the _mesh_open flag to False to indicate that
+        # the mesh cannot be modified."""
+        # self._mesh_open = False
 
-    def Is_Mesh_Open(self):
-        """This prints and returns whether or not the mesh is open."""
-        if not self._mesh_open:
-            print("Mesh is not open for modification!")
-            print("     You must first use the 'Open' method.")
-        return self._mesh_open
+    def Simplex_Mesh_Of_Rectangle(self, Pll=[0.0, 0.0], Pur=[1.0, 1.0], N0=10, N1=10, UseBCC=False):
+        """Generate a simplicial mesh of a 2-D rectangle.
 
-    def Num_Cell(self):
-        """Returns the number of cells in the mesh."""
-        return self.Cell.Size()
+        Inputs: Pll: length 2 array with coordinates of lower left corner of rectangle;
+                     default = [0,0].
+                Pur: length 2 array with coordinates of upper right corner of rectangle;
+                     default = [1,1].
+                N0: number of intervals to use along the 0-th axis (x-axis); default = 10.
+                N1: number of intervals to use along the 1-th axis (y-axis); default = 10.
+                UseBCC: choose between a mesh based on a Cartesian lattice (with diagonals),
+                        or a lattice that includes the midpoint of each "square";
+                        default = False
+        Outputs: VC (VtxCoordType), Mesh (SimplexMesh) object containing the mesh data.
+        """
+        if (type(Pll[0]) is not float) or (type(Pll[1]) is not float):
+            print("Error: Pll must be a 2 length array of floats!")
+            return
+        if (type(Pur[0]) is not float) or (type(Pur[1]) is not float):
+            print("Error: Pur must be a 2 length array of floats!")
+            return
+        if (N0 <= 0) or (N1 <= 0):
+            print("Error: number of points N0, N1 must be > 0!")
+            return
+        if (Pur[0] <= Pll[0]) or (Pur[1] <= Pll[1]):
+            print("Error: Pur[:] must be > Pll[:]!")
+            return
 
-    def Top_Dim(self):
-        """Returns the topological dimension of the mesh."""
-        return self.Cell.Dim()
+        # get number of actual points
+        NP0 = N0 + 1
+        NP1 = N1 + 1
+        
+        if UseBCC:
+            ERROR
+        else:
+            # Create a grid
+            xv = np.linspace(0, 1, NP0, dtype=CoordType)
+            yv = np.linspace(0, 1, NP1, dtype=CoordType)
+            [XX, YY] = np.meshgrid(xv,yv)
+            XV = XX.flatten('F')
+            XV.shape = [XV.size, 1]
+            YV = YY.flatten('F')
+            YV.shape = [YV.size, 1]
+            XP = np.hstack((XV, YV))
+            # apply scaling and translation for dimensions
+            L0 = Pur[0] - Pll[0]
+            L1 = Pur[1] - Pll[1]
+            XP[:,0] = (L0*XP[:,0]) + Pll[0]
+            XP[:,1] = (L1*XP[:,1]) + Pll[1]
+            
+            # meshgrid flips x and y ordering
+            idx = np.arange(NP0*NP1, dtype=VtxIndType)
+            idx.shape = [NP1, NP0]
+            #idx = reshape(1:prod([ny,nx]),[ny,nx]);
+            # local vertex numbering
+            v1 = idx[:-1,:-1]
+            v1 = v1.flatten('F')
+            v1.shape = [v1.size, 1]
+            v2 = idx[1:,:-1]
+            v2 = v2.flatten('F')
+            v2.shape = [v2.size, 1]
+            v3 = idx[:-1,1:]
+            v3 = v3.flatten('F')
+            v3.shape = [v3.size, 1]
+            v4 = idx[1:,1:]
+            v4 = v4.flatten('F')
+            v4.shape = [v4.size, 1]
+
+            # create the cell connectivity
+            R0  = np.hstack((v1,v3,v4))
+            R1  = np.hstack((v1,v4,v2))
+            TRI = np.vstack((R0,R1))
+            
+            # create the object
+            VC = VtxCoordType(2)
+            VC.Set(XP)
+            Mesh = SimplexMesh(2,VC)
+            Mesh.Set_Cell(TRI)
+            
+            # finalize it!
+            Mesh.Finalize_Mesh_Connectivity()
+
+        return VC, Mesh
 
 

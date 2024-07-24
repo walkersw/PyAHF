@@ -713,6 +713,8 @@ class SimplexMesh(BaseSimplexMesh):
 
     # Perimeter?
 
+    # add a VTKwrite method...
+    # would be nice to have a read method...
 
 # (need a local-to-global mapping sub-routine...)
 #
