@@ -1242,23 +1242,23 @@ def Circumcenter(vtx_coord):
     return CB, CR
 
 def Incenter(vtx_coord):
-    """Compute the incenter and inradius of of a simplex; See:
+    """Compute the incenter and inradius of a simplex; see:
     "Coincidences of simplex centers and related facial structures" by Edmonds, et al.
 
     There are two ways to call this function:
     Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
            vertices of a single simplex of topological dimension TD embedded in
            a Euclidean space of dimension GD.
-    Outputs: CB: (TD+1,) numpy array that gives the barycentric coordinates of the
+    Outputs: IB: (TD+1,) numpy array that gives the barycentric coordinates of the
              incenter of the simplex;
-             CR: a single number that gives the inradius.
+             IR: a single number that gives the inradius.
     OR
     Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
            vertices of M simplices of topological dimension TD embedded in
            a Euclidean space of dimension GD.
-    Outputs: CB: (M,TD+1) numpy array that gives the barycentric coordinates of the
+    Outputs: IB: (M,TD+1) numpy array that gives the barycentric coordinates of the
              incenters of the given M simplices;
-             CR: (M,) numpy array that gives the corresponding inradii.
+             IR: (M,) numpy array that gives the corresponding inradii.
     """
     if type(vtx_coord) is not np.ndarray:
         print("Error: vtx_coord must be a numpy array!")
@@ -1277,23 +1277,23 @@ def Incenter(vtx_coord):
         # get perimeter of boundary of simplex
         Total_Area, SA = Perimeter(vtx_coord)
         # init
-        CB = np.zeros((TD+1,), dtype=CoordType)
+        IB = np.zeros((TD+1,), dtype=CoordType)
         
         if (TD==0):
             # the incenter must coincide with the sole point
-            CB[0] = 1.0
+            IB[0] = 1.0
         else:
             # output barycentric coordinates (convert to barycentric)
             SA = SA / Total_Area
-            CB[:] = SA[:]
+            IB[:] = SA[:]
 
-        CR = 0.0
+        IR = 0.0
         if (TD==0):
             # a point has zero radius
-            CR = 0.0
+            IR = 0.0
         elif (TD==1):
             # radius is half the length of the cell
-            CR = (1.0/2.0) * Volume(vtx_coord)
+            IR = (1.0/2.0) * Volume(vtx_coord)
         else:
             # convert barycentric incenter to cartesian incenter
             # init to 0th contribution
@@ -1311,7 +1311,7 @@ def Incenter(vtx_coord):
             # this is the inradius:
             IC_cart = np.reshape(IC_cart, (GD,1))
             X_star_0, DV = Hyperplane_Closest_Point(vtx_coord[1:TD+1,:],IC_cart)
-            CR = np.linalg.norm(DV,ord=2)
+            IR = np.linalg.norm(DV,ord=2)
     else:
         # computing for M simplices
         M  = dim_vc[0]
@@ -1322,24 +1322,24 @@ def Incenter(vtx_coord):
         Total_Area, SA = Perimeter(vtx_coord)
         Total_Area = Total_Area.reshape((M,1))
         # init
-        CB = np.zeros((M,TD+1), dtype=CoordType)
+        IB = np.zeros((M,TD+1), dtype=CoordType)
         
         if (TD==0):
             # the incenter must coincide with the sole point
-            CB[:,0] = 1.0
+            IB[:,0] = 1.0
         else:
             # output barycentric coordinates (convert to barycentric)
             Total_Area_rep = np.tile(Total_Area, (1, TD+1))
             SA[:,:] = SA[:,:] / Total_Area_rep[:,:]
-            CB[:,:] = SA[:,:]
+            IB[:,:] = SA[:,:]
 
-        CR = np.zeros((M,), dtype=RealType)
+        IR = np.zeros((M,), dtype=RealType)
         if (TD==0):
             # a point has zero radius
-            CR[:] = 0.0
+            IR[:] = 0.0
         elif (TD==1):
             # radius is half the length of the cell
-            CR[:] = (1.0/2.0) * Volume(vtx_coord)
+            IR[:] = (1.0/2.0) * Volume(vtx_coord)
         else:
             # convert barycentric incenter to cartesian incenter
             IC_cart = np.zeros((M,GD,1), dtype=CoordType)
@@ -1352,14 +1352,14 @@ def Incenter(vtx_coord):
             # this is the inradius:
             X_star_0, DV = Hyperplane_Closest_Point(vtx_coord[:,1:TD+1,:],IC_cart)
             DV_norm = np.linalg.norm(DV, ord=2, axis=1)
-            CR[:] = DV_norm[:,0]
-            #CR = np.reshape(CR, (M,))
+            IR[:] = DV_norm[:,0]
+            #IR = np.reshape(CR, (M,))
 
-    return CB, CR
+    return IB, IR
 
 def Shape_Regularity(vtx_coord):
     """Compute the "shape regularity" of a simplex,
-    i.e. the ratio of the circumradius to the inradius.
+    i.e. this ratio: circumradius / inradius.
 
     There are two ways to call this function:
     Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the

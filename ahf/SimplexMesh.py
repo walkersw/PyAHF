@@ -366,7 +366,7 @@ class SimplexMesh(BaseSimplexMesh):
         return bary_coord
 
     def Diameter(self, cell_ind=None):
-        """Compute the diameter of cells in the mesh.
+        """Compute the diameter of simplices in the mesh.
 
         There are two ways to call this function:
         Input:  cell_ind: non-negative integer being a specific cell index.
@@ -404,7 +404,7 @@ class SimplexMesh(BaseSimplexMesh):
         return diam_0
 
     def Volume(self, cell_ind=None):
-        """Compute the volume of cells in the mesh.
+        """Compute the volume of simplices in the mesh.
         Note: TD = topological dimension, GD = ambient dimension.
 
         There are two ways to call this function:
@@ -497,17 +497,176 @@ class SimplexMesh(BaseSimplexMesh):
 
         return ang_0
 
+    def Barycenter(self, cell_ind=None):
+        """Compute the barycenter of simplices in the mesh.
+        Note: TD = topological dimension, GD = ambient dimension.
+
+        There are two ways to call this function:
+        Input:  cell_ind: non-negative integer being a specific cell index.
+        Output: (GD,) numpy array that gives the cartesian coordinates of
+                the barycenter of the cell.
+        OR
+        Input: cell_ind: numpy array (M,) of cell indices.  If set to None (or omitted),
+               then defaults to cell_ind = [0, 1, 2, ..., N-1],
+               where N==M is the total number of cells.
+        Output: (M,GD) numpy array that gives the cartesian coordinates of
+                the barycenters of the given M cells.
+        """
+        if cell_ind is None:
+            cell_ind = np.arange(0, self.Num_Cell(), dtype=CellIndType)
+
+        single_cell = False
+        if type(cell_ind) is int:
+            single_cell = True
+        if (not single_cell) and (type(cell_ind) is not np.ndarray):
+            print("Error: input must be a single (non-negative) integer or numpy array!")
+            return
+
+        GD = self._Vtx.Dim()
+        if single_cell:
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind,:],:]
+            BC_0 = sm.Barycenter(vtx_coord)
+        else:
+            # more than one cell
+            M = cell_ind.shape[0]
+            #TD = self.Top_Dim()
+            #GD = self._Vtx.Dim()
+
+            # get the grouped list of vertex coordinates
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind[:],:],:]
+            BC_0 = sm.Barycenter(vtx_coord)
+
+        return BC_0
+
+    def Circumcenter(self, cell_ind=None):
+        """Compute the circumcenter and circumradius of simplices in the mesh.
+        see:  https://westy31.home.xs4all.nl/Circumsphere/ncircumsphere.htm#Coxeter
+        for the method.
+        Note: TD = topological dimension, GD = ambient dimension.
+
+        There are two ways to call this function:
+        Input:  cell_ind: non-negative integer being a specific cell index.
+        Outputs: CB: (TD+1,) numpy array that gives the barycentric coordinates
+                 of the circumcenter of the cell;
+                 CR: a single number that gives the circumradius.
+        OR
+        Input: cell_ind: numpy array (M,) of cell indices.  If set to None (or omitted),
+               then defaults to cell_ind = [0, 1, 2, ..., N-1],
+               where N==M is the total number of cells.
+        Outputs: CB: (M,TD+1) numpy array that gives the barycentric coordinates of the
+                 circumcenters of the given M cells;
+                 CR: (M,) numpy array that gives the corresponding circumradii.
+        """
+        if cell_ind is None:
+            cell_ind = np.arange(0, self.Num_Cell(), dtype=CellIndType)
+
+        single_cell = False
+        if type(cell_ind) is int:
+            single_cell = True
+        if (not single_cell) and (type(cell_ind) is not np.ndarray):
+            print("Error: input must be a single (non-negative) integer or numpy array!")
+            return
+
+        GD = self._Vtx.Dim()
+        if single_cell:
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind,:],:]
+            CB_0, CR_0 = sm.Circumcenter(vtx_coord)
+        else:
+            # more than one cell
+            M = cell_ind.shape[0]
+            #TD = self.Top_Dim()
+            #GD = self._Vtx.Dim()
+
+            # get the grouped list of vertex coordinates
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind[:],:],:]
+            CB_0, CR_0 = sm.Circumcenter(vtx_coord)
+
+        return CB_0, CR_0
+
+    def Incenter(self, cell_ind=None):
+        """Compute the incenter and inradius of simplices in the mesh; see:
+        "Coincidences of simplex centers and related facial structures" by Edmonds, et al.
+
+        There are two ways to call this function:
+        Input:  cell_ind: non-negative integer being a specific cell index.
+        Outputs: IB: (TD+1,) numpy array that gives the barycentric coordinates
+                 of the incenter of the cell;
+                 IR: a single number that gives the inradius.
+        OR
+        Input: cell_ind: numpy array (M,) of cell indices.  If set to None (or omitted),
+               then defaults to cell_ind = [0, 1, 2, ..., N-1],
+               where N==M is the total number of cells.
+        Outputs: IB: (M,TD+1) numpy array that gives the barycentric coordinates of the
+                 incenters of the given M simplices;
+                 IR: (M,) numpy array that gives the corresponding inradii.
+        """
+        if cell_ind is None:
+            cell_ind = np.arange(0, self.Num_Cell(), dtype=CellIndType)
+
+        single_cell = False
+        if type(cell_ind) is int:
+            single_cell = True
+        if (not single_cell) and (type(cell_ind) is not np.ndarray):
+            print("Error: input must be a single (non-negative) integer or numpy array!")
+            return
+
+        GD = self._Vtx.Dim()
+        if single_cell:
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind,:],:]
+            IB_0, IR_0 = sm.Incenter(vtx_coord)
+        else:
+            # more than one cell
+            M = cell_ind.shape[0]
+            #TD = self.Top_Dim()
+            #GD = self._Vtx.Dim()
+
+            # get the grouped list of vertex coordinates
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind[:],:],:]
+            IB_0, IR_0 = sm.Incenter(vtx_coord)
+
+        return IB_0, IR_0
+
+    def Shape_Regularity(self, cell_ind=None):
+        """Compute the "shape regularity" of simplices in the mesh,
+        i.e. this ratio: circumradius / inradius.
+
+        There are two ways to call this function:
+        Input:  cell_ind: non-negative integer being a specific cell index.
+        Output: RATIO: a single number representing the "shape regularity" ratio.
+        OR
+        Input: cell_ind: numpy array (M,) of cell indices.  If set to None (or omitted),
+               then defaults to cell_ind = [0, 1, 2, ..., N-1],
+               where N==M is the total number of cells.
+        Output: RATIO: (M,) numpy array that gives the "shape regularity" ratios.
+        """
+        if cell_ind is None:
+            cell_ind = np.arange(0, self.Num_Cell(), dtype=CellIndType)
+
+        single_cell = False
+        if type(cell_ind) is int:
+            single_cell = True
+        if (not single_cell) and (type(cell_ind) is not np.ndarray):
+            print("Error: input must be a single (non-negative) integer or numpy array!")
+            return
+
+        GD = self._Vtx.Dim()
+        if single_cell:
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind,:],:]
+            RATIO_0 = sm.Shape_Regularity(vtx_coord)
+        else:
+            # more than one cell
+            M = cell_ind.shape[0]
+            #TD = self.Top_Dim()
+            #GD = self._Vtx.Dim()
+
+            # get the grouped list of vertex coordinates
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind[:],:],:]
+            RATIO_0 = sm.Shape_Regularity(vtx_coord)
+
+        return RATIO_0
 
 
 
-    # // simplex centers
-    # void Barycenter(const CellIndType&, const CellIndType*, PointType*);
-    # void Circumcenter(const CellIndType&, const CellIndType*, PointType*, RealType*);
-    # void Incenter(const CellIndType&, const CellIndType*, PointType*, RealType*);
-
-    # // others
-    # void Shape_Regularity(const CellIndType&, const CellIndType*, RealType*);
-    
     # for the whole mesh...
     # void Bounding_Box(const CellIndType&, const CellIndType*, PointType*, PointType*);
     # void Bounding_Box(PointType*, PointType*);
