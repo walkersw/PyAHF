@@ -711,5 +711,9 @@ class SimplexMesh(BaseSimplexMesh):
         return BB_min_0, BB_max_0
 
 
-
     # Perimeter?
+
+
+# (need a local-to-global mapping sub-routine...)
+#
+# Remove_Unused_Vertices

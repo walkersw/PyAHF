@@ -795,3 +795,8 @@ class BaseSimplexMesh:
         # Note: we don't have to sort again,
         #       because the half-facets are ordered by the attached vertex
 
+
+# add this:
+#
+# Get_Adjacency_Matrix
+# Reorder
