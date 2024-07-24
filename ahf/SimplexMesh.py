@@ -586,6 +586,7 @@ class SimplexMesh(BaseSimplexMesh):
     def Incenter(self, cell_ind=None):
         """Compute the incenter and inradius of simplices in the mesh; see:
         "Coincidences of simplex centers and related facial structures" by Edmonds, et al.
+        Note: TD = topological dimension, GD = ambient dimension.
 
         There are two ways to call this function:
         Input:  cell_ind: non-negative integer being a specific cell index.
@@ -665,10 +666,50 @@ class SimplexMesh(BaseSimplexMesh):
 
         return RATIO_0
 
+    def Bounding_Box(self, cell_ind=None):
+        """Compute the bounding (cartesian) box of simplices in the mesh.
+        Note: TD = topological dimension, GD = ambient dimension.
+        
+        There are two ways to call this function:
+        Input:  cell_ind: non-negative integer being a specific cell index.
+        Outputs: BB_min, BB_max.  Both are (GD,) numpy arrays that contain the minimum
+                 and maximum coordinates of the "box" that contains the cell.
+           Example:  if GD==3, then
+                 BB_min[:] = [X_min, Y_min, Z_min], (numpy array),
+                 BB_max[:] = [X_max, Y_max, Z_max], (numpy array).
+        OR
+        Input: cell_ind: numpy array (M,) of cell indices.  If set to None (or omitted),
+               then defaults to cell_ind = [0, 1, 2, ..., N-1],
+               where N==M is the total number of cells.
+        Outputs: BB_min, BB_max.  Both are (M,GD) numpy arrays that contain the minimum
+                 and maximum coordinates of the "box" that contains the M cells.
+        """
+        if cell_ind is None:
+            cell_ind = np.arange(0, self.Num_Cell(), dtype=CellIndType)
+
+        single_cell = False
+        if type(cell_ind) is int:
+            single_cell = True
+        if (not single_cell) and (type(cell_ind) is not np.ndarray):
+            print("Error: input must be a single (non-negative) integer or numpy array!")
+            return
+
+        GD = self._Vtx.Dim()
+        if single_cell:
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind,:],:]
+            BB_min_0, BB_max_0 = sm.Bounding_Box(vtx_coord)
+        else:
+            # more than one cell
+            M = cell_ind.shape[0]
+            #TD = self.Top_Dim()
+            #GD = self._Vtx.Dim()
+
+            # get the grouped list of vertex coordinates
+            vtx_coord = self._Vtx.coord[self.Cell.vtx[cell_ind[:],:],:]
+            BB_min_0, BB_max_0 = sm.Bounding_Box(vtx_coord)
+
+        return BB_min_0, BB_max_0
 
 
-    # for the whole mesh...
-    # void Bounding_Box(const CellIndType&, const CellIndType*, PointType*, PointType*);
-    # void Bounding_Box(PointType*, PointType*);
 
-
+    # Perimeter?

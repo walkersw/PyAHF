@@ -302,6 +302,14 @@ class TestSimplexMesh(unittest.TestCase):
         A0_CHK = Angles(vc0)
         err_A0 = np.amax(np.abs(A0 - A0_CHK))
         self.assertEqual(err_A0 < 1e-15, True, "Should be True.")
+        BB_min0, BB_max0 = self.Mesh.Bounding_Box(0)
+        print(BB_min0)
+        print(BB_max0)
+        BB_min0_CHK, BB_max0_CHK = Bounding_Box(vc0)
+        err_BB_min0 = np.amax(np.abs(BB_min0 - BB_min0_CHK))
+        err_BB_max0 = np.amax(np.abs(BB_max0 - BB_max0_CHK))
+        self.assertEqual(err_BB_min0 < 1e-15, True, "Should be True.")
+        self.assertEqual(err_BB_max0 < 1e-15, True, "Should be True.")
 
         D1_vec = self.Mesh.Diameter(np.array([1, 2], dtype=CellIndType))
         print(D1_vec)
@@ -319,6 +327,15 @@ class TestSimplexMesh(unittest.TestCase):
         A1_vec_CHK = Angles(vc1)
         err_A1 = np.amax(np.abs(A1_vec - A1_vec_CHK))
         self.assertEqual(err_A1 < 1e-15, True, "Should be True.")
+
+        BB_min1_vec, BB_max1_vec = self.Mesh.Bounding_Box(np.array([1, 2], dtype=CellIndType))
+        print(BB_min1_vec)
+        print(BB_max1_vec)
+        BB_min1_vec_CHK, BB_max1_vec_CHK = Bounding_Box(vc1)
+        err_BB_min1 = np.amax(np.abs(BB_min1_vec - BB_min1_vec_CHK))
+        err_BB_max1 = np.amax(np.abs(BB_max1_vec - BB_max1_vec_CHK))
+        self.assertEqual(err_BB_min1 < 1e-15, True, "Should be True.")
+        self.assertEqual(err_BB_max1 < 1e-15, True, "Should be True.")
 
     def test_Centers(self):
         del(self.Mesh)

@@ -459,7 +459,7 @@ def Bounding_Box(vtx_coord):
            vertices of a single simplex of topological dimension TD embedded in
            a Euclidean space of dimension GD.
     Outputs: BB_min, BB_max.  Both are (GD,) numpy arrays that contain the minimum
-             and maximum coordinates of the "box".
+             and maximum coordinates of the "box" that contains the simplex.
        Example:  if GD==3, then
              BB_min[:] = [X_min, Y_min, Z_min], (numpy array),
              BB_max[:] = [X_max, Y_max, Z_max], (numpy array).
@@ -468,7 +468,7 @@ def Bounding_Box(vtx_coord):
            vertices of M simplices of topological dimension TD embedded in
            a Euclidean space of dimension GD.
     Outputs: BB_min, BB_max.  Both are (M,GD) numpy arrays that contain the minimum
-             and maximum coordinates of the "box".
+             and maximum coordinates of the "box" that contains the M simplices.
     """
     if type(vtx_coord) is not np.ndarray:
         print("Error: vtx_coord must be a numpy array!")
