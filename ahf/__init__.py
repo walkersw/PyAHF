@@ -4,7 +4,7 @@ ahf
 The ahf package - a Python package for the Array-based Half-facet data
 structure.  It is a mesh class.
 
-Copyright (c) 12-10-2020,  Shawn W. Walker
+Copyright (c) 07-24-2024,  Shawn W. Walker
 """
 
 import numpy as np

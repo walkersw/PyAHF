@@ -6,7 +6,7 @@ Information about the current version of the PyAHF package.
 
 __title__ = 'PyAHF'
 __description__ = 'Python Class for the AHF mesh data structure'
-__version__ = '0.1.0'
+__version__ = '0.1.2'
 __author__ = 'Shawn W. Walker'
 __author_email__ = 'walker@lsu.edu'
 __license__ = 'GNU GENERAL PUBLIC LICENSE'
