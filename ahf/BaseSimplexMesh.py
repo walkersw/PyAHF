@@ -6,7 +6,7 @@ process simplex meshes.
 
 Also, see "Vtx2HalfFacet_Mapping.py" and "BasicClasses.py" for more explanation.
 
-Copyright (c) 08-18-2022,  Shawn W. Walker
+Copyright (c) 07-24-2024,  Shawn W. Walker
 """
 
 import numpy as np

@@ -6,7 +6,7 @@ depending on the topological dimension TD, and/or the geometric dimension GD.
 
 Also, see "SimplexMesh.py" for more explanation.
 
-Copyright (c) 09-04-2022,  Shawn W. Walker
+Copyright (c) 07-24-2024,  Shawn W. Walker
 """
 
 import numpy as np

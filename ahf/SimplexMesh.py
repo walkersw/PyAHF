@@ -9,7 +9,7 @@ various methods in a more general way.
 
 Also, see "BaseSimplexMesh.py" and "SimplexMath.py" for more explanation.
 
-Copyright (c) 01-01-2023,  Shawn W. Walker
+Copyright (c) 07-24-2024,  Shawn W. Walker
 """
 
 import numpy as np

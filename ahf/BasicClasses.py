@@ -4,10 +4,10 @@ ahf.BasicClasses.py
 Definition of small, light-weight classes and data types used to hold
 mesh cell data, mesh vertex coordinate data, etc.
 
-Note: these structs are used within BaseSimplexMesh and ???, for storing
-      cell and point coordinate data.
+Note: these structs are used within BaseSimplexMesh and SimplexMesh, for
+      storing cell and point coordinate data.
 
-Copyright (c) 08-12-2022,  Shawn W. Walker
+Copyright (c) 07-24-2024,  Shawn W. Walker
 """
 
 import numpy as np
