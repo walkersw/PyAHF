@@ -132,7 +132,7 @@ class MeshFactory:
             
             # meshgrid flips x and y ordering
             idx = np.arange(NP0*NP1, dtype=VtxIndType)
-            idx.shape = [NP1, NP0]
+            idx = np.reshape(idx, (NP1, NP0), order='F')
             #idx = reshape(1:prod([ny,nx]),[ny,nx]);
             # local vertex numbering
             v1 = idx[:-1,:-1]
@@ -153,14 +153,14 @@ class MeshFactory:
             R1  = np.hstack((v1,v4,v2))
             TRI = np.vstack((R0,R1))
             
-            # create the object
-            VC = VtxCoordType(2)
-            VC.Set(XP)
-            Mesh = SimplexMesh(2,VC)
-            Mesh.Set_Cell(TRI)
-            
-            # finalize it!
-            Mesh.Finalize_Mesh_Connectivity()
+        # create the object
+        VC = VtxCoordType(2)
+        VC.Set(XP)
+        Mesh = SimplexMesh(2,VC)
+        Mesh.Set_Cell(TRI)
+        
+        # finalize it!
+        Mesh.Finalize_Mesh_Connectivity()
 
         return VC, Mesh
 

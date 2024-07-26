@@ -713,8 +713,46 @@ class SimplexMesh(BaseSimplexMesh):
 
     # Perimeter?
 
-    # add a VTKwrite method...
-    # would be nice to have a read method...
+    def Export_For_VTKwrite(self):
+        """This exports the vertex coordinates and mesh connectivity in a form
+        that VTKwrite (a Python package) can use.
+        
+        Outputs: Px, Py, Pz, Mesh_Conn, Cell_Offsets.
+        
+        You then call VTKwrite.unstructuredGridToVTK(...) with the following arguments:
+            (FILE_PATH,
+            Px, Py, Pz, connectivity = Mesh_Conn, offsets = Cell_Offsets,
+            cell_types = ctype,
+            all_cell_data = all_cell_data,
+            all_point_data = all_point_data,
+            comments = comments),
+        where ctype = np.zeros(Cell_Offsets.size), ctype[:] = VtkTriangle.tid,
+        all_cell_data = <whatever data is defined on cells in the mesh>,
+        all_point_data = <whatever data is defined on points in the mesh>,
+        comments = <whatever comments you want>.
+        """
+
+        TD = self.Top_Dim()
+        GD = self._Vtx.Dim()
+        
+        Num_Points = self._Vtx.Size()
+        Px = np.zeros(Num_Points, dtype=CoordType)
+        Py = np.zeros(Num_Points, dtype=CoordType)
+        Pz = np.zeros(Num_Points, dtype=CoordType)
+        if GD > 0:
+            Px[:] = self._Vtx.coord[0:Num_Points,0]
+        if GD > 1:
+            Py[:] = self._Vtx.coord[0:Num_Points,1]
+        if GD > 2:
+            Pz[:] = self._Vtx.coord[0:Num_Points,2]
+
+        M = self.Num_Cell()
+        Mesh_Conn = self.Cell.vtx[0:M,:].flatten('C')
+        
+        Cell_Offsets = (TD+1) * np.arange(1, M+1, dtype=CellIndType)
+        
+        return Px, Py, Pz, Mesh_Conn, Cell_Offsets
+
 
 # (need a local-to-global mapping sub-routine...)
 #
