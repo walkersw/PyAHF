@@ -711,7 +711,7 @@ class SimplexMesh(BaseSimplexMesh):
         return BB_min_0, BB_max_0
 
 
-    # Perimeter?
+    # Perimeter? (get the free boundary...)
 
     def Export_For_VTKwrite(self):
         """This exports the vertex coordinates and mesh connectivity in a form
