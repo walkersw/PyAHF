@@ -929,8 +929,10 @@ class VtxCoordType:
         return self._geo_dim
 
     def Reserve(self, num_vtx):
-        """This just pre-allocates, or re-sizes.
-        The _size attribute is unchanged."""
+        """This reserves enough internal storage to hold the given
+        number of vertices.  The actual number of vertices does
+        not change. (The _size attribute is unchanged.)
+        """
         if not self.Is_Coord_Open():
             return
 
@@ -947,7 +949,9 @@ class VtxCoordType:
             pass
 
     def Capacity(self):
-        """This just returns the reserved number of vertex coordinates."""
+        """This returns the reserved number of vertex coordinates.
+        (Not the capacity which is usually larger.)
+        """
         dimcoord = self.coord.shape
         return dimcoord[0]
 

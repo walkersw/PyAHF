@@ -90,8 +90,9 @@ class MeshFactory:
                      default = [1,1].
                 N0: number of intervals to use along the 0-th axis (x-axis); default = 10.
                 N1: number of intervals to use along the 1-th axis (y-axis); default = 10.
-                UseBCC: choose between a mesh based on a Cartesian lattice (with diagonals),
-                        or a lattice that includes the midpoint of each "square";
+                UseBCC: choose between a mesh based on a Cartesian lattice with two triangles
+                        per "square" (bisected along diagonal), or a lattice that includes
+                        the midpoint of each "square" with four triangle;
                         default = False
         Outputs: VC (VtxCoordType), Mesh (SimplexMesh) object containing the mesh data.
         """
@@ -112,42 +113,70 @@ class MeshFactory:
         NP0 = N0 + 1
         NP1 = N1 + 1
         
+        # Create a grid
+        xv = np.linspace(0, 1, NP0, dtype=CoordType)
+        yv = np.linspace(0, 1, NP1, dtype=CoordType)
+        [XX, YY] = np.meshgrid(xv,yv)
+        XV = XX.flatten('F')
+        XV.shape = [XV.size, 1]
+        YV = YY.flatten('F')
+        YV.shape = [YV.size, 1]
+        XP = np.hstack((XV, YV))
+        # apply scaling and translation for dimensions
+        L0 = Pur[0] - Pll[0]
+        L1 = Pur[1] - Pll[1]
+        XP[:,0] = (L0*XP[:,0]) + Pll[0]
+        XP[:,1] = (L1*XP[:,1]) + Pll[1]
+        
+        # meshgrid flips x and y ordering
+        idx = np.arange(NP0*NP1, dtype=VtxIndType)
+        idx = np.reshape(idx, (NP1, NP0), order='F')
+        #idx = reshape(1:prod([ny,nx]),[ny,nx]);
+        # local vertex numbering
+        v1 = idx[:-1,:-1]
+        v1 = v1.flatten('F')
+        v1.shape = [v1.size, 1]
+        v2 = idx[1:,:-1]
+        v2 = v2.flatten('F')
+        v2.shape = [v2.size, 1]
+        v3 = idx[:-1,1:]
+        v3 = v3.flatten('F')
+        v3.shape = [v3.size, 1]
+        v4 = idx[1:,1:]
+        v4 = v4.flatten('F')
+        v4.shape = [v4.size, 1]
+        
         if UseBCC:
-            ERROR
-        else:
-            # Create a grid
-            xv = np.linspace(0, 1, NP0, dtype=CoordType)
-            yv = np.linspace(0, 1, NP1, dtype=CoordType)
-            [XX, YY] = np.meshgrid(xv,yv)
-            XV = XX.flatten('F')
-            XV.shape = [XV.size, 1]
-            YV = YY.flatten('F')
-            YV.shape = [YV.size, 1]
-            XP = np.hstack((XV, YV))
-            # apply scaling and translation for dimensions
-            L0 = Pur[0] - Pll[0]
-            L1 = Pur[1] - Pll[1]
-            XP[:,0] = (L0*XP[:,0]) + Pll[0]
-            XP[:,1] = (L1*XP[:,1]) + Pll[1]
-            
-            # meshgrid flips x and y ordering
-            idx = np.arange(NP0*NP1, dtype=VtxIndType)
-            idx = np.reshape(idx, (NP1, NP0), order='F')
-            #idx = reshape(1:prod([ny,nx]),[ny,nx]);
-            # local vertex numbering
-            v1 = idx[:-1,:-1]
-            v1 = v1.flatten('F')
-            v1.shape = [v1.size, 1]
-            v2 = idx[1:,:-1]
-            v2 = v2.flatten('F')
-            v2.shape = [v2.size, 1]
-            v3 = idx[:-1,1:]
-            v3 = v3.flatten('F')
-            v3.shape = [v3.size, 1]
-            v4 = idx[1:,1:]
-            v4 = v4.flatten('F')
-            v4.shape = [v4.size, 1]
+            # cell dimensions
+            Cell_X = (1/N0)
+            Cell_Y = (1/N1)
+            # apply scaling (translation already accounted for)
+            Cell_X = L0*Cell_X
+            Cell_Y = L1*Cell_Y
 
+            # create BCC coordinates
+            New_BCC = XP[v1[:,0],:]
+            New_BCC[:,0] = New_BCC[:,0] + Cell_X/2
+            New_BCC[:,1] = New_BCC[:,1] + Cell_Y/2
+
+            Num_Cells = N0*N1
+            if (New_BCC.shape[0]!=Num_Cells):
+                print("Number of cells does not match number of center vertices.")
+                return
+
+            v5 = np.arange(Num_Cells, dtype=VtxIndType) + XP.shape[0]
+            v5.shape = [v5.size, 1]
+            # v5 is linked to v1~v4
+            XP = np.vstack((XP,New_BCC))
+
+            # create the cell connectivity
+            R0  = np.hstack((v1,v3,v5))
+            R1  = np.hstack((v3,v4,v5))
+            R2  = np.hstack((v4,v2,v5))
+            R3  = np.hstack((v2,v1,v5))
+            TRI = np.vstack((R0,R1,R2,R3))
+            
+        else:
             # create the cell connectivity
             R0  = np.hstack((v1,v3,v4))
             R1  = np.hstack((v1,v4,v2))
