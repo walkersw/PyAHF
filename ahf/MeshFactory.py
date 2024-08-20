@@ -31,27 +31,9 @@ class MeshFactory:
         # if np.rint(CELL_DIM).astype(SmallIndType)!=CELL_DIM:
             # print("Error: cell dimension must be a non-negative integer!")
         # assert(np.rint(CELL_DIM).astype(SmallIndType)==CELL_DIM)
-
-        # # connectivity and sibling half-facet data
-        # self.Cell = CellSimplexType(CELL_DIM, res_buf)
-        
-        # # flag to indicate if mesh cells may be added or modified.
-        # #  true  = cells can be added, modified
-        # #  false = the mesh cells cannot be changed!
-        # self._mesh_open = True
         
         # # estimate of the size to allocate in Vtx2HalfFacets
         # self._estimate_size_Vtx2HalfFacets = 0
-        
-        # # referenced vertices in Cell and (possibly multiple) attached half-facet(s)
-        # self.Vtx2HalfFacets = Vtx2HalfFacetMap()
-        
-        # # intermediate data structure for building sibling half-facet information
-        # self._v2hfs = Vtx2HalfFacetMap() # for a given vertex, it references multiple half-facets.
-        # # Note: this data structure will NOT NECESSARILY store all referenced vertices
-        # #       in the triangulation.  This is because the vertex with smallest index
-        # #       will never be referenced (for example).  This is an internal structure that
-        # #       is only used to construct the sibling half-facet information (stored in Cell).
 
     def __init__(self):
 
@@ -92,7 +74,7 @@ class MeshFactory:
                 N1: number of intervals to use along the 1-th axis (y-axis); default = 10.
                 UseBCC: choose between a mesh based on a Cartesian lattice with two triangles
                         per "square" (bisected along diagonal), or a lattice that includes
-                        the midpoint of each "square" with four triangle;
+                        the midpoint of each "square" with four triangles;
                         default = False
         Outputs: VC (VtxCoordType), Mesh (SimplexMesh) object containing the mesh data.
         """
