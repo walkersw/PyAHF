@@ -58,6 +58,33 @@ class SimplexMesh(BaseSimplexMesh):
         """This resets all mesh data, but not the vertex coordinate data."""
         super().Clear()
 
+    def Open(self):
+        """This sets the _mesh_open flag and _Vtx._coord_open flag to True
+        to indicate that the mesh can be modified."""
+        super().Open()
+        self._Vtx.Open()
+
+    def Close(self):
+        """This sets the _mesh_open flag and _Vtx._coord_open flag to False
+        to indicate that the mesh cannot be modified."""
+        super().Close()
+        self._Vtx.Close()
+
+    def Is_Mesh_Open(self):
+        """This prints and returns whether or not the mesh is open."""
+        Cell_Mesh_Open = super().Is_Mesh_Open()
+        Vtx_Coord_Open = self._Vtx.Is_Coord_Open()
+        M_Open = Cell_Mesh_Open and Vtx_Coord_Open
+        
+        if not Cell_Mesh_Open:
+            print("The Cell Mesh is not open for modification!")
+            print("     You must first use the 'Open' method.")
+        if not Vtx_Coord_Open:
+            print("The Vertex Coordinates are not open for modification!")
+            print("     You must first use the 'Open' method.")
+
+        return M_Open
+
     def Set_Geometric_Dimension(self, new_geo_dim):
         """This changes the geometric dimension of the mesh's vertex coordinates.
 

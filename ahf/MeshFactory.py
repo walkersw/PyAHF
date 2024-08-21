@@ -172,6 +172,7 @@ class MeshFactory:
         
         # finalize it!
         Mesh.Finalize_Mesh_Connectivity()
+        Mesh.Close()
 
         return VC, Mesh
 
