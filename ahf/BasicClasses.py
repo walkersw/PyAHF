@@ -1036,6 +1036,53 @@ class VtxCoordType:
         else:
             print("Error: geometric dimension of given vertex coordinates is incorrect!")
 
+    def Change_Dimension(self, new_geo_dim):
+        """This changes the geometric dimension of the vertex coordinates.
+
+        E.g. if new_geo_dim==5, then each vertex will have coordinates like
+                     (x_0, x_1, x_2, x_3, x_4).
+
+        If the new geometric dimension > old geometric dimension, then:
+            (x_0, ..., x_{old GD}) ---> (x_0, ..., x_{old GD}, 0, ..., 0),
+        i.e. an extension.
+
+        If the new geometric dimension < old geometric dimension, then:
+            (x_0, ..., x_{new GD}, ..., x_{old GD}) ---> (x_0, ..., x_{new GD}),
+        i.e. a projection.
+
+        Input: new_geo_dim: the new geometric dimension of the vertex coordinates.
+        """
+        if not self.Is_Coord_Open():
+            print("The coordinates are not *open* to be changed.  Please Open() them.")
+            return
+
+        if (new_geo_dim<0):
+            print("Error: new geometric dimension must be non-negative!")
+        assert(new_geo_dim>=0)
+        if np.rint(new_geo_dim).astype(SmallIndType)!=new_geo_dim:
+            print("Error: new geometric dimension must be a non-negative integer!")
+        assert(np.rint(new_geo_dim).astype(SmallIndType)==new_geo_dim)
+
+        Num_Rows = self.Capacity()
+        Num_Cols_old = self.Dim()
+        Num_Cols_new = new_geo_dim
+        
+        if Num_Cols_old==Num_Cols_new:
+            # no need to do anything
+            return
+
+        old_coord = np.copy(self.coord)
+        self.coord = None
+        self.coord = np.full((Num_Rows, Num_Cols_new), 0.0, dtype=CoordType)
+        
+        if Num_Cols_new > Num_Cols_old:
+            self.coord[:,0:Num_Cols_old] = old_coord
+        elif Num_Cols_new < Num_Cols_old:
+            self.coord = old_coord[:,0:Num_Cols_new]
+
+        # update the dimension
+        self._geo_dim = new_geo_dim
+
     def Init_Coord(self, num_vtx):
         """Allocate given number of vertex coordinates and set all to 0.0
         """

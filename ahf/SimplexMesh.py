@@ -38,6 +38,13 @@ class SimplexMesh(BaseSimplexMesh):
         if not VCType_Correct:
             print("Error: VtxCoord is not of VtxCoordType!")
         assert(VCType_Correct)
+        
+        # need to enforce that the geometric dimension >= topological dimension
+        Dims_Correct = VtxCoord.Dim() >= CELL_DIM
+        if not Dims_Correct:
+            print("Error: Dimension of VtxCoord must be >= the cell dimension!")
+        assert(Dims_Correct)
+
         self._Vtx = VtxCoord
 
     def __str__(self):
@@ -50,6 +57,44 @@ class SimplexMesh(BaseSimplexMesh):
     def Clear(self):
         """This resets all mesh data, but not the vertex coordinate data."""
         super().Clear()
+
+    def Set_Geometric_Dimension(self, new_geo_dim):
+        """This changes the geometric dimension of the mesh's vertex coordinates.
+
+        Note: the new geometric dimension must be *greater or equal* to the
+              topological dimension = TD.
+
+        E.g. if new_geo_dim==5, then each vertex will have coordinates like
+                     (x_0, x_1, x_2, x_3, x_4).
+
+        If the new geometric dimension > old geometric dimension, then:
+            (x_0, ..., x_{old GD}) ---> (x_0, ..., x_{old GD}, 0, ..., 0),
+        i.e. an extension.
+
+        If the new geometric dimension < old geometric dimension, then:
+            (x_0, ..., x_{new GD}, ..., x_{old GD}) ---> (x_0, ..., x_{new GD}),
+        i.e. a projection.  Warning: this may cause a tangled mesh!
+
+        Input: new_geo_dim: the new geometric dimension of the vertex coordinates.
+        """
+        if not self._Vtx.Is_Coord_Open():
+            print("The mesh coordinates are not *open* to be changed.  Please Open() them.")
+            return
+
+        if (new_geo_dim<0):
+            print("Error: new geometric dimension must be non-negative!")
+        assert(new_geo_dim>=0)
+        if np.rint(new_geo_dim).astype(SmallIndType)!=new_geo_dim:
+            print("Error: new geometric dimension must be a non-negative integer!")
+        assert(np.rint(new_geo_dim).astype(SmallIndType)==new_geo_dim)
+
+        # need to enforce that the new geometric dimension >= topological dimension
+        Dims_Correct = new_geo_dim >= self.Top_Dim()
+        if not Dims_Correct:
+            print("Error: New geometric dimension must be >= topological dimension!")
+        assert(Dims_Correct)
+
+        self._Vtx.Change_Dimension(new_geo_dim)
 
     def Affine_Map(self, cell_ind=None):
         """Get the (jacobian) matrix and translation vector for the affine map from the

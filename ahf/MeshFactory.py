@@ -14,7 +14,7 @@ import numpy as np
 # from ahf import RealType, CoordType
 from ahf import *
 
-from ahf.SimplexMesh import *
+import ahf.SimplexMesh as ahf_SM
 
 class MeshFactory:
     r"""
@@ -165,9 +165,9 @@ class MeshFactory:
             TRI = np.vstack((R0,R1))
             
         # create the object
-        VC = VtxCoordType(2)
+        VC = ahf_SM.VtxCoordType(2)
         VC.Set(XP)
-        Mesh = SimplexMesh(2,VC)
+        Mesh = ahf_SM.SimplexMesh(2,VC)
         Mesh.Set_Cell(TRI)
         
         # finalize it!

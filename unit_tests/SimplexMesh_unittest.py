@@ -52,6 +52,19 @@ class TestSimplexMesh(unittest.TestCase):
         self.assertEqual(Cell_cap, 5, "Cell Capacity should be 5.")
         self.assertEqual(Vtx2HF_cap, 0, "Vtx2HF capacity should be 0.")
 
+    def test_Set_Geo_Dim(self):
+        self.test_Create()
+
+        print(self.VC.coord)
+        self.Mesh.Set_Geometric_Dimension(5)
+        print(self.VC.coord)
+        self.Mesh.Set_Geometric_Dimension(3)
+        print(self.VC.coord)
+        self.Mesh.Set_Geometric_Dimension(8)
+        print(self.VC.coord)
+        self.Mesh.Set_Geometric_Dimension(2)
+        print(self.VC.coord)
+
     def test_Affine_Map(self):
         del(self.Mesh)
         del(self.VC)

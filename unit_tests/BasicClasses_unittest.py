@@ -112,6 +112,25 @@ class TestBasicClasses(unittest.TestCase):
         self.assertEqual(np.array_equal(self.VC.coord[4],[4.7, 10.6, -5.1]), True, "Should be [4.7, 10.6, -5.1].")
         self.assertEqual(self.VC.Size(), 5, "Should be 5.")
 
+    def test_Change_Vertex_Geo_Dim(self):
+        del(self.Cell)
+        del(self.VC)
+        self.VC = VtxCoordType(3)
+
+        vc_rand = np.random.rand(5,3)
+        self.VC.Set(vc_rand)
+        print(self.VC.coord)
+        orig_VC_coord = np.copy(self.VC.coord)
+        
+        self.VC.Change_Dimension(5)
+        print(self.VC.coord)
+        self.assertEqual(np.array_equal(self.VC.coord[:,0:3],orig_VC_coord), True, "Should be equal.")
+        self.assertEqual(np.linalg.norm(self.VC.coord[:,3:]), 0, "Should be 0.")
+
+        self.VC.Change_Dimension(2)
+        print(self.VC.coord)
+        self.assertEqual(np.array_equal(self.VC.coord,orig_VC_coord[:,0:2]), True, "Should be equal.")
+
     def test_Reindex(self):
         del(self.Cell)
         del(self.VC)
