@@ -70,12 +70,11 @@ class MeshFactory:
                      default = [0,0].
                 Pur: length 2 array with coordinates of upper right corner of rectangle;
                      default = [1,1].
-                N0: number of intervals to use along the 0-th axis (x-axis); default = 10.
-                N1: number of intervals to use along the 1-th axis (y-axis); default = 10.
-                UseBCC: choose between a mesh based on a Cartesian lattice with two triangles
-                        per "square" (bisected along diagonal), or a lattice that includes
-                        the midpoint of each "square" with four triangles;
-                        default = False
+                 N0: number of intervals to use along the 0-th axis (x-axis); default = 10.
+                 N1: number of intervals to use along the 1-th axis (y-axis); default = 10.
+             UseBCC: choose between a mesh based on a Cartesian lattice with two triangles per
+                     "square" (bisected along diagonal), or a lattice that includes the
+                     midpoint of each "square" with four triangles; default = False.
         Outputs: VC (VtxCoordType), Mesh (SimplexMesh) object containing the mesh data.
         """
         if (type(Pll[0]) is not float) or (type(Pll[1]) is not float):

@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PyAHF"
+version = "0.1.2"
+dependencies = [
+  "numpy",
+]
+requires-python = ">=3.6"
+authors = [
+  {name = "Shawn W. Walker", email = "walker@lsu.edu"},
+]
+maintainers = [
+  {name = "Shawn W. Walker", email = "walker@lsu.edu"}
+]
+description = "Python Class for the AHF mesh data structure"
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = ["mesh"]
+classifiers = [
+	"Programming Language :: Python :: 3",
+	"License :: OSI Approved :: GNU GENERAL PUBLIC LICENSE",
+	"Operating System :: OS Independent"
+]
+
+[tool.setuptools]
+packages = ["ahf"]
+
+[project.urls]
+Homepage = "https://github.com/walkersw/PyAHF"
+Documentation = "https://github.com/walkersw/PyAHF"
+Repository = "https://github.com/walkersw/PyAHF"
+"Bug Tracker" = "https://github.com/walkersw/PyAHF"
