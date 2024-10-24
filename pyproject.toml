@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "PyAHF"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
   "numpy",
 ]
@@ -26,7 +26,8 @@ classifiers = [
 ]
 
 [tool.setuptools]
-packages = ["ahf"]
+packages = ["ahf", "ahf.fem"]
+package-dir = {"" = "src"}
 
 [project.urls]
 Homepage = "https://github.com/walkersw/PyAHF"

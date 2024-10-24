@@ -1564,3 +1564,68 @@ def Angles(vtx_coord):
 
     return Ang
 
+def Unit_Simplex_Quadrature(deg=1, TD=1):
+    """Get a quadrature rule on the unit simplex.
+    Formulas taken from Hammmer and Stroud (1956), via Walkington (2000).
+    Note: only degrees 1, 2, 3 are implemented.
+
+    Inputs: deg: integer >= 1 that specifies the degree of precision;
+                 integration rule will be exact for polynomials up to degree <= deg.
+             TD: integer >= 1 that specifies the topological dimension of the simplex;
+                 in this case, the unit simplex will be assumed.
+    Outputs:  X: (M,TD+1) numpy array that gives the barycentric coordinates, with respect
+                 to the simplex, of the quadrature points where M is the number of points.
+              W: (M,) numpy array that gives the quadrature weights.
+    """
+
+    if not (isinstance(deg, (int, np.integer)) and deg >=1):
+        print("Error: deg must be an integer >= 1!")
+        return
+
+    if not (isinstance(TD, (int, np.integer)) and TD >=1):
+        print("Error: TD must be an integer >= 1!")
+        return
+
+    # compute the centroid
+    cen = (1.0 / (TD + 1)) * np.ones((1,TD+1), dtype=CoordType)
+    
+    # choose quad rule based on order
+    if deg==1:
+        # simple mid-point rule
+        X = np.copy(cen)
+        W = (1.0 / math.factorial(TD)) * np.ones((1,), dtype=RealType)
+    elif deg==2:
+        # define the \Xi_1 set
+        a1 = 1.0 / np.sqrt(TD+1)
+        b1 = 1.0 - TD * a1
+        w1 = 1.0 / math.factorial(TD+1)
+        M = TD+1
+        # init
+        X = a1 * np.ones((M,TD+1), dtype=CoordType)
+        for mm in range(M):
+            X[mm,mm] = b1
+        W = w1 * np.ones((M,), dtype=RealType)
+    elif deg==3:
+        # define the \Xi_1 set
+        w0 = -(1.0/4) * np.power(TD+1, 3) / math.factorial(TD+2)
+        a1 = 1.0 / (TD+3)
+        b1 = 1.0 - TD * a1
+        w1 = (1.0/4) * np.power(TD+3, 3) / math.factorial(TD+3)
+
+        # init
+        M1 = TD+1
+        Xi_1 = a1 * np.ones((M1,TD+1), dtype=CoordType)
+        for mm in range(M1):
+            Xi_1[mm,mm] = b1
+        X = np.vstack((cen,Xi_1))
+        M = X.shape[0]
+        # init
+        W = w1 * np.ones((M,), dtype=RealType)
+        W[0] = w0
+    else:
+        print("Error: not implemented!")
+        X = None
+        W = None
+
+    return X, W
+
