@@ -61,6 +61,7 @@ class TestBaseSimplexMesh(unittest.TestCase):
         
         self.Mesh.Append_Cell(np.array([1, 2, 3, 4]))
         self.Mesh.Append_Cell(np.array([4, 23, 88]))
+        print("Note: this is supposed to produce an error (above).")
         print(self.Mesh)
         self.Mesh.Cell.Print()
 
@@ -195,6 +196,20 @@ class TestBaseSimplexMesh(unittest.TestCase):
         #print(Vtx2HalfFacets_REF)
         self.assertEqual(np.array_equal(self.Mesh.Vtx2HalfFacets.VtxMap[0:self.Mesh.Vtx2HalfFacets.Size()],\
                          Vtx2HalfFacets_REF), True, "Should be True.")
+
+        # get all vertex indices attached to a given vertex
+        vi_attached_v0 = self.Mesh.Get_Vertices_Attached_To_Vertex(0)
+        print(vi_attached_v0)
+        vi_attached_v0_REF = np.array([1,3,4])
+        self.assertEqual(np.array_equal(vi_attached_v0,vi_attached_v0_REF), True, "Should be True.")
+        vi_attached_v3 = self.Mesh.Get_Vertices_Attached_To_Vertex(3)
+        print(vi_attached_v3)
+        vi_attached_v3_REF = np.array([0,2,4])
+        self.assertEqual(np.array_equal(vi_attached_v3,vi_attached_v3_REF), True, "Should be True.")
+        vi_attached_v4 = self.Mesh.Get_Vertices_Attached_To_Vertex(4)
+        print(vi_attached_v4)
+        vi_attached_v4_REF = np.array([0,1,2,3])
+        self.assertEqual(np.array_equal(vi_attached_v4,vi_attached_v4_REF), True, "Should be True.")
 
     def test_0D_Nonmanifold_Mesh_1(self):
         """

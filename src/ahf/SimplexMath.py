@@ -845,14 +845,14 @@ def Normal_Space(vtx_coord):
     Input: vtx_coord: a (TD+1,GD) numpy array that gives the coordinates of the
            vertices of a single simplex of topological dimension TD embedded in
            a Euclidean space of dimension GD.
-    Outputs: NS: numpy matrix (GD,GD-TD), whose column vectors are the (unit)
-             basis vectors of the normal space.
+    Output: NS: numpy matrix (GD,GD-TD), whose column vectors are the (unit)
+            basis vectors of the normal space.
     OR
     Input: vtx_coord: a (M,TD+1,GD) numpy array that gives the coordinates of the
            vertices of M simplices of topological dimension TD embedded in
            a Euclidean space of dimension GD.
-    Outputs: NS: numpy array (M,GD,GD-TD), which is a stack of M matrices, each of
-             whose column vectors are the (unit) basis vectors of the normal space.
+    Output: NS: numpy array (M,GD,GD-TD), which is a stack of M matrices, each of
+            whose column vectors are the (unit) basis vectors of the normal space.
     """
     if type(vtx_coord) is not np.ndarray:
         print("Error: vtx_coord must be a numpy array!")
@@ -1572,7 +1572,7 @@ def Unit_Simplex_Quadrature(deg=1, TD=1):
     Inputs: deg: integer >= 1 that specifies the degree of precision;
                  integration rule will be exact for polynomials up to degree <= deg.
              TD: integer >= 1 that specifies the topological dimension of the simplex;
-                 in this case, the unit simplex will be assumed.
+                 here, the unit simplex is assumed.
     Outputs:  X: (M,TD+1) numpy array that gives the barycentric coordinates, with respect
                  to the simplex, of the quadrature points where M is the number of points.
               W: (M,) numpy array that gives the quadrature weights.

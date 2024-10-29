@@ -425,6 +425,28 @@ class BaseSimplexMesh:
 
         return v1_in_cell
 
+    def Get_Vertices_Attached_To_Vertex(self, vi):
+        """Returns all vertex indices (a numpy array) that are attached to vertex "vi"
+        by an edge of the mesh; the array is sorted.
+        WARNING: this requires the sibling half-facet data (see self.Cell.halffacet)
+        to be built, and self.Vtx2HalfFacets must be completed as well, before this
+        method can be used.
+        Note: the returned cell_array can be empty.
+        """
+        
+        # get all cells attached to vi
+        attached_cells = self.Get_Cells_Attached_To_Vertex(vi)
+
+        # collect all the attached vertices
+        all_vertices = np.array([], dtype=VtxIndType) # initialize as an empty array
+        for ci in attached_cells:
+            cell_vtx = self.Cell.vtx[ci]
+            all_vertices = np.concatenate((all_vertices, cell_vtx), axis=0)
+            # NOTE: in a simplex, all vertices are attached to each other
+
+        vtx_array = np.setdiff1d(all_vertices, vi)
+        return vtx_array
+
     def Get_Cells_Attached_To_Edge(self, *args):
         """Returns all cell indices (numpy array) attached to a given edge.
         Inputs: either give a single MeshEdgeType, or

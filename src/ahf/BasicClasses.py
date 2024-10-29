@@ -317,10 +317,14 @@ class CellSimplexType:
         uv = self.Get_Unique_Vertices()
         return uv.size
 
+    def Min_Vtx_Index(self):
+        """Returns the minimum vertex index referenced in self.vtx."""
+        return np.amin(self.vtx[0:self.Size()][:])
+
     def Max_Vtx_Index(self):
         """Returns the largest vertex index referenced in self.vtx."""
         return np.amax(self.vtx[0:self.Size()][:])
-        
+
     def Reindex_Vertices(self, new_indices):
         """Re-index the vertices in the mesh.
         Example: new_index = new_indices[old_index]

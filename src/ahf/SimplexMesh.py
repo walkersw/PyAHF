@@ -785,6 +785,228 @@ class SimplexMesh(BaseSimplexMesh):
 
     # Perimeter? (get the free boundary...)
 
+    def Get_Vtx_Edge_Star(self, vi=None, efficient=False):
+        """Get a mapping from mesh vertices (indices) to mesh edges (indices).
+
+        Input:        vi: a single non-negative integer (vtx index), or
+                          a numpy array (VI,) of vertex indices, or None (default).
+                          If set to None, then vi = a numpy array (VI,) of all
+                          vertex indices that are referenced by the mesh cells.
+               efficient: True or False (default).
+        -if efficient==False, then: 
+        Outputs: Mesh_Edges: array of MeshEdgeType (see BasicClasses.Cell.Get_Edges())
+                 Vtx2Edge: a dict where Vtx2Edge[vi] = numpy array of indices that index
+                 into Mesh_Edges, where vi is a vertex index referenced by self.Cell.
+        -if efficient==True, then: 
+        Outputs: Mesh_Edges: numpy array (E+1,2), where Mesh_Edges[ee,:] contains the
+                 vertex indices for a single edge, ee, in the mesh.  Note that edge index
+                 E is a dummy edge index with Mesh_Edges[E,:] = [vv, vv], where
+                 vv is the smallest index of vertex referenced by self.Cell (usually, vv==0).
+                 Vtx2Edge: a numpy array (N,M) where N-1 is the maximum vertex index
+                 referenced by self.Cell and M is the maximum number of edges that
+                 any vertex is connected to in the mesh.  Thus,
+                 Vtx2Edge[vi,:] = numpy array of indices that index into Mesh_Edges.
+                 If Vtx2Edge[vi,kk]==E, then that is a dummy edge that should be ignored.
+                 If vi is not referenced by self.Cell, then Vtx2Edge[vi,:]==E.
+        """
+        if vi is None:
+            vi = self.Cell.Get_Unique_Vertices()
+
+        if isinstance(vi, np.ndarray):
+            if not ( np.issubdtype(vi.dtype, np.integer) and (np.amin(vi) >= 0) ):
+                print("Error: vi must be a numpy array of non-negative integers!")
+                return
+        elif type(vi) is int:
+            if vi < 0:
+                print("Error: vi must be a non-negative integer!")
+                return
+        else:
+            print("Error: vi must either be a singleton or numpy array of non-negative integers!")
+            return
+
+        if not efficient:
+            # get all mesh edges (array of MeshEdgeType)
+            Mesh_Edges = self.Cell.Get_Edges()
+
+            # figure out the maximum number of edges per vertex
+            Vtx2Edge = dict.fromkeys(vi)
+            for ii in vi:
+                edge_indices_0 = np.argwhere(Mesh_Edges[:]['v0']==ii)
+                edge_indices_1 = np.argwhere(Mesh_Edges[:]['v1']==ii)
+                edge_ind = np.vstack((edge_indices_0,edge_indices_1))
+                if edge_ind.size > 0:
+                    Vtx2Edge[ii] = edge_ind[:,0]
+
+        else:
+            # output a full numpy array that is more efficient for
+            # numerical operations later
+
+            min_vi = np.amin(vi)
+            max_vi = np.amax(vi)
+
+            # number of unique vertices referenced by Cell
+            #Num_Vtx = self.Cell.Num_Vtx()
+
+            # get all mesh edges (array of MeshEdgeType)
+            EE = self.Cell.Get_Edges()
+
+            # figure out the maximum number of edges per vertex
+            Max_Edge_in_Star = 0
+            Vtx_Star_temp = dict.fromkeys(vi)
+            for ii in vi:
+                edge_indices_0 = np.argwhere(EE[:]['v0']==ii)
+                edge_indices_1 = np.argwhere(EE[:]['v1']==ii)
+                edge_ind = np.vstack((edge_indices_0,edge_indices_1))
+                Max_Edge_in_Star = np.max([Max_Edge_in_Star, edge_ind.size])
+                if edge_ind.size > 0:
+                    Vtx_Star_temp[ii] = edge_ind[:,0]
+
+            # make a pure numpy version of Mesh_Edges that has a dummy edge
+            Mesh_Edges = np.zeros((EE.size+1,2), dtype=VtxIndType)
+            Mesh_Edges[:-1,0] = EE[:]['v0']
+            Mesh_Edges[:-1,1] = EE[:]['v1']
+
+            # set the dummy edge (the last edge)
+            Mesh_Edges[-1,0] = min_vi
+            Mesh_Edges[-1,1] = min_vi
+            dummy_edge_index = Mesh_Edges.shape[0]-1
+
+            # now remake a more efficient data structure
+            Vtx2Edge = np.full((max_vi,Max_Edge_in_Star), dummy_edge_index, dtype=VtxIndType)
+            for ii in np.arange(max_vi, dtype=VtxIndType):
+                Edges_Attached_to_V_ii = Vtx_Star_temp[ii]
+                Num_Edges = Edges_Attached_to_V_ii.size
+                Vtx2Edge[ii,0:Num_Edges] = Edges_Attached_to_V_ii[:]
+
+        return Mesh_Edges, Vtx2Edge
+
+    def Get_Vtx_Based_Orthogonal_Frame(self, arg1=None, frame_type="all", debug=False):
+        """Get orthonormal column vectors that describe a frame for a set of given
+        vertices.  If the keyword "all" is given, then the orthonormal vectors
+        span all of \R^{GD}, where the first TD vectors span an (approximate)
+        *tangent* space of the mesh (at each vertex), and the last (GD - TD) vectors
+        span the space *orthogonal* to the tangent space (i.e. called the *normal*
+        space). The keyword "tangent" only gives the vectors in the tangent space;
+        the keyword "normal" only gives the vectors in the normal space.
+        Note: TD = topological dimension, GD = ambient dimension.
+
+        Note on the method: this a "vertex-based" tangent space.  It is computed by
+        computing an SVD of the edge vectors that are connected to the vertex.  Each
+        edge vector is the difference of the coordinates of the tail and head vertex
+        of that edge.  In other words, the edge vectors are stacked into a matrix,
+        and that matrix is SVD'ed.  We then extract the "edge-weighted" orthogonal
+        vectors from that matrix.  The first TD vectors are the tangent vectors;
+        the rest are the normal vectors.
+
+        There are three ways to call this function:
+        Inputs:         vi: non-negative integer being a specific vertex index.
+                frame_type: a string = "all", "tangent", or "normal".  If omitted,
+                then default is "all".  "all" gives a complete frame of \R^{GD},
+                "tangent" gives the tangent space, and "normal" gives the normal space.
+        Output: Ortho: numpy matrix (GD,qD), whose column vectors are the (unit)
+                basis vectors of the frame.
+                Note: "all" ==> qD==GD; "tangent" ==> qD==TD; "normal" ==> qD==GD-TD.
+        OR
+        Inputs: vi: numpy array (N,) of vertex indices.  If set to None (or omitted),
+                    then defaults to vi = [0, 1, 2, ..., N-1],
+                    where N is the total number of vertices.
+                frame_type: same as above.
+        Output: Ortho: numpy array (N,GD,qD), which is a stack of N matrices, each
+                of whose column vectors are the (unit) basis vectors of the frame.
+                Note: see above, for qD.
+        OR
+        Inputs: (Mesh_Edges, Vtx2Edge): as generated from 'Get_Vtx_Edge_Star'
+                            frame_type: same as above.
+        Output: Ortho: either a numpy matrix (GD,qD) or a numpy array (N,GD,qD),
+                which is described above; it depends on whether vi was an array or not.
+        """
+        if isinstance(arg1, tuple):
+            Mesh_Edges = arg1[0]
+            Vtx2Edge = arg1[1]
+            
+            if isinstance(Vtx2Edge, dict):
+                keys = dict.keys()
+                num_keys = len(keys)
+                if num_keys > 1:
+                    print("Error: if Vtx2Edge is a dict, then it should only contain 1 key!")
+                    return
+                is_array = False
+                vi = keys[0]
+            else:
+                is_array = True
+        else:
+            vi = arg1
+            if vi is None:
+                vi = self.Cell.Get_Unique_Vertices()
+
+            is_array = False
+            if isinstance(vi, np.ndarray):
+                is_array = True
+                if not ( np.issubdtype(vi.dtype, np.integer) and (np.amin(vi) >= 0) ):
+                    print("Error: vi must be a numpy array of non-negative integers!")
+                    return
+            elif type(vi) is int:
+                if vi < 0:
+                    print("Error: vi must be a non-negative integer!")
+                    return
+            else:
+                print("Error: vi must either be a singleton or numpy array of non-negative integers!")
+                return
+            Mesh_Edges, Vtx2Edge = self.Get_Vtx_Edge_Star(vi, efficient=is_array)
+
+        if not is_array:
+            #
+            # compute edge vectors (Num_Edges,GD)
+            Edge_Vec = self._Vtx.coord[Mesh_Edges[:]['v1']][:] - self._Vtx.coord[Mesh_Edges[:]['v0']][:]
+            Max_Edge_in_Star = Vtx2Edge[vi].size
+            GD = self._Vtx.Dim()
+            Tangent_Star = np.zeros((Max_Edge_in_Star,GD), dtype=CoordType)
+            Tangent_Star[:,:] = Edge_Vec[Vtx2Edge[vi][:],:]
+
+            U, S, Vh = np.linalg.svd(Tangent_Star, full_matrices=False)
+            
+            # we want column vectors, so take the transpose
+            if frame_type.lower() == "tangent":
+                # the first TD rows of Vh span the tangent space
+                Ortho = np.transpose(Vh[0:TD,:])
+            elif frame_type.lower() == "normal":
+                # the remaining GD-TD rows of Vh span the normal space
+                Ortho = np.transpose(Vh[TD:,:])
+            else:
+                Ortho = Vh.transpose()
+
+        else:
+            # we have an array of vertex indices
+            
+            # compute edge vectors (Num_Edges,GD)
+            Edge_Vec = self._Vtx.coord[Mesh_Edges[:,1]][:] - self._Vtx.coord[Mesh_Edges[:,0]][:]
+            Max_Vtx = Vtx2Edge.shape[0]
+            Max_Edge_in_Star = Vtx2Edge.shape[1]
+            GD = self._Vtx.Dim()
+            Tangent_Star = np.zeros((Max_Vtx,Max_Edge_in_Star,GD), dtype=CoordType)
+            Tangent_Star[:,:,:] = Edge_Vec[Vtx2Edge[:,:],:]
+
+            # stack of SVDs
+            U, S, Vh = np.linalg.svd(Tangent_Star, full_matrices=False)
+            
+            # the first TD rows of Vh[ii,:,:] span the tangent space (for each ii)
+            # the remaining GD-TD rows of Vh[ii,:,:] span the normal space (for each ii)
+            if frame_type.lower() == "tangent":
+                Vh_tilde = Vh[:,0:TD,:]
+            elif frame_type.lower() == "normal":
+                Vh_tilde = Vh[:,TD:,:]
+            else:
+                Vh_tilde = Vh
+
+            # but we want column vectors, so take the transpose
+            Ortho = np.transpose(Vh_tilde, (0, 2, 1))
+
+        if debug:
+            return Ortho, Edge_Vec, Tangent_Star
+        else:
+            return Ortho
+
+
     def Export_For_VTKwrite(self):
         """This exports the vertex coordinates and mesh connectivity in a form
         that VTKwrite (a Python package) can use.
