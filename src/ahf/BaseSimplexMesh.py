@@ -500,7 +500,7 @@ class BaseSimplexMesh:
         # (each one corresponds to a connected component of the mesh)
         for hf_it in np.arange(HF_1st, HF_1st + Num_HF, dtype=VtxIndType):
             star_hf_it = self.Vtx2HalfFacets.VtxMap[hf_it]
-            temp_array = self.Cell.Get_Cells_Attached_To_Vertex(vi, star_hf_it['ci'])
+            temp_array = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(vi, star_hf_it['ci'])
             # store the found cells in cell_array
             cell_array = np.concatenate((cell_array, temp_array), axis=0)
 
@@ -530,7 +530,7 @@ class BaseSimplexMesh:
             star_hf_it = self.Vtx2HalfFacets.VtxMap[hf_it]
             COUNT += 1
             print("component #" + str(COUNT) + ": ")
-            cell_array = self.Cell.Get_Cells_Attached_To_Vertex(vi, star_hf_it['ci'])
+            cell_array = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(vi, star_hf_it['ci'])
             print(str(cell_array[0]), endl="")
             # print it
             for cc in np.arange(1, cell_array.size, dtype=CellIndType):
@@ -624,80 +624,144 @@ class BaseSimplexMesh:
         # don't forget to sort!
         self._v2hfs.Sort()
 
+    # def _Build_Sibling_HalfFacets(self):
+        # """Fill in the sibling half-facet data structure.
+        # Note: this updates the internal data of "self.Cell.halffacet".
+        # Note: need to run '_Finalize_v2hfs' before this.
+        # """
+        # CELL_DIM = self.Top_Dim()
+        # if (not self.Is_Mesh_Open()):
+            # return
+
+        # # go thru all the elements
+        # NC = self.Num_Cell()
+        # for ci in np.arange(0, NC, dtype=CellIndType):
+            # # loop through all the facets
+            # for ff in np.arange(0, CELL_DIM+1, dtype=SmallIndType):
+                # # if that hf is uninitialized
+                # if (self.Cell.halffacet[ci][ff]==NULL_HalfFacet):
+                    # # find the vertex with largest ID in the face ff
+                    # MaxVtx = self.Cell.Get_Vertex_With_Largest_Index_In_Facet(self.Cell.vtx[ci], ff)
+                    # # get vertices in the facet ff of the current element that is adjacent to MaxVtx
+                    # Adj_Vtx = self.Cell.Vtx2Adjacent(MaxVtx, ci, ff) # see below...
+
+                    # # find all half-facets that are attached to MaxVtx
+                    # HF_1st, Num_HF = self._v2hfs.Get_Half_Facets(MaxVtx)
+
+                    # # update sibling half-facets in Cell to be a cyclic mapping...
+                    # if (Num_HF > 0): 
+                        # # then there is at least one half-facet attached to MaxVtx
+                        # # keep track of consecutive pairs in cyclic mapping
+
+                        # # Note: all the attached half-facets are attached to MaxVtx.
+                        # #       we say a half-facet is *valid* if its adjacent vertices match the
+                        # #       adjacent vertices in the facet of the original cell (... see above).
+
+                        # # find the first valid half-facet...
+                        # Start = np.zeros(1, dtype=VtxIndType)
+                        # Start[0] = HF_1st + Num_HF - 1 # default value
+                        
+                        # for hf_it in np.arange(HF_1st, HF_1st + Num_HF, dtype=VtxIndType):
+                            # # get vertices in the half-facet that is adjacent to MaxVtx
+                            # star_hf_it = self._v2hfs.VtxMap[hf_it]
+                            # Adj_Vtx_First = self.Cell.Vtx2Adjacent(MaxVtx, star_hf_it['ci'], star_hf_it['fi'])
+
+                            # # if the adjacent facet vertices match, then this half-facet is valid
+                            # if (self.Cell.Adj_Vertices_In_Facet_Equal(Adj_Vtx_First, Adj_Vtx)):
+                                # # ... and save it
+                                # Start[0] = hf_it
+                                # break
+
+                        # Current = np.zeros(1, dtype=VtxIndType)
+                        # # init Current to Start
+                        # Current[0] = Start[0]
+                        
+                        # # loop through the remaining half-facets
+                        # for Next in np.arange(Current[0]+1, HF_1st + Num_HF, dtype=VtxIndType):
+                            # # get vertices in the half-facet that is adjacent to MaxVtx
+                            # star_Next = self._v2hfs.VtxMap[Next]
+                            # Adj_Vtx_Other = self.Cell.Vtx2Adjacent(MaxVtx, star_Next['ci'], star_Next['fi'])
+
+                            # # if the half-facet is valid
+                            # if (self.Cell.Adj_Vertices_In_Facet_Equal(Adj_Vtx_Other, Adj_Vtx)):
+                                # # in the Current cell and half-facet, write the Next half-facet
+                                # star_Current = self._v2hfs.VtxMap[Current[0]]
+                                # self.Cell.halffacet[star_Current['ci']][star_Current['fi']] = star_Next[['ci','fi']]
+                                # # update Current to Next
+                                # Current[0] = Next
+                                # star_Current = star_Next
+
+                        # # don't forget to close the cycle:
+                        # # if Current is different from Start
+                        # if (Current[0]!=Start[0]): # i.e. it cannot refer to itself!
+                            # # then in the Current cell and half-facet, write the Start half-facet
+                            # star_Start = self._v2hfs.VtxMap[Start[0]]
+                            # self.Cell.halffacet[star_Current['ci']][star_Current['fi']] = star_Start[['ci','fi']]
+
+                        # # Note: Current and Start are guaranteed to be valid at this point!
+                    # else:
+                        # # error check!
+                        # print("Error: nothing is attached to the largest index vertex in the facet!")
+                        # hf = self._v2hfs.Get_Half_Facet(MaxVtx)
+                        # assert(hf!=NULL_HalfFacet) # this should stop the program
+
+        # # now that we no longer need v2hfs, we can delete it
+        # self._estimate_size_Vtx2HalfFacets = self._v2hfs.Size() # for estimating size of Vtx2HalfFacets
+        # self._v2hfs.Clear()
+
     def _Build_Sibling_HalfFacets(self):
         """Fill in the sibling half-facet data structure.
         Note: this updates the internal data of "self.Cell.halffacet".
+        Note: need to run '_Finalize_v2hfs' before this.
         """
         CELL_DIM = self.Top_Dim()
         if (not self.Is_Mesh_Open()):
             return
 
-        # go thru all the elements
+        # go thru all the cells
         NC = self.Num_Cell()
         for ci in np.arange(0, NC, dtype=CellIndType):
-            # loop through all the facets
+            # loop through all the facets of the current cell
             for ff in np.arange(0, CELL_DIM+1, dtype=SmallIndType):
-                # if that hf is uninitialized
+                # if that hf = (ci,ff) is uninitialized
                 if (self.Cell.halffacet[ci][ff]==NULL_HalfFacet):
+                    VI_facet = np.sort(self.Cell.Get_Global_Vertices_In_Facet(ci, ff))
                     # find the vertex with largest ID in the face ff
-                    MaxVtx = self.Cell.Get_Vertex_With_Largest_Index_In_Facet(self.Cell.vtx[ci], ff)
-                    # get vertices in the facet ff of the current element that is adjacent to MaxVtx
-                    Adj_Vtx = self.Cell.Vtx2Adjacent(MaxVtx, ci, ff) # see below...
+                    MaxVtx = VI_facet[-1]
 
                     # find all half-facets that are attached to MaxVtx
                     HF_1st, Num_HF = self._v2hfs.Get_Half_Facets(MaxVtx)
 
-                    # update sibling half-facets in Cell to be a cyclic mapping...
+                    # update sibling half-facets in Cell to be a cyclic mapping
                     if (Num_HF > 0): 
                         # then there is at least one half-facet attached to MaxVtx
-                        # keep track of consecutive pairs in cyclic mapping
-
-                        # Note: all the attached half-facets are attached to MaxVtx.
-                        #       we say a half-facet is *valid* if its adjacent vertices match the
-                        #       adjacent vertices in the facet of the original cell (... see above).
-
-                        # find the first valid half-facet...
-                        Start = np.zeros(1, dtype=VtxIndType)
-                        Start[0] = HF_1st + Num_HF - 1 # default value
-                        
-                        for hf_it in np.arange(HF_1st, HF_1st + Num_HF, dtype=VtxIndType):
-                            # get vertices in the half-facet that is adjacent to MaxVtx
-                            star_hf_it = self._v2hfs.VtxMap[hf_it]
-                            Adj_Vtx_First = self.Cell.Vtx2Adjacent(MaxVtx, star_hf_it['ci'], star_hf_it['fi'])
-
-                            # if the adjacent facet vertices match, then this half-facet is valid
-                            if (self.Cell.Adj_Vertices_In_Facet_Equal(Adj_Vtx_First, Adj_Vtx)):
-                                # ... and save it
-                                Start[0] = hf_it
-                                break
-
-                        Current = np.zeros(1, dtype=VtxIndType)
-                        # init Current to Start
-                        Current[0] = Start[0]
-                        
-                        # loop through the remaining half-facets
-                        for Next in np.arange(Current[0]+1, HF_1st + Num_HF, dtype=VtxIndType):
-                            # get vertices in the half-facet that is adjacent to MaxVtx
-                            star_Next = self._v2hfs.VtxMap[Next]
-                            Adj_Vtx_Other = self.Cell.Vtx2Adjacent(MaxVtx, star_Next['ci'], star_Next['fi'])
-
-                            # if the half-facet is valid
-                            if (self.Cell.Adj_Vertices_In_Facet_Equal(Adj_Vtx_Other, Adj_Vtx)):
-                                # in the Current cell and half-facet, write the Next half-facet
-                                star_Current = self._v2hfs.VtxMap[Current[0]]
-                                self.Cell.halffacet[star_Current['ci']][star_Current['fi']] = star_Next[['ci','fi']]
-                                # update Current to Next
-                                Current[0] = Next
-                                star_Current = star_Next
+                        last_ci = ci
+                        last_ff = ff
+                        # loop through all half-facets attached to MaxVtx
+                        for ii in np.arange(HF_1st, HF_1st + Num_HF, dtype=VtxIndType):
+                            vhf_ii = self._v2hfs.VtxMap[ii]
+                            hf_ii = vhf_ii[['ci','fi']]
+                            hf_ii_ci = hf_ii['ci']
+                            hf_ii_fi = hf_ii['fi']
+                            # if the facet is != to current main facet
+                            if ( (hf_ii_ci != ci) or (hf_ii_fi != ff) ):
+                                # then check if vertices in the facet match the main facet
+                                VI_other_facet = np.sort(self.Cell.Get_Global_Vertices_In_Facet(hf_ii_ci, hf_ii_fi))
+                                facet_vertices_match = np.array_equal(VI_facet, VI_other_facet)
+                                if facet_vertices_match:
+                                    # we found a sibling half-facet!
+                                    self.Cell.halffacet[last_ci][last_ff] = hf_ii
+                                    # update to make the cyclic mapping
+                                    last_ci = hf_ii_ci
+                                    last_ff = hf_ii_fi
 
                         # don't forget to close the cycle:
-                        # if Current is different from Start
-                        if (Current[0]!=Start[0]): # i.e. it cannot refer to itself!
-                            # then in the Current cell and half-facet, write the Start half-facet
-                            star_Start = self._v2hfs.VtxMap[Start[0]]
-                            self.Cell.halffacet[star_Current['ci']][star_Current['fi']] = star_Start[['ci','fi']]
+                        # there needs to be at least 2 half-facets to do this;
+                        # otherwise, the main facet has no siblings
+                        never_changed = (last_ci == ci) and (last_ff == ff)
+                        if not never_changed: # i.e. it cannot refer to itself!
+                            self.Cell.halffacet[last_ci][last_ff] = np.array((ci, ff), dtype=HalfFacetType)
 
-                        # Note: Current and Start are guaranteed to be valid at this point!
                     else:
                         # error check!
                         print("Error: nothing is attached to the largest index vertex in the facet!")
@@ -708,8 +772,43 @@ class BaseSimplexMesh:
         self._estimate_size_Vtx2HalfFacets = self._v2hfs.Size() # for estimating size of Vtx2HalfFacets
         self._v2hfs.Clear()
 
+    def _Check_Sibling_HalfFacets(self):
+        """This is an internal debugging routine to check that the
+        sibling half-facet data structure is consistent.
+        """
+        CELL_DIM = self.Top_Dim()
+
+        CONSISTENT = True
+
+        # go thru all the cells
+        NC = self.Num_Cell()
+        for ci in np.arange(0, NC, dtype=CellIndType):
+            # loop through all the facets of the current cell
+            for ff in np.arange(0, CELL_DIM+1, dtype=SmallIndType):
+                # if that hf = (ci,ff) is uninitialized
+                VI_current_cell_and_facet = np.sort(self.Cell.Get_Global_Vertices_In_Facet(ci, ff))
+                hf = self.Cell.halffacet[ci][ff]
+                if hf != NULL_HalfFacet:
+                    VI_sibling_cell_and_facet = np.sort(self.Cell.Get_Global_Vertices_In_Facet(hf['ci'], hf['fi']))
+                    facet_vertices_match = np.array_equal(VI_current_cell_and_facet, VI_sibling_cell_and_facet)
+                    if not facet_vertices_match:
+                        CONSISTENT = False
+                        print("Error: this cell and other cell do not have consistent sibling half-facet data:")
+                        print("Cell index: " + str(ci) + ":")
+                        self.Cell.Print(ci)
+                        print("Cell index: " + str(hf['ci']) + ":")
+                        self.Cell.Print(hf['ci'])
+
+        if CONSISTENT:
+            print("The sibling half-facet data is consistent!")
+        else:
+            print("The sibling half-facet data is NOT consistent!")
+
+        return CONSISTENT
+
     def _Build_Vtx2HalfFacets(self):
         """Build the final vertex-to-adjacent half-facets data structure.
+        Note: this needs '_Build_Sibling_HalfFacets' to have already run.
         In general, a vertex is attached to (or contained in) many half-facets.  But we
         only need to store one of the half-facets (for each vertex), because the rest can
         be found by a simple local search using the Sibling Half-Facets.  If the vertex
@@ -719,17 +818,21 @@ class BaseSimplexMesh:
         the degree of "non-manifold"-ness of the vertex.
         """
         if not self.Is_Mesh_Open():
+            print("In order to run '_Build_Vtx2HalfFacets', the mesh must be open for modification!")
             return
 
         self.Vtx2HalfFacets.Clear() # start fresh
         # make guess on how much space to allocate
         self.Vtx2HalfFacets.Reserve(self._estimate_size_Vtx2HalfFacets)
 
-        # allocate a temp variable and initialize to all false,
-        #    because we have not visited any half-facets yet.
+        # initialize a dict with keys being vertex indices
+        min_vi = self.Cell.Min_Vtx_Index()
+        max_vi = self.Cell.Max_Vtx_Index()
+        Vtx2Cell = {kk: [] for kk in np.arange(min_vi, max_vi+1, dtype=VtxIndType)}
+        # this will keep track of what vertices have been visited and distinct components of the mesh
+
         CELL_DIM = self.Top_Dim()
         NC = self.Num_Cell()
-        Marked = np.full((NC, (CELL_DIM+1)), False)
 
         # store one-to-one mapping from local vertices to local facets
         lv_to_lf = np.zeros(CELL_DIM+1, dtype=SmallIndType)
@@ -742,28 +845,27 @@ class BaseSimplexMesh:
         for ci in np.arange(0, NC, 1, dtype=CellIndType):
             # loop through each local vertex of the current cell
             for local_vi in np.arange(0, (CELL_DIM+1), 1, dtype=SmallIndType):
-                # current half-facet is (ci,local_fi)
-                local_fi = lv_to_lf[local_vi]
-                if not Marked[ci][local_fi]:
+                Global_Vtx = self.Cell.vtx[ci][local_vi] # get global vertex
+                ci_is_facet_attached_to_GV = ci in Vtx2Cell[Global_Vtx]
+                if not ci_is_facet_attached_to_GV:
+                    # we have found a cell (containing vi) that is not facet attached to
+                    # previously known cells that are facet attached to vi; i.e.
+                    # we have found a new component of the mesh that is attached to vi.
+                    
+                    # current half-facet is (ci,local_fi)
+                    local_fi = lv_to_lf[local_vi]
                     # store this half-facet
-                    Global_Vtx = self.Cell.vtx[ci][local_vi] # get global vertex
                     vhf = np.array((Global_Vtx, ci, local_fi), dtype=VtxHalfFacetType)
                     self.Vtx2HalfFacets.Append(vhf)
-                    # denote that we have visited it!
-                    Marked[ci][local_fi] = True
 
                     # get the cells attached to the current vertex, that are also
                     #     facet-connected to the current cell
-                    attached_cells = self.Cell.Get_Cells_Attached_To_Vertex(Global_Vtx, ci)
-                    
-                    # loop thru the attached cells and mark corresponding half-facets as also visited
-                    for ci_hat in attached_cells:
-                        # the local vertex index within ci_hat
-                        local_vi_hat = self.Cell.Get_Local_Vertex_Index_In_Cell(Global_Vtx, self.Cell.vtx[ci_hat])
-                        # corresponding local facet index
-                        local_fi_hat = lv_to_lf[local_vi_hat]
-                        # mark it!
-                        Marked[ci_hat][local_fi_hat] = True
+                    attached_cells = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(Global_Vtx, ci)
+                    # record this so we know we have visited this component of the mesh
+                    Vtx2Cell[Global_Vtx].extend(list(attached_cells[:]))
+
+        # free up some memory
+        del Vtx2Cell
 
         # now this data structure is usable!
         self.Vtx2HalfFacets.Sort()
@@ -816,6 +918,221 @@ class BaseSimplexMesh:
 
         # Note: we don't have to sort again,
         #       because the half-facets are ordered by the attached vertex
+
+    def _Check_Vtx2HalfFacets(self):
+        """This is an internal debugging routine to check that the
+        Vtx2HalfFacets data structure is consistent.
+        """
+        CELL_DIM = self.Top_Dim()
+
+        CONSISTENT = True
+
+        array_of_cell_indices = np.zeros(0, dtype=CellIndType)
+
+        # go thru all vertices
+        UV = self.Get_Unique_Vertices()
+        for vi in UV:
+            # get the half-facets attached to the vertex
+            HF_1st, Num_HF = self.Vtx2HalfFacets.Get_Half_Facets(vi)
+            if (Num_HF==0):
+                print("Error: there should be at least one attached half-facet!")
+                CONSISTENT = False
+            elif (Num_HF==1):
+                hf = self.Vtx2HalfFacets.VtxMap[HF_1st]
+                VI_cell_facet = np.sort(self.Cell.Get_Global_Vertices_In_Facet(hf['ci'], hf['fi']))
+                if not np.isin(vi, VI_cell_facet):
+                    print("Error: the attached half-facet does not contain the vertex it is attached to!")
+                    print("vi = " + str(vi))
+                    print("hf:")
+                    print(hf)
+                    print("Cell index: " + str(hf['ci']) + ":")
+                    self.Cell.Print(hf['ci'])
+                    CONSISTENT = False
+                # get all cell indices that are facet attached to this vertex/cell
+                ci_temp = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(vi, hf['ci'])
+                array_of_cell_indices = np.append(array_of_cell_indices, ci_temp)
+            else:
+                # there is more than one, so is a non-manifold vertex
+                ci_temp = [[]] * Num_HF
+                # loop through all the attached facets
+                for it in np.arange(HF_1st, HF_1st + Num_HF, dtype=VtxIndType):
+                    hf_it = self.Vtx2HalfFacets.VtxMap[it]
+                    VI_cell_facet = np.sort(self.Cell.Get_Global_Vertices_In_Facet(hf_it['ci'], hf_it['fi']))
+                    if not np.isin(vi, VI_cell_facet):
+                        print("Error: the attached half-facet does not contain the vertex it is attached to!")
+                        print("vi = " + str(vi))
+                        print("hf:")
+                        print(hf_it)
+                        print("Cell index: " + str(hf_it['ci']) + ":")
+                        self.Cell.Print(hf_it['ci'])
+                        CONSISTENT = False
+                    # get all cell indices that are facet attached to this vertex/cell
+                    ci_temp = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(vi, hf_it['ci'])
+                    array_of_cell_indices = np.append(array_of_cell_indices, ci_temp)
+                # loop through distinct pairs of attached facets
+                for ii in np.arange(HF_1st, HF_1st + Num_HF, dtype=VtxIndType):
+                    for jj in np.arange(HF_1st, HF_1st + Num_HF, dtype=VtxIndType):
+                        if ii!=jj:
+                            hf_ii = self.Vtx2HalfFacets.VtxMap[ii]
+                            hf_jj = self.Vtx2HalfFacets.VtxMap[jj]
+                            c_ii = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(vi, hf_ii['ci'])
+                            c_jj = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(vi, hf_jj['ci'])
+                            c_ii_AND_c_jj = np.intersect1d(c_ii, c_jj)
+                            if c_ii_AND_c_jj.size > 0:
+                                print("Error: the distinct components should not have overlapping cells!")
+                                print("vi = " + str(vi))
+                                print("hf_ii:")
+                                print(hf_ii)
+                                print("hf_jj:")
+                                print(hf_jj)
+                                print("c_ii:")
+                                print(c_ii)
+                                print("c_jj:")
+                                print(c_jj)
+                                CONSISTENT = False
+
+        # one final check
+        unique_ci = np.unique(array_of_cell_indices)
+        min_ci = np.min(unique_ci)
+        max_ci = np.max(unique_ci)
+        if min_ci != 0:
+            print("The minimum cell index is not 0!")
+            CONSISTENT = False
+        if max_ci != self.Num_Cell()-1:
+            print("The maximum cell index is not Num_Cell!")
+            CONSISTENT = False
+
+        if CONSISTENT:
+            print("The vertex-to-half-facet data is consistent!")
+        else:
+            print("The vertex-to-half-facet data is NOT consistent!")
+
+        return CONSISTENT
+
+
+
+    # OLD:
+    # def _Build_Vtx2HalfFacets(self):
+        # """Build the final vertex-to-adjacent half-facets data structure.
+        # Note: this needs '_Build_Sibling_HalfFacets' to have already run.
+        # In general, a vertex is attached to (or contained in) many half-facets.  But we
+        # only need to store one of the half-facets (for each vertex), because the rest can
+        # be found by a simple local search using the Sibling Half-Facets.  If the vertex
+        # is a NON-manifold vertex, then we need to store more than one half-facet in order
+        # to be able to easily find *all* half-facets (and all cells) that contain that
+        # vertex.  The number of half-facets needed (for a single vertex) depends on
+        # the degree of "non-manifold"-ness of the vertex.
+        # """
+        # if not self.Is_Mesh_Open():
+            # return
+
+        # self.Vtx2HalfFacets.Clear() # start fresh
+        # # make guess on how much space to allocate
+        # self.Vtx2HalfFacets.Reserve(self._estimate_size_Vtx2HalfFacets)
+
+        # # allocate a temp variable and initialize to all false,
+        # #    because we have not visited any half-facets yet.
+        # CELL_DIM = self.Top_Dim()
+        # NC = self.Num_Cell()
+        # Marked = np.full((NC, (CELL_DIM+1)), False)
+
+        # # store one-to-one mapping from local vertices to local facets
+        # lv_to_lf = np.zeros(CELL_DIM+1, dtype=SmallIndType)
+        # if (CELL_DIM>=1):
+            # for kk in np.arange(0, CELL_DIM, dtype=SmallIndType):
+                # lv_to_lf[kk] = kk+1
+            # lv_to_lf[CELL_DIM] = 0
+
+        # # loop through each cell
+        # for ci in np.arange(0, NC, 1, dtype=CellIndType):
+            # # loop through each local vertex of the current cell
+            # for local_vi in np.arange(0, (CELL_DIM+1), 1, dtype=SmallIndType):
+                # # current half-facet is (ci,local_fi)
+                # local_fi = lv_to_lf[local_vi]
+                # if not Marked[ci][local_fi]:
+                    # # store this half-facet
+                    # Global_Vtx = self.Cell.vtx[ci][local_vi] # get global vertex
+                    # vhf = np.array((Global_Vtx, ci, local_fi), dtype=VtxHalfFacetType)
+                    # self.Vtx2HalfFacets.Append(vhf)
+                    # # denote that we have visited it!
+                    # Marked[ci][local_fi] = True
+
+                    # # get the cells attached to the current vertex, that are also
+                    # #     facet-connected to the current cell
+                    # attached_cells = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(Global_Vtx, ci)
+                    
+                    # # loop thru the attached cells and mark corresponding half-facets as also visited
+                    # for ci_hat in attached_cells:
+                        # # the local vertex index within ci_hat
+                        # local_vi_hat = self.Cell.Get_Local_Vertex_Index_In_Cell(Global_Vtx, self.Cell.vtx[ci_hat])
+                        # # corresponding local facet index
+                        # local_fi_hat = lv_to_lf[local_vi_hat]
+                        # # mark it!
+                        # Marked[ci_hat][local_fi_hat] = True
+
+        # # now this data structure is usable!
+        # self.Vtx2HalfFacets.Sort()
+        
+        # self.Vtx2HalfFacets.Print_Half_Facets()
+
+        # # Give border half-facets (i.e. half-facets with no siblings) higher priority.
+        # # This allows us to easily identify vertices that are on the boundary of the mesh.
+
+        # # loop through each cell
+        # for ci in np.arange(0, NC, 1, dtype=CellIndType):
+            # # loop through each local facet of the current cell
+            # for local_fi in np.arange(0, (CELL_DIM+1), 1, dtype=SmallIndType):
+                # # if this half-facet has no sibling
+                # if (self.Cell.halffacet[ci][local_fi]==NULL_HalfFacet):
+                    # if (CELL_DIM > 0):
+                        # # get the local vertices of the local facet
+                        # local_vtx = self.Cell.Get_Local_Vertices_Of_Local_Facet(local_fi)
+                        # # for each vertex of the current half-facet
+                        # for local_vi in np.arange(0, CELL_DIM, 1, dtype=SmallIndType):
+                            # # get the global vertex
+                            # global_vi = self.Cell.vtx[ci][ local_vtx[local_vi] ]
+                            # print("[global_vi, ci]:")
+                            # print(global_vi)
+                            # print(ci)
+
+                            # # get the half-facets attached to the vertex
+                            # HF_1st, Num_HF = self.Vtx2HalfFacets.Get_Half_Facets(global_vi)
+                            # print("HF_1st:")
+                            # print(HF_1st)
+                            # print(self.Vtx2HalfFacets.VtxMap[HF_1st])
+
+                            # # find the half-facet in the connected component corresponding to ci,
+                            # #      and replace it with the half-facet with no sibling.
+                            # if (Num_HF==0):
+                                # # error!
+                                # print("Error: the first part of 'Build_Vtx2HalfFacets' missed this vertex: " \
+                                      # + str(global_vi) + ".")
+                                # temp_hf = self.Vtx2HalfFacets.Get_Half_Facet(global_vi)
+                                # assert(temp_hf!=NULL_HalfFacet) # this should stop the program
+                            # elif (Num_HF==1):
+                                # # in this case, it is obvious what to replace
+                                # star_HF_1st = self.Vtx2HalfFacets.VtxMap[HF_1st]
+                                # star_HF_1st['ci'] = ci
+                                # star_HF_1st['fi'] = local_fi
+                            # else:
+                                # # there is more than one connected component,
+                                # #    so we need to find the correct one to replace.
+                                # print("Is there really more than one connected component?")
+                                # for hf_it in np.arange(HF_1st, HF_1st + Num_HF, dtype=VtxIndType):
+                                    # star_hf_it = self.Vtx2HalfFacets.VtxMap[hf_it]
+                                    # print("Num_HF = " + str(Num_HF))
+                                    # print(star_hf_it)
+                                    # CONNECTED = self.Cell.Two_Cells_Are_Facet_Connected(global_vi, ci, star_hf_it['ci'])
+                                    # if CONNECTED:
+                                        # # then replace this one (note: this still points to 
+                                        # #      self.Vtx2HalfFacets.VtxMap[hf_it])
+                                        # star_hf_it['ci'] = ci
+                                        # star_hf_it['fi'] = local_fi
+                                        # break # can stop looking
+                                # print("Finished!")
+
+        # # Note: we don't have to sort again,
+        # #       because the half-facets are ordered by the attached vertex
 
 
 # add this:

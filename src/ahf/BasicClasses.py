@@ -428,11 +428,12 @@ class CellSimplexType:
         bdy_np = np.array(bdy, dtype=HalfFacetType)
         return bdy_np
 
-    def Get_Cells_Attached_To_Vertex(self, vi, ci):
+    def Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(self, vi, ci):
         """Returns all cell indices (a numpy array) that are attached to vertex "vi" AND are
         facet-connected to the cell "ci".  WARNING: this requires the sibling half-facet data
         (see self.halffacet) to be built before this can be used.
-        Note: the returned cell_array can be empty.
+        The returned cell array does include the starting cell "ci" (if "ci" contains "vi").
+        Note: the returned cell_array can be empty, for instance if "ci" does not contain "vi".
         """
         if ( (vi==NULL_Vtx) or (ci==NULL_Cell) ):
             # the vertex or starting cell is null, so do nothing.
@@ -440,17 +441,17 @@ class CellSimplexType:
 
         # do a recursive search to collect all the cells
         cell_list = [] # initialize as an empty list
-        self._Get_Cells_Attached_To_Vertex_Recurse(vi, ci, cell_list)
+        self._Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell_Recurse(vi, ci, cell_list)
         
         return np.array(cell_list, dtype=CellIndType)
 
-    def _Get_Cells_Attached_To_Vertex_Recurse(self, vi, ci, cell_list):
+    def _Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell_Recurse(self, vi, ci, cell_list):
         """Recursive function call for the above method.
         """
         # if we have been searching too long...
         if (len(cell_list) > 100000):
             # then quit!
-            print("Error in 'Get_Cells_Attached_To_Vertex'...")
+            print("Error in 'Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell'...")
             print("    Recursion depth is too great.")
             print("    There should not be more than 100,000 cells attached to a single vertex!")
             return
@@ -472,7 +473,7 @@ class CellSimplexType:
             local_vi = self.Get_Local_Vertex_Index_In_Cell(vi, cell_vtx)
             if (local_vi==NULL_Small):
                 # cell does not actually contain the vertex
-                #    will only happen if the (vi, ci) given to 'Get_Cells_Attached_To_Vertex'
+                #    will only happen if the (vi, ci) given to 'Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell'
                 #    is not valid, i.e. ci does not contain vi.
                 # so, we are done
                 return
@@ -488,7 +489,8 @@ class CellSimplexType:
                 for fi in range(self._cell_dim):
                     if (local_facet[fi]!=NULL_Small):
                         # determine the neighbor cell on the "other side" of that facet and search it
-                        self._Get_Cells_Attached_To_Vertex_Recurse(vi, cell_halffacet[local_facet[fi]]['ci'], cell_list)
+                        self._Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell_Recurse(vi, \
+                                  cell_halffacet[local_facet[fi]]['ci'], cell_list)
                     # else the neighbor does not exist, so do nothing
 
     def Two_Cells_Are_Facet_Connected(self, vi, ci_a, ci_b):
@@ -558,6 +560,7 @@ class CellSimplexType:
 
             # keep counting
             Depth_Count += 1
+            #print("Depth_Count = " + str(Depth_Count) + ", vi=" + str(vi) + ", start=" + str(start) + ", current=" + str(current) + ", target=" + str(target))
 
             # loop through the facets
             CONNECTED = False # init
@@ -743,10 +746,11 @@ class CellSimplexType:
         
         if (self._cell_dim >= 2):
             # get the vertices in the half-facet "fi"
-            vtx_in_hf = self.Get_Global_Vertices_In_Facet(self.vtx[ci], fi)
+            vtx_in_hf = self.Get_Global_Vertices_In_Facet(ci, fi)
             # now return the vertices in the half-facet, EXCEPT v_in (i.e. the adjacent vertices)
             v_adj = self.Get_Adj_Vertices_In_Facet(vtx_in_hf, v_in)
         else:
+            # a length zero array
             v_adj = np.zeros(0, dtype=VtxIndType)
         return v_adj
 
@@ -784,20 +788,21 @@ class CellSimplexType:
         # hahah, we can reuse this!
         vert = self.Get_Local_Facets_Sharing_Local_Vertex(fi)
         return vert
-        
-    def Get_Global_Vertices_In_Facet(self, vtx_ind, fi):
-        """Given a cell's vertices and a local facet index, return the global vertices
-        contained in that facet.
+
+    def Get_Global_Vertices_In_Facet(self, ci, fi):
+        """Given a cell index and a local facet index, return the global vertices
+        contained in that facet of that cell, i.e. the global vertices of the
+        half-facet (ci,fi).
         """
         if (fi < 0) or (fi > self._cell_dim):
             print("Error: facet index fi is negative or bigger than cell dimension!")
         assert ((fi >= 0) and (fi <= self._cell_dim)), "Facet index is invalid!"
 
-        # note: vertex fi is opposite facet fi
-        #       so, facet fi does NOT contain vertex fi
+        # note: local vertex fi is opposite facet fi
+        #       so, facet fi does NOT contain local vertex fi
         
         # copy array over (except for vertex fi)
-        facet_vtx = vtx_ind[np.arange(len(vtx_ind))!=fi]
+        facet_vtx = self.vtx[ci][np.arange(self._cell_dim+1)!=fi]
         return facet_vtx
 
     def Get_Adj_Vertices_In_Facet(self, fv, vi):

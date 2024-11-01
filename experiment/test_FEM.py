@@ -206,9 +206,9 @@ print(Ortho[test_vi,:,:])
 
 print("Tangent_Star_tr[test_vi,:,0:6] DPs with Ortho[test_vi,:,[0,1,2]]:")
 for kk in range(6):
-    DP_0 = np.dot(Tangent_Star_tr[test_vi,:,kk],Ortho[test_vi,:,0])
-    DP_1 = np.dot(Tangent_Star_tr[test_vi,:,kk],Ortho[test_vi,:,1])
-    DP_2 = np.dot(Tangent_Star_tr[test_vi,:,kk],Ortho[test_vi,:,2])
+    DP_0 = np.dot(Tangent_Star_tr[test_vi,:,kk],Ortho[test_vi,:,0]).item(0)
+    DP_1 = np.dot(Tangent_Star_tr[test_vi,:,kk],Ortho[test_vi,:,1]).item(0)
+    DP_2 = np.dot(Tangent_Star_tr[test_vi,:,kk],Ortho[test_vi,:,2]).item(0)
     print([DP_0, DP_1, DP_2])
 
 # print(np.sum(Vh[0,0,:]**2))
