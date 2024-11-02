@@ -919,9 +919,11 @@ class BaseSimplexMesh:
         # Note: we don't have to sort again,
         #       because the half-facets are ordered by the attached vertex
 
-    def _Check_Vtx2HalfFacets(self):
+    def _Check_Vtx2HalfFacets(self, check_freebdy=False):
         """This is an internal debugging routine to check that the
         Vtx2HalfFacets data structure is consistent.
+        Note: if check_freebdy==True, then the sibling half-facet data
+        must be formed already.
         """
         CELL_DIM = self.Top_Dim()
 
@@ -1002,14 +1004,37 @@ class BaseSimplexMesh:
             print("The maximum cell index is not Num_Cell!")
             CONSISTENT = False
 
+        if check_freebdy:
+            # determine if the vertices on the free boundary point to a
+            # boundary half-facet
+            
+            # get the boundary vertices from this
+            Bdy_Vtx = self.Cell.Get_FreeBoundary(True)
+            for vi in Bdy_Vtx:
+                # get the half-facets attached to the vertex
+                HF_1st, Num_HF = self.Vtx2HalfFacets.Get_Half_Facets(vi)
+                if (Num_HF==0):
+                    print("Error: there should be at least one attached half-facet!")
+                    CONSISTENT = False
+                else:
+                    # loop through all the attached facets
+                    for it in np.arange(HF_1st, HF_1st + Num_HF, dtype=VtxIndType):
+                        hf_it = self.Vtx2HalfFacets.VtxMap[it]
+                        no_sibling = self.Cell.halffacet[hf_it['ci']][hf_it['fi']]==NULL_HalfFacet
+                        if not no_sibling:
+                            print("Error: this boundary vertex should point to a half-facet on the boundary!")
+                            print("hf:")
+                            print(hf_it)
+                            print("Cell index: " + str(hf_it['ci']) + ":")
+                            self.Cell.Print(hf_it['ci'])
+                            CONSISTENT = False
+
         if CONSISTENT:
             print("The vertex-to-half-facet data is consistent!")
         else:
             print("The vertex-to-half-facet data is NOT consistent!")
 
         return CONSISTENT
-
-
 
     # OLD:
     # def _Build_Vtx2HalfFacets(self):

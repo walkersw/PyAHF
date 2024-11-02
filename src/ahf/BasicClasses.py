@@ -404,28 +404,51 @@ class CellSimplexType:
             EE_str = "(" + str(v0) + ", " + str(v1) + ")"
         return EE_str
 
-    def Get_FreeBoundary(self):
-        """Returns all half-facets that are referenced by only one cell;
+    def Get_FreeBoundary(self, get_vertices=False):
+        """Get data about the mesh's free boundary.
+        
+        If no input argument is given, or the input is False, then this
+        returns all half-facets that are referenced by only one cell;
         i.e. the half-facets that are on the boundary of the mesh.
         WARNING: this requires the sibling half-facet data (see self.halffacet)
         to be built before this can be used correctly.
         Note: the returned numpy array can be empty.
+        
+        If the input is True, then this returns the indices of all
+        vertices that belong to half-facets that lie on the boundary.
         """
         NC = self.Size()
-        bdy = [] # init to empty list
 
-        # check all cells
-        for ci in np.arange(0, NC, dtype=CellIndType):
-            Cell_HFs = self.halffacet[ci]
-            # loop through each local facet of the current (simplex) cell
-            for fi in np.arange(0, self._cell_dim + 1, dtype=SmallIndType):
-                HF = np.array((NULL_Cell, NULL_Small), dtype=HalfFacetType)
-                if (Cell_HFs[fi]==NULL_HalfFacet):
-                    # this facet has no neighbor!
-                    HF[['ci','fi']] = (ci, fi) # so store this bdy facet
-                    bdy.append(HF)
+        if get_vertices:
+            bdy_np = np.zeros(0, dtype=VtxIndType)
+            # check all cells
+            for ci in np.arange(0, NC, dtype=CellIndType):
+                Cell_HFs = self.halffacet[ci]
+                # loop through each local facet of the current (simplex) cell
+                for fi in np.arange(0, self._cell_dim + 1, dtype=SmallIndType):
+                    HF = np.array((NULL_Cell, NULL_Small), dtype=HalfFacetType)
+                    if (Cell_HFs[fi]==NULL_HalfFacet):
+                        # this facet has no neighbor!
+                        facet_v_ind = self.Get_Global_Vertices_In_Facet(ci, fi)
+                        bdy_np = np.append(bdy_np, facet_v_ind)
 
-        bdy_np = np.array(bdy, dtype=HalfFacetType)
+            bdy_np = np.unique(bdy_np)
+
+        else:
+            bdy = [] # init to empty list
+            # check all cells
+            for ci in np.arange(0, NC, dtype=CellIndType):
+                Cell_HFs = self.halffacet[ci]
+                # loop through each local facet of the current (simplex) cell
+                for fi in np.arange(0, self._cell_dim + 1, dtype=SmallIndType):
+                    HF = np.array((NULL_Cell, NULL_Small), dtype=HalfFacetType)
+                    if (Cell_HFs[fi]==NULL_HalfFacet):
+                        # this facet has no neighbor!
+                        HF[['ci','fi']] = (ci, fi) # so store this bdy facet
+                        bdy.append(HF)
+
+            bdy_np = np.array(bdy, dtype=HalfFacetType)
+
         return bdy_np
 
     def Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(self, vi, ci):
@@ -802,7 +825,11 @@ class CellSimplexType:
         #       so, facet fi does NOT contain local vertex fi
         
         # copy array over (except for vertex fi)
-        facet_vtx = self.vtx[ci][np.arange(self._cell_dim+1)!=fi]
+        if self._cell_dim==0:
+            vtx_mask = [True]
+        else:
+            vtx_mask = np.arange(self._cell_dim+1)!=fi
+        facet_vtx = self.vtx[ci][vtx_mask]
         return facet_vtx
 
     def Get_Adj_Vertices_In_Facet(self, fv, vi):

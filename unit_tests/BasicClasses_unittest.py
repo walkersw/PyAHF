@@ -192,12 +192,15 @@ class TestBasicClasses(unittest.TestCase):
         self.VC   = VtxCoordType(3)
         
         Cell_0D = CellSimplexType(0)
-        Cell_0D.Append(np.array([88, 4, 21, 14]))
+        cv = np.array([88, 4, 21, 14])
+        cv.shape = (4,1)
+        Cell_0D.Append(cv)
         print(Cell_0D)
         self.assertEqual(Cell_0D.Adj_Vertices_In_Facet_Equal(np.array([]), np.array([])), True, "Should be True.")
         self.assertEqual(Cell_0D.Get_Vertex_With_Largest_Index_In_Facet(np.array([88]), 0), 88, "Should be 88.")
         self.assertEqual(np.array_equal(Cell_0D.Get_Adj_Vertices_In_Facet(np.array([]), 34),np.array([])), True, "Should be True.")
-        self.assertEqual(np.array_equal(Cell_0D.Get_Global_Vertices_In_Facet(np.array([88]), 0),np.array([])), \
+        
+        self.assertEqual(np.array_equal(Cell_0D.Get_Global_Vertices_In_Facet(0, 0),np.array([88])), \
                          True, "Should be True.")
         self.assertEqual(np.array_equal(Cell_0D.Get_Local_Facets_Sharing_Local_Vertex(0),np.array([])), \
                          True, "Should be True.")
@@ -215,7 +218,7 @@ class TestBasicClasses(unittest.TestCase):
         self.assertEqual(Cell_1D.Adj_Vertices_In_Facet_Equal(np.array([]), np.array([])), True, "Should be True.")
         self.assertEqual(Cell_1D.Get_Vertex_With_Largest_Index_In_Facet(np.array([78, 35]), 1)==78, True, "Should be True.")
         self.assertEqual(np.array_equal(Cell_1D.Get_Adj_Vertices_In_Facet(np.array([67]), 34),np.array([])), True, "Should be True.")
-        self.assertEqual(np.array_equal(Cell_1D.Get_Global_Vertices_In_Facet(np.array([23, 34]), 0),np.array([34])), \
+        self.assertEqual(np.array_equal(Cell_1D.Get_Global_Vertices_In_Facet(3, 1),np.array([99])), \
                          True, "Should be True.")
         self.assertEqual(np.array_equal(Cell_1D.Get_Local_Facets_Sharing_Local_Vertex(1),np.array([0])), \
                          True, "Should be True.")
@@ -237,7 +240,7 @@ class TestBasicClasses(unittest.TestCase):
                          True, "Should be True.")
         self.assertEqual(np.array_equal(Cell_2D.Get_Adj_Vertices_In_Facet(np.array([18, 91]), 18),np.array([91])), \
                          True, "Should be True.")
-        self.assertEqual(np.array_equal(Cell_2D.Get_Global_Vertices_In_Facet(np.array([53, 34, 12]), 1),np.array([53, 12])), \
+        self.assertEqual(np.array_equal(Cell_2D.Get_Global_Vertices_In_Facet(1, 1),np.array([4, 9])), \
                          True, "Should be True.")
         self.assertEqual(np.array_equal(Cell_2D.Get_Local_Facets_Sharing_Local_Vertex(2),np.array([0, 1])), \
                          True, "Should be True.")
@@ -263,7 +266,7 @@ class TestBasicClasses(unittest.TestCase):
                          np.array([NULL_Vtx, NULL_Vtx])), True, "Should be True.")
         self.assertEqual(np.array_equal(self.Cell.Get_Adj_Vertices_In_Facet(np.array([18, 91, 23]), 18), \
                          np.array([91, 23])), True, "Should be True.")
-        self.assertEqual(np.array_equal(self.Cell.Get_Global_Vertices_In_Facet(np.array([53, 5, 12, 8]), 2),np.array([53, 5, 8])), \
+        self.assertEqual(np.array_equal(self.Cell.Get_Global_Vertices_In_Facet(2, 2),np.array([88, 62, 72])), \
                          True, "Should be True.")
         self.assertEqual(np.array_equal(self.Cell.Get_Local_Facets_Sharing_Local_Vertex(3),np.array([0, 1, 2])), \
                          True, "Should be True.")
@@ -337,11 +340,11 @@ class TestBasicClasses(unittest.TestCase):
         self.Cell.halffacet[3][:] = hfs[:] # Cell #3
         self.Cell.Print()
         
-        cell_attach = self.Cell.Get_Cells_Attached_To_Vertex(2, 0)
+        cell_attach = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(2, 0)
         self.assertEqual(np.array_equal(cell_attach,np.array([])), True, "Should be True.")
-        cell_attach = self.Cell.Get_Cells_Attached_To_Vertex(0, 2)
+        cell_attach = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(0, 2)
         self.assertEqual(np.array_equal(cell_attach,np.array([2, 1, 0, 3])), True, "Should be True.")
-        cell_attach = self.Cell.Get_Cells_Attached_To_Vertex(2, 1)
+        cell_attach = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(2, 1)
         self.assertEqual(np.array_equal(cell_attach,np.array([1, 2])), True, "Should be True.")
         #print(cell_attach)
         
@@ -410,7 +413,7 @@ class TestBasicClasses(unittest.TestCase):
         self.Cell.halffacet[3][:] = hfs[:] # Cell #3
         self.Cell.Print()
 
-        attached_cl = self.Cell.Get_Cells_Attached_To_Vertex(2, 2)
+        attached_cl = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(2, 2)
         print(attached_cl)
         self.assertEqual(np.array_equal(attached_cl,np.array([2, 1], dtype=CellIndType)), True, "Should be [2, 1].")
         CHK_Facet_Connected = self.Cell.Two_Cells_Are_Facet_Connected(1, 0, 1)
@@ -486,7 +489,7 @@ class TestBasicClasses(unittest.TestCase):
         self.Cell.halffacet[3][:] = hfs[:] # Cell #3
         self.Cell.Print()
 
-        attached_cl = self.Cell.Get_Cells_Attached_To_Vertex(2, 3)
+        attached_cl = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(2, 3)
         print(attached_cl)
         self.assertEqual(np.array_equal(attached_cl,np.array([3, 0, 1, 2], dtype=CellIndType)), True, "Should be [3, 0, 1, 2].")
         CHK_Facet_Connected = self.Cell.Two_Cells_Are_Facet_Connected(1, 0, 1)
@@ -581,10 +584,10 @@ class TestBasicClasses(unittest.TestCase):
         self.Cell.halffacet[6][:] = hfs[:] # Cell #6
         self.Cell.Print()
 
-        attached_cl_1 = self.Cell.Get_Cells_Attached_To_Vertex(5, 0)
+        attached_cl_1 = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(5, 0)
         print(attached_cl_1)
         self.assertEqual(np.array_equal(attached_cl_1,np.array([0, 1, 2, 3], dtype=CellIndType)), True, "Should be [0, 1, 2, 3].")
-        attached_cl_2 = self.Cell.Get_Cells_Attached_To_Vertex(5, 4)
+        attached_cl_2 = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(5, 4)
         print(attached_cl_2)
         self.assertEqual(np.array_equal(attached_cl_2,np.array([4, 5, 6], dtype=CellIndType)), True, "Should be [4, 5, 6].")
 

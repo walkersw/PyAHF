@@ -321,7 +321,7 @@ class TestBaseSimplexMesh(unittest.TestCase):
                         +V4
                        /
                       C4
-                     /       +V5 (and C5)
+                     /       V5+--C5--+V6
            V2+--C2--+V3
              |      |
              C3     C1
@@ -329,23 +329,21 @@ class TestBaseSimplexMesh(unittest.TestCase):
            V0+--C0--+V1
 
         where the Vi are the vertex indices, and Ci are the cell indices.
-        Obviously, this is not a manifold mesh.
+        This is not a manifold mesh.
         
-        Note: there are two non-manifold "points" here: V3 and V5.  But because
-        of the dimension, they are treated slightly differently.  In 1-D, half-facets
-        and vertices are (topologically) the same; but in higher dimensions, this is
-        not true.  Here, V3 is considered a non-manifold half-facet.  V5 is considered
-        a non-manifold vertex.
+        Note: the non-manifold "point" here is V3.  But because of the dimension,
+        it is treated differently.  In 1-D, half-facets and vertices are
+        (topologically) the same; but in higher dimensions, this is
+        not true.  Here, V3 is considered a non-manifold half-facet.
         
         The PyAHF code treats non-manifold vertices as *different* from non-manifold
-        half-facets in all dimensions.  The only non-manifold vertices in 1-D are
-        isolated vertices.
+        half-facets in all dimensions.  There are no non-manifold vertices in 1-D.
         """
         del(self.Mesh)
         self.Mesh = BaseSimplexMesh(1)
 
         # see help text above
-        cv = np.array([0,1, 1,3, 3,2, 2,0, 3,4, 5,5])
+        cv = np.array([0,1, 1,3, 3,2, 2,0, 3,4, 5,6])
         cv.shape = (6,2)
         self.Mesh.Append_Cell(cv)
 
@@ -364,8 +362,6 @@ class TestBaseSimplexMesh(unittest.TestCase):
         Cell_HF_REF[3][0] = (0, 1)
         Cell_HF_REF[3][1] = (2, 0)
         Cell_HF_REF[4][1] = (1, 0)
-        Cell_HF_REF[5][0] = (5, 1)
-        Cell_HF_REF[5][1] = (5, 0)
         #print(self.Mesh.Cell.halffacet[0:self.Mesh.Num_Cell()])
         #print(Cell_HF_REF)
         self.assertEqual(np.array_equal(self.Mesh.Cell.halffacet[0:self.Mesh.Num_Cell()],Cell_HF_REF), True, "Should be True.")
@@ -377,8 +373,8 @@ class TestBaseSimplexMesh(unittest.TestCase):
         Vtx2HalfFacets_REF[2]  = (2, 2, 0)
         Vtx2HalfFacets_REF[3]  = (3, 1, 0)
         Vtx2HalfFacets_REF[4]  = (4, 4, 0)
-        Vtx2HalfFacets_REF[5]  = (5, 5, 0)
-        Vtx2HalfFacets_REF[6]  = (5, 5, 1)
+        Vtx2HalfFacets_REF[5]  = (5, 5, 1)
+        Vtx2HalfFacets_REF[6]  = (6, 5, 0)
         #print(self.Mesh.Vtx2HalfFacets.VtxMap[0:self.Mesh.Vtx2HalfFacets.Size()])
         #print(Vtx2HalfFacets_REF)
         self.assertEqual(np.array_equal(self.Mesh.Vtx2HalfFacets.VtxMap[0:self.Mesh.Vtx2HalfFacets.Size()],\
@@ -409,7 +405,7 @@ class TestBaseSimplexMesh(unittest.TestCase):
         Edge_CHK[2]  = (1, 3)
         Edge_CHK[3]  = (2, 3)
         Edge_CHK[4]  = (3, 4)
-        Edge_CHK[5]  = (5, 5)
+        Edge_CHK[5]  = (5, 6)
         self.assertEqual(np.array_equal(Edge_CHK,EE), True, "Should be True.")
 
         cell_attached_edge = self.Mesh.Get_Cells_Attached_To_Edge(3, 2)
@@ -417,13 +413,15 @@ class TestBaseSimplexMesh(unittest.TestCase):
 
         uv = self.Mesh.Get_Unique_Vertices()
         self.Mesh.Print_Unique_Vertices()
-        self.assertEqual(np.array_equal(uv,np.array([0, 1, 2, 3, 4, 5], dtype=VtxIndType)), True, "Should be [0, 1, 2, 3, 4, 5].")
+        self.assertEqual(np.array_equal(uv,np.array([0, 1, 2, 3, 4, 5, 6], dtype=VtxIndType)), True, "Should be [0, 1, 2, 3, 4, 5, 6].")
 
         free_bdy = self.Mesh.Cell.Get_FreeBoundary()
         print("free boundary of the mesh:")
         print(free_bdy)
-        free_bdy_CHK = np.full(1, NULL_HalfFacet, dtype=HalfFacetType)
+        free_bdy_CHK = np.full(3, NULL_HalfFacet, dtype=HalfFacetType)
         free_bdy_CHK[0] = (4, 0)
+        free_bdy_CHK[1] = (5, 0)
+        free_bdy_CHK[2] = (5, 1)
         self.assertEqual(np.array_equal(free_bdy,free_bdy_CHK), True, "Should be True.")
         print("")
 
@@ -433,7 +431,7 @@ class TestBaseSimplexMesh(unittest.TestCase):
 
         non_man_vtx = self.Mesh.Get_Nonmanifold_Vertices()
         self.Mesh.Print_Nonmanifold_Vertices()
-        self.assertEqual(np.array_equal(non_man_vtx,np.array([5], dtype=VtxIndType)), True, "Should be [5].")
+        self.assertEqual(np.array_equal(non_man_vtx,np.array([], dtype=VtxIndType)), True, "Should be [].")
 
     def test_2D_Nonmanifold_Mesh_1(self):
         """
