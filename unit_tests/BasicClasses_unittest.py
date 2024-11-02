@@ -339,7 +339,7 @@ class TestBasicClasses(unittest.TestCase):
         hfs[2] = NULL_HalfFacet
         self.Cell.halffacet[3][:] = hfs[:] # Cell #3
         self.Cell.Print()
-        
+
         cell_attach = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(2, 0)
         self.assertEqual(np.array_equal(cell_attach,np.array([])), True, "Should be True.")
         cell_attach = self.Cell.Get_Cells_Attached_And_Facet_Connected_To_Vertex_Cell(0, 2)

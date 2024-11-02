@@ -97,6 +97,12 @@ class TestBaseSimplexMesh(unittest.TestCase):
         self.Mesh.Cell.Print()
         self.Mesh.Print_Vtx2HalfFacets()
 
+        # basic checks
+        consistent_sibhfs = self.Mesh._Check_Sibling_HalfFacets()
+        self.assertEqual(consistent_sibhfs, True, "Should be True.")
+        consistent_vhfs = self.Mesh._Check_Vtx2HalfFacets(True)
+        self.assertEqual(consistent_vhfs, True, "Should be True.")
+
         new_indices = np.zeros(155)
         lin_indices = np.linspace(0, 15, num=16, dtype=VtxIndType)
         cv.shape = (16,)
@@ -185,6 +191,12 @@ class TestBaseSimplexMesh(unittest.TestCase):
         self.Mesh.Close() # we can close it now, i.e. no more modifications
         self.Mesh.Print_Vtx2HalfFacets()
 
+        # basic checks
+        consistent_sibhfs = self.Mesh._Check_Sibling_HalfFacets()
+        self.assertEqual(consistent_sibhfs, True, "Should be True.")
+        consistent_vhfs = self.Mesh._Check_Vtx2HalfFacets(True)
+        self.assertEqual(consistent_vhfs, True, "Should be True.")
+
         # check 'Vtx2HalfFacets' against reference data
         Vtx2HalfFacets_REF = np.full(5, NULL_VtxHalfFacet, dtype=VtxHalfFacetType)
         Vtx2HalfFacets_REF[0]  = (0, 3, 2)
@@ -243,6 +255,12 @@ class TestBaseSimplexMesh(unittest.TestCase):
         self.Mesh.Finalize_Mesh_Connectivity()
         self.Mesh.Cell.Print()
         self.Mesh.Print_Vtx2HalfFacets()
+
+        # basic checks
+        consistent_sibhfs = self.Mesh._Check_Sibling_HalfFacets()
+        self.assertEqual(consistent_sibhfs, True, "Should be True.")
+        consistent_vhfs = self.Mesh._Check_Vtx2HalfFacets(True)
+        self.assertEqual(consistent_vhfs, True, "Should be True.")
 
         # check 'Cell.halffacet' against reference data
         Cell_HF_REF = np.full((4,1), NULL_HalfFacet, dtype=HalfFacetType)
@@ -351,6 +369,12 @@ class TestBaseSimplexMesh(unittest.TestCase):
         self.Mesh.Cell.Print()
         self.Mesh.Print_Vtx2HalfFacets()
 
+        # basic checks
+        consistent_sibhfs = self.Mesh._Check_Sibling_HalfFacets()
+        self.assertEqual(consistent_sibhfs, True, "Should be True.")
+        consistent_vhfs = self.Mesh._Check_Vtx2HalfFacets(True)
+        self.assertEqual(consistent_vhfs, True, "Should be True.")
+
         # check 'Cell.halffacet' against reference data
         Cell_HF_REF = np.full((6,2), NULL_HalfFacet, dtype=HalfFacetType)
         Cell_HF_REF[0][0] = (1, 1)
@@ -450,6 +474,12 @@ class TestBaseSimplexMesh(unittest.TestCase):
         self.Mesh.Finalize_Mesh_Connectivity()
         self.Mesh.Cell.Print()
         self.Mesh.Print_Vtx2HalfFacets()
+
+        # basic checks
+        consistent_sibhfs = self.Mesh._Check_Sibling_HalfFacets()
+        self.assertEqual(consistent_sibhfs, True, "Should be True.")
+        consistent_vhfs = self.Mesh._Check_Vtx2HalfFacets(True)
+        self.assertEqual(consistent_vhfs, True, "Should be True.")
 
         # check 'Cell.halffacet' against reference data
         Cell_HF_REF = np.full((4,3), NULL_HalfFacet, dtype=HalfFacetType)
@@ -562,6 +592,12 @@ class TestBaseSimplexMesh(unittest.TestCase):
         self.Mesh.Finalize_Mesh_Connectivity()
         self.Mesh.Cell.Print()
         self.Mesh.Print_Vtx2HalfFacets()
+
+        # basic checks
+        consistent_sibhfs = self.Mesh._Check_Sibling_HalfFacets()
+        self.assertEqual(consistent_sibhfs, True, "Should be True.")
+        consistent_vhfs = self.Mesh._Check_Vtx2HalfFacets(True)
+        self.assertEqual(consistent_vhfs, True, "Should be True.")
 
         # check 'Cell.halffacet' against reference data
         Cell_HF_REF = np.full((7,3), NULL_HalfFacet, dtype=HalfFacetType)
@@ -695,6 +731,12 @@ class TestBaseSimplexMesh(unittest.TestCase):
         self.Mesh.Finalize_Mesh_Connectivity()
         self.Mesh.Cell.Print()
         self.Mesh.Print_Vtx2HalfFacets()
+
+        # basic checks
+        consistent_sibhfs = self.Mesh._Check_Sibling_HalfFacets()
+        self.assertEqual(consistent_sibhfs, True, "Should be True.")
+        consistent_vhfs = self.Mesh._Check_Vtx2HalfFacets(True)
+        self.assertEqual(consistent_vhfs, True, "Should be True.")
 
         # check 'Cell.halffacet' against reference data
         Cell_HF_REF = np.full((3,4), NULL_HalfFacet, dtype=HalfFacetType)

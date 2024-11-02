@@ -775,29 +775,86 @@ class BaseSimplexMesh:
     def _Check_Sibling_HalfFacets(self):
         """This is an internal debugging routine to check that the
         sibling half-facet data structure is consistent.
+        This routine is slow (double FOR loop over the mesh cells).
         """
         CELL_DIM = self.Top_Dim()
 
         CONSISTENT = True
 
-        # go thru all the cells
         NC = self.Num_Cell()
+        
+        # check each cell
         for ci in np.arange(0, NC, dtype=CellIndType):
             # loop through all the facets of the current cell
-            for ff in np.arange(0, CELL_DIM+1, dtype=SmallIndType):
-                # if that hf = (ci,ff) is uninitialized
-                VI_current_cell_and_facet = np.sort(self.Cell.Get_Global_Vertices_In_Facet(ci, ff))
-                hf = self.Cell.halffacet[ci][ff]
-                if hf != NULL_HalfFacet:
-                    VI_sibling_cell_and_facet = np.sort(self.Cell.Get_Global_Vertices_In_Facet(hf['ci'], hf['fi']))
-                    facet_vertices_match = np.array_equal(VI_current_cell_and_facet, VI_sibling_cell_and_facet)
-                    if not facet_vertices_match:
+            for fi in np.arange(0, CELL_DIM+1, dtype=SmallIndType):
+                HF_ci_fi = np.array((ci, fi), dtype=HalfFacetType)
+                ci_facet_vtx_ind = np.sort(self.Cell.Get_Global_Vertices_In_Facet(ci, fi))
+                HF = self.Cell.halffacet[ci][fi]
+                if HF==NULL_HalfFacet:
+                    # then there should be no sibling
+                    # check the entire mesh to make sure that facet does not appear anywhere else
+                    for cj in np.arange(0, NC, dtype=CellIndType):
+                        if cj!=ci:
+                            # loop through all the facets of cj
+                            for fj in np.arange(0, CELL_DIM+1, dtype=SmallIndType):
+                                cj_facet_vtx_ind = np.sort(self.Cell.Get_Global_Vertices_In_Facet(cj, fj))
+                                facets_match = np.array_equal(ci_facet_vtx_ind, cj_facet_vtx_ind)
+                                if facets_match:
+                                    # they should not match!
+                                    CONSISTENT = False
+                                    print("Error: these two cells have a matching half-facet:")
+                                    print("Cell index: " + str(ci) + ":")
+                                    self.Cell.Print(ci)
+                                    print("Cell index: " + str(cj) + ":")
+                                    self.Cell.Print(cj)
+                                    print("     But, the sibling half-facet data in ci says NO!")
+                else:
+                    # there should be (at least one) sibling half-facet
+                    
+                    # get the complete cyclic mapping for this half-facet
+                    HF_map = self.Cell.Get_HalfFacets_Attached_To_HalfFacet(HF)
+                    # make sure HF_ci_fi is in HF_np (the cyclic mapping must return to where we started)
+                    HF_ci_fi_is_present = False
+                    ki = -1
+                    for kk in range(HF_map.size):
+                        if HF_ci_fi==HF_map[kk]:
+                            HF_ci_fi_is_present = True
+                            ki = kk
+                            break
+                    if not HF_ci_fi_is_present:
+                        # something is wrong!
                         CONSISTENT = False
-                        print("Error: this cell and other cell do not have consistent sibling half-facet data:")
+                        print("Error: for this cell:")
                         print("Cell index: " + str(ci) + ":")
                         self.Cell.Print(ci)
-                        print("Cell index: " + str(hf['ci']) + ":")
-                        self.Cell.Print(hf['ci'])
+                        print("       the half-facet:")
+                        print(HF_ci_fi)
+                        print("       does not appear in the cyclic map:")
+                        print(HF_map)
+                    else:
+                        # check the entire mesh to make sure it appears consistently,
+                        #       and not in other places
+                        for cj in np.arange(0, NC, dtype=CellIndType):
+                            # loop through all the facets of cj
+                            for fj in np.arange(0, CELL_DIM+1, dtype=SmallIndType):
+                                cj_facet_vtx_ind = np.sort(self.Cell.Get_Global_Vertices_In_Facet(cj, fj))
+                                facets_match = np.array_equal(ci_facet_vtx_ind, cj_facet_vtx_ind)
+                                if facets_match:
+                                    # then check if its just one of the cyclic map HF's
+                                    HF_cj_fj = np.array((cj, fj), dtype=HalfFacetType)
+                                    HF_cj_fj_is_present = np.isin(HF_cj_fj, HF_map)
+                                    if not HF_cj_fj_is_present:
+                                        # then we found another sibling half-facet that we should not have!
+                                        CONSISTENT = False
+                                        print("Error: these two cells have a matching half-facet:")
+                                        print("Cell index: " + str(ci) + ":")
+                                        self.Cell.Print(ci)
+                                        print("Cell index: " + str(cj) + ":")
+                                        self.Cell.Print(cj)
+                                        print("     But, that half-facet:")
+                                        print(HF_cj_fj)
+                                        print("     is not in the cyclic map:")
+                                        print(HF_map)
 
         if CONSISTENT:
             print("The sibling half-facet data is consistent!")
