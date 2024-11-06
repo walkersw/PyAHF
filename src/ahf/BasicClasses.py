@@ -1066,7 +1066,7 @@ class VtxCoordType:
                 self.coord[0:num_vtx,:] = vtx_coord
                 self._size = num_vtx
                 # put in ZERO values for the rest
-                self.coord[num_vtx+1:][:] = 0.0
+                self.coord[num_vtx:][:] = 0.0
             else:
                 self.coord[vtx_ind,:] = vtx_coord
         else:

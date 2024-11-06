@@ -393,11 +393,11 @@ class MeshFactory:
                 XP_O = np.zeros((1,3), dtype=VtxIndType)
                 XP_O[0,:] = Pbll[:]
 
-                # collect the vertices
-                New_XP = np.vstack((XP, XP_x0, XP_y0, XP_z0, XP_O))
+                # collect the vertices (overwrite XP)
+                XP = np.vstack((XP, XP_x0, XP_y0, XP_z0, XP_O))
 
                 # now, mesh it
-                D_tet = Delaunay(New_XP)
+                D_tet = Delaunay(XP)
                 TET = D_tet.simplices
                 TET = TET.astype(VtxIndType)
                 

@@ -156,8 +156,37 @@ class TestMeshFactory(unittest.TestCase):
         self.assertEqual(Point_Coord_bcc_Diff < 1e-15, True, "Should be True.")
         self.assertEqual(np.array_equal(Cell_bcc_CHK,Mesh_bcc.Cell.vtx[0:Mesh_bcc.Num_Cell(),:]), True, "Should be True.")
 
+        # test the BCC option with flat sides
+        VC_flat, Mesh_flat = MF.Simplex_Mesh_Of_Box(Pbll=[0.0, 0.0, 0.0], Ptur=[2.0, 1.0, 0.5], N0=2, N1=3, N2=2, UseBCC=True, FlatSides=True)
+        #print(VC_flat)
+        print(Mesh_flat)
+        #VC_flat.Print()
+        Mesh_flat.Cell.Print()
+        #Mesh_flat.Print_Vtx2HalfFacets()
+
+        # basic checks
+        consistent_flat_sibhfs = Mesh_flat._Check_Sibling_HalfFacets()
+        self.assertEqual(consistent_flat_sibhfs, True, "Should be True.")
+        consistent_flat_vhfs = Mesh_flat._Check_Vtx2HalfFacets(True)
+        self.assertEqual(consistent_flat_vhfs, True, "Should be True.")
+
+        print("Nonmanifold_Vertices:")
+        Mesh_flat.Print_Nonmanifold_Vertices()
+
+        # reference mesh data
+        PX_ref = 2.0*np.array([0,0,0, 0.5,0.5,0.5,0.5, 1.0,1.0,1.0,1.0,  0,0,0,0, 0.5,0.5,0.5,0.5, 1.0,1.0,1.0,1.0, 0,0,0,0, 0.5,0.5,0.5,0.5, 1.0,1.0,1.0,1.0,  0.25,0.25,0.25,0.75,0.75,0.75, 0.25,0.25,0.25,0.75,0.75,0.75,  1.0,1.0,1.0,1.0,1.0,1.0,  0.25,0.75,0.25,0.75,  0.25,0.25,0.25,0.75,0.75,0.75,  0,0,0,0,0,0,  0.25,0.75,0.25,0.75, 0.25,0.25,0.25,0.75,0.75,0.75, 0], dtype=CoordType)
+        PX_ref.shape = [PX_ref.shape[0], 1]
+        PY_ref = 1.0*np.array([(1/3),(2/3),1.0, 0,(1/3),(2/3),1.0, 0,(1/3),(2/3),1.0, 0,(1/3),(2/3),1.0, 0,(1/3),(2/3),1.0, 0,(1/3),(2/3),1.0, 0,(1/3),(2/3),1.0, 0,(1/3),(2/3),1.0, 0,(1/3),(2/3),1.0,  (1/6),(1/2),(5/6), (1/6),(1/2),(5/6), (1/6),(1/2),(5/6), (1/6),(1/2),(5/6), (1/6),(1/2),(5/6), (1/6),(1/2),(5/6),  1.0,1.0,1.0,1.0,  (1/6),(1/2),(5/6), (1/6),(1/2),(5/6), (1/6),(1/2),(5/6), (1/6),(1/2),(5/6),  0,0,0,0,  (1/6),(1/2),(5/6),  (1/6),(1/2),(5/6), 0], dtype=CoordType)
+        PY_ref.shape = [PY_ref.shape[0], 1]
+        PZ_ref = 0.5*np.array([0,0,0,0,0,0,0,0,0,0,0,  0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,0.5,   1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,1.0,  0.25,0.25,0.25,0.25,0.25,0.25,  0.75,0.75,0.75,0.75,0.75,0.75,  0.25,0.25,0.25,0.75,0.75,0.75,  0.25,0.25,0.75,0.75,  1.0,1.0,1.0,1.0,1.0,1.0,  0.25,0.25,0.25,0.75,0.75,0.75,  0.25,0.25,0.75,0.75,  0,0,0,0,0,0,0], dtype=CoordType)
+        PZ_ref.shape = [PZ_ref.shape[0], 1]
+        Point_Coord_flat_CHK = np.hstack((PX_ref,PY_ref,PZ_ref))
+        # we can't check the cell connectivity, because we use Delaunay internally
+        Point_Coord_flat_Diff = np.amax(np.abs(Point_Coord_flat_CHK - VC_flat.coord[0:VC_flat.Size(),:]))
+        self.assertEqual(Point_Coord_flat_Diff < 1e-15, True, "Should be True.")
+
         # write to a VTK file
-        Px, Py, Pz, Mesh_Conn, Cell_Offsets = Mesh_bcc.Export_For_VTKwrite()
+        Px, Py, Pz, Mesh_Conn, Cell_Offsets = Mesh_flat.Export_For_VTKwrite()
         Cell_Types = np.zeros(Cell_Offsets.size)
         Cell_Types[:] = VtkTetra.tid
         

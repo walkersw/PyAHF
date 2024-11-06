@@ -9,7 +9,11 @@
 
 # SWW: keep this order of imports!
 
+import matplotlib.pyplot as plt
+#import matplotlib.tri as tri
 import numpy as np
+import scipy as sp
+from mpl_toolkits.mplot3d import Axes3D
 
 # END: imports
 
@@ -23,17 +27,35 @@ import ahf.fem.Formulation as FEM
 
 MF = MeshFactory()
 print(MF)
-VC, Mesh = MF.Simplex_Mesh_Of_Rectangle(Pll=[0.0, 0.0], Pur=[2.0, 1.0], N0=4, N1=3)
+VC, Mesh = MF.Simplex_Mesh_Of_Rectangle(Pll=[0.0, 0.0], Pur=[2.0, 1.0], N0=10, N1=10)
 VC.Open()
-VC.Change_Dimension(5)
+VC.Change_Dimension(3)
+GD = VC.Dim()
 Num_Vtx = Mesh.Cell.Num_Vtx()
-VC.coord[0:Num_Vtx,2] = (VC.coord[0:Num_Vtx,0] - 1.0)**2 + (VC.coord[0:Num_Vtx,1] - 0.5)**2
+Num_Cell = Mesh.Num_Cell()
+#VC.coord[0:Num_Vtx,2] = (VC.coord[0:Num_Vtx,0] - 1.0)**2 + (VC.coord[0:Num_Vtx,1] - 0.5)**2
+VC.coord[0:Num_Vtx,2] = np.sin(3*VC.coord[0:Num_Vtx,0] + 0.7) * np.cos(4*VC.coord[0:Num_Vtx,1])
 VC.Close()
 #print(VC)
 print(Mesh)
 #VC.Print()
 #Mesh.Cell.Print()
 #Mesh.Print_Vtx2HalfFacets()
+
+Fixed_DoFs = Mesh.Cell.Get_FreeBoundary(get_vertices=True)
+
+# Create a figure and an axes object.
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+
+# Plot the surface.
+ax.plot_trisurf(VC.coord[0:Num_Vtx,0], VC.coord[0:Num_Vtx,1], VC.coord[0:Num_Vtx,2], triangles=Mesh.Cell.vtx[0:Num_Cell,:], cmap='viridis')
+ax.set_xlabel('X')
+ax.set_ylabel('Y')
+ax.set_zlabel('Z')
+plt.title('Triangulated Surface Mesh')
+plt.show()
+input("Press Enter to continue...")
 
 FES = FEM.Lagrange(Mesh,degree=1)
 
@@ -152,7 +174,6 @@ print(Vtx2Edge)
 # print("Tangent_Star:")
 # print(Tangent_Star)
 
-
 Ortho, Edge_Vec, Tangent_Star = Mesh.Get_Vtx_Based_Orthogonal_Frame((Mesh_Edges, Vtx2Edge), frame_type="all", debug=True)
 
 print("Edge_Vec:")
@@ -193,7 +214,7 @@ print(DIFF)
 
 Tangent_Star_tr = np.transpose(Tangent_Star, (0, 2, 1))
 
-test_vi = 1
+test_vi = 3
 print("Tangent_Star_tr[test_vi,:,:]:")
 print(Tangent_Star_tr[test_vi,:,:])
 
@@ -204,12 +225,256 @@ print(Tangent_Star_tr[test_vi,:,:])
 print("Ortho[test_vi,:,:]")
 print(Ortho[test_vi,:,:])
 
-print("Tangent_Star_tr[test_vi,:,0:6] DPs with Ortho[test_vi,:,[0,1,2]]:")
+print("Tangent_Star_tr[test_vi,:,0:6] DPs with Ortho[test_vi,[0,1,2],:]:")
 for kk in range(6):
-    DP_0 = np.dot(Tangent_Star_tr[test_vi,:,kk],Ortho[test_vi,:,0]).item(0)
-    DP_1 = np.dot(Tangent_Star_tr[test_vi,:,kk],Ortho[test_vi,:,1]).item(0)
-    DP_2 = np.dot(Tangent_Star_tr[test_vi,:,kk],Ortho[test_vi,:,2]).item(0)
+    DP_0 = np.dot(Tangent_Star_tr[test_vi,:,kk],Ortho[test_vi,0,:]).item(0)
+    DP_1 = np.dot(Tangent_Star_tr[test_vi,:,kk],Ortho[test_vi,1,:]).item(0)
+    DP_2 = np.dot(Tangent_Star_tr[test_vi,:,kk],Ortho[test_vi,2,:]).item(0)
     print([DP_0, DP_1, DP_2])
 
 # print(np.sum(Vh[0,0,:]**2))
 # print(np.sum(Vh[0,1,:]**2))
+
+# Ortho[test_vi,:,0] *
+# T0 = Ortho[:,:,0]
+# T0.shape = [Num_Vtx, GD, 1]
+
+print(Ortho.shape)
+
+NumBasis = 2
+TanBasis = Ortho[:,0:NumBasis,:]
+TanBasis.shape = [Num_Vtx, NumBasis, GD, 1]
+TanBasis_tp = np.transpose(TanBasis, (0, 1, 3, 2))
+
+Proj = np.matmul(TanBasis, TanBasis_tp)
+
+print(Proj[0,0,:,:])
+
+print("test this:")
+P00 = np.outer(Ortho[0,0,:],Ortho[0,0,:])
+print(P00)
+
+# sum over the basis projections
+Tangent_Proj = np.sum(Proj[:,0:NumBasis,:,:], axis=1)
+
+# shape is [Num_Vtx, GD, GD]
+
+print("Tangent_Proj:")
+print(Tangent_Proj[3,:,:])
+
+# need the normal projection
+eye_stack = np.tile(np.eye(GD), (Num_Vtx, 1, 1))
+
+Normal_Proj = eye_stack - Tangent_Proj
+
+# TT[vi,:,:]
+
+i_temp = np.arange(GD*Num_Vtx, dtype=VtxIndType)
+rep_vec = np.ones(GD, dtype=VtxIndType)
+i_vec = np.kron(rep_vec,i_temp)
+
+#print("i_vec:")
+#print(i_vec)
+
+j_temp = np.arange(Num_Vtx, dtype=VtxIndType)
+j1 = np.kron(rep_vec,j_temp)
+
+shift_vec = np.arange(GD, dtype=VtxIndType)
+shift_vec.shape = [GD,1]
+
+j_mat = j1+(Num_Vtx*shift_vec)
+j_vec = j_mat.flatten()
+
+#print("j_vec:")
+#print(j_vec)
+
+s_val = Normal_Proj.flatten('F')
+
+# this is the projection onto the normal space
+Proj_Sparse = sp.sparse.csr_matrix((s_val, (i_vec, j_vec)), shape=(GD*Num_Vtx, GD*Num_Vtx))
+
+print("Proj_Sparse")
+print(Proj_Sparse)
+
+# now assemble the diagonal lumped mass matrix, and repeat it GD (block) times
+# assemble the stiffness matrix, and repeat it GD (block) times
+
+sM = FE_mat.Lumped_Mass_Matrix()
+sK = FE_mat.Stiffness_Matrix()
+
+sK_tilde = sK.copy()
+sK_diag = sK.diagonal()
+
+sK_diag[Fixed_DoFs] = 1E100
+sK_tilde.setdiag(sK_diag, k=0)
+
+II = sp.sparse.identity(GD, format='csr')
+vM = sp.sparse.kron(II, sM, format='csr')
+vK_tilde = sp.sparse.kron(II, sK_tilde, format='csr')
+
+M_1 = vM * Proj_Sparse
+M_2 = Proj_Sparse * vM
+
+# check the difference
+ERR_MAT = M_1 - M_2
+EM = np.max(np.abs(ERR_MAT))
+
+print("ERROR:")
+print(EM)
+
+R1_array = -sK*VC.coord[0:Num_Vtx,:]
+R1_array[Fixed_DoFs,:] = 0.0
+#print(R1_array)
+#R1_vec = R1_array.flatten('F')
+R1_vec = np.reshape(R1_array, (Num_Vtx*GD,), order='F', copy=True)
+
+#print(R1_vec)
+R2_vec = np.zeros(R1_vec.size)
+RHS = np.concatenate((R1_vec,R2_vec))
+
+# form the linear system
+# [\tilde{vK},       vM*vP] [\delta X] = [-vK*X_old]
+# [vP*vM, -\tau * vP*vM*vP] [ \kappa ] = [0]
+
+tau0 = 0.001
+C = Proj_Sparse * vM * Proj_Sparse
+MAT = sp.sparse.bmat([[vK_tilde, vM * Proj_Sparse], [Proj_Sparse * vM, -tau0 * C]], format='csr')
+
+
+# flatten the coordinate vector
+
+#numpy.reshape(a, /, shape=None, *, newshape=None, order='C', copy=None)
+
+
+# solve for update
+#scipy.sparse.linalg.LinearOperator
+#scipy.sparse.linalg.cg
+#x = sp.sparse.linalg.spsolve(A, b)
+
+SOLN = sp.sparse.linalg.spsolve(MAT, RHS)
+
+delta_X_vec = SOLN[0:Num_Vtx*GD]
+kappa_vec   = SOLN[Num_Vtx*GD:]
+
+# unflatten...
+
+delta_X = np.reshape(delta_X_vec, (Num_Vtx,GD), order='F', copy=True)
+kappa   = np.reshape(kappa_vec, (Num_Vtx,GD), order='F', copy=True)
+
+print("delta_X:")
+print(delta_X)
+print("kappa:")
+print(kappa)
+
+# alternative way
+# [\tilde{vK} + (1/\tau) * vP*vM*vP] [\delta X] = [-vK*X_old]
+MAT_alt = vK_tilde + (1/tau0) * C
+
+delta_X_vec_alt = sp.sparse.linalg.spsolve(MAT_alt, R1_vec)
+delta_X_alt = np.reshape(delta_X_vec_alt, (Num_Vtx,GD), order='F', copy=True)
+
+delta_X_DIFF = np.abs(delta_X_alt - delta_X)
+delta_X_ERR = np.max(delta_X_DIFF)
+print("delta_X_ERR:")
+print(delta_X_ERR)
+print(delta_X_DIFF)
+
+# update coordinates...
+
+
+# start the time-stepping loop here
+tau0 = 0.001
+for ti in range(50):
+
+    Ortho, Edge_Vec, Tangent_Star = Mesh.Get_Vtx_Based_Orthogonal_Frame((Mesh_Edges, Vtx2Edge), frame_type="all", debug=True)
+
+    NumBasis = 2
+    TanBasis = Ortho[:,0:NumBasis,:]
+    TanBasis.shape = [Num_Vtx, NumBasis, GD, 1]
+    TanBasis_tp = np.transpose(TanBasis, (0, 1, 3, 2))
+
+    Proj = np.matmul(TanBasis, TanBasis_tp)
+
+    # sum over the basis projections
+    Tangent_Proj = np.sum(Proj[:,0:NumBasis,:,:], axis=1)
+    # shape is [Num_Vtx, GD, GD]
+
+    # need the normal projection
+    eye_stack = np.tile(np.eye(GD), (Num_Vtx, 1, 1))
+
+    Normal_Proj = eye_stack - Tangent_Proj
+
+    # create the sparse projection matrix
+
+    i_temp = np.arange(GD*Num_Vtx, dtype=VtxIndType)
+    rep_vec = np.ones(GD, dtype=VtxIndType)
+    i_vec = np.kron(rep_vec,i_temp)
+
+    j_temp = np.arange(Num_Vtx, dtype=VtxIndType)
+    j1 = np.kron(rep_vec,j_temp)
+
+    shift_vec = np.arange(GD, dtype=VtxIndType)
+    shift_vec.shape = [GD,1]
+
+    j_mat = j1+(Num_Vtx*shift_vec)
+    j_vec = j_mat.flatten()
+
+    s_val = Normal_Proj.flatten('F')
+
+    # this is the projection onto the normal space
+    Proj_Sparse = sp.sparse.csr_matrix((s_val, (i_vec, j_vec)), shape=(GD*Num_Vtx, GD*Num_Vtx))
+
+    # now assemble the diagonal lumped mass matrix, and repeat it GD (block) times
+    # assemble the stiffness matrix, and repeat it GD (block) times
+
+    sM = FE_mat.Lumped_Mass_Matrix()
+    sK = FE_mat.Stiffness_Matrix()
+
+    sK_tilde = sK.copy()
+    sK_diag = sK.diagonal()
+
+    sK_diag[Fixed_DoFs] = 1E100
+    sK_tilde.setdiag(sK_diag, k=0)
+
+    II = sp.sparse.identity(GD, format='csr')
+    vM = sp.sparse.kron(II, sM, format='csr')
+    vK_tilde = sp.sparse.kron(II, sK_tilde, format='csr')
+
+    R1_array = -sK*VC.coord[0:Num_Vtx,:]
+    R1_array[Fixed_DoFs,:] = 0.0
+    #print(R1_array)
+    #R1_vec = R1_array.flatten('F')
+    R1_vec = np.reshape(R1_array, (Num_Vtx*GD,), order='F', copy=True)
+
+    # alternative way
+    # [\tilde{vK} + (1/\tau) * vP*vM*vP] [\delta X] = [-vK*X_old]
+    MAT_alt = vK_tilde + (1/tau0) * C
+
+    delta_X_vec = sp.sparse.linalg.spsolve(MAT_alt, R1_vec)
+    delta_X = np.reshape(delta_X_vec, (Num_Vtx,GD), order='F', copy=True)
+
+    # compute the curvature vector??
+    # \kappa_vec = -(1/\tau)*vP*delta_X_vec
+    kappa_vec = -(1/tau0) * Proj_Sparse * delta_X_vec
+    kappa = np.reshape(kappa_vec, (Num_Vtx,GD), order='F', copy=True)
+
+    # update coordinates
+    VC.Open()
+    VC.coord[0:Num_Vtx,:] += delta_X
+    VC.Close()
+
+#
+
+# Create a figure and an axes object.
+fig2 = plt.figure()
+ax2 = fig2.add_subplot(111, projection='3d')
+
+# plot the surface
+ax2.plot_trisurf(VC.coord[0:Num_Vtx,0], VC.coord[0:Num_Vtx,1], VC.coord[0:Num_Vtx,2], triangles=Mesh.Cell.vtx[0:Num_Cell,:], cmap='viridis')
+ax2.set_xlabel('X')
+ax2.set_ylabel('Y')
+ax2.set_zlabel('Z')
+plt.title('surface at later time')
+plt.show()
+
+input("Press Enter to continue...")

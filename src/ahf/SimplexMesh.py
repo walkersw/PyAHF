@@ -872,8 +872,8 @@ class SimplexMesh(BaseSimplexMesh):
             dummy_edge_index = Mesh_Edges.shape[0]-1
 
             # now remake a more efficient data structure
-            Vtx2Edge = np.full((max_vi,Max_Edge_in_Star), dummy_edge_index, dtype=VtxIndType)
-            for ii in np.arange(max_vi, dtype=VtxIndType):
+            Vtx2Edge = np.full((max_vi+1,Max_Edge_in_Star), dummy_edge_index, dtype=VtxIndType)
+            for ii in np.arange(max_vi+1, dtype=VtxIndType):
                 Edges_Attached_to_V_ii = Vtx_Star_temp[ii]
                 Num_Edges = Edges_Attached_to_V_ii.size
                 Vtx2Edge[ii,0:Num_Edges] = Edges_Attached_to_V_ii[:]
@@ -903,21 +903,21 @@ class SimplexMesh(BaseSimplexMesh):
                 frame_type: a string = "all", "tangent", or "normal".  If omitted,
                 then default is "all".  "all" gives a complete frame of \R^{GD},
                 "tangent" gives the tangent space, and "normal" gives the normal space.
-        Output: Ortho: numpy matrix (GD,qD), whose column vectors are the (unit)
-                basis vectors of the frame.
+        Output: Ortho: numpy matrix (qD,GD), whose rows are the (unit) basis vectors
+                       of the frame.
                 Note: "all" ==> qD==GD; "tangent" ==> qD==TD; "normal" ==> qD==GD-TD.
         OR
         Inputs: vi: numpy array (N,) of vertex indices.  If set to None (or omitted),
                     then defaults to vi = [0, 1, 2, ..., N-1],
                     where N is the total number of vertices.
                 frame_type: same as above.
-        Output: Ortho: numpy array (N,GD,qD), which is a stack of N matrices, each
-                of whose column vectors are the (unit) basis vectors of the frame.
+        Output: Ortho: numpy array (N,qD,GD), which is a stack of N matrices, each
+                of whose rows are the (unit) basis vectors of the frame.
                 Note: see above, for qD.
         OR
         Inputs: (Mesh_Edges, Vtx2Edge): as generated from 'Get_Vtx_Edge_Star'
                             frame_type: same as above.
-        Output: Ortho: either a numpy matrix (GD,qD) or a numpy array (N,GD,qD),
+        Output: Ortho: either a numpy matrix (qD,GD) or a numpy array (N,qD,GD),
                 which is described above; it depends on whether vi was an array or not.
         """
         if isinstance(arg1, tuple):
@@ -964,16 +964,15 @@ class SimplexMesh(BaseSimplexMesh):
             Tangent_Star[:,:] = Edge_Vec[Vtx2Edge[vi][:],:]
 
             U, S, Vh = np.linalg.svd(Tangent_Star, full_matrices=False)
-            
-            # we want column vectors, so take the transpose
+
             if frame_type.lower() == "tangent":
                 # the first TD rows of Vh span the tangent space
-                Ortho = np.transpose(Vh[0:TD,:])
+                Ortho = Vh[0:TD,:]
             elif frame_type.lower() == "normal":
                 # the remaining GD-TD rows of Vh span the normal space
-                Ortho = np.transpose(Vh[TD:,:])
+                Ortho = Vh[TD:,:]
             else:
-                Ortho = Vh.transpose()
+                Ortho = Vh
 
         else:
             # we have an array of vertex indices
@@ -992,14 +991,11 @@ class SimplexMesh(BaseSimplexMesh):
             # the first TD rows of Vh[ii,:,:] span the tangent space (for each ii)
             # the remaining GD-TD rows of Vh[ii,:,:] span the normal space (for each ii)
             if frame_type.lower() == "tangent":
-                Vh_tilde = Vh[:,0:TD,:]
+                Ortho = Vh[:,0:TD,:]
             elif frame_type.lower() == "normal":
-                Vh_tilde = Vh[:,TD:,:]
+                Ortho = Vh[:,TD:,:]
             else:
-                Vh_tilde = Vh
-
-            # but we want column vectors, so take the transpose
-            Ortho = np.transpose(Vh_tilde, (0, 2, 1))
+                Ortho = Vh
 
         if debug:
             return Ortho, Edge_Vec, Tangent_Star
