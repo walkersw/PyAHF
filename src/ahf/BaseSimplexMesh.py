@@ -537,6 +537,184 @@ class BaseSimplexMesh:
                 print(", " + str(cell_array[cc]), endl="")
             print("")
 
+    def Get_Vtx_Cell_Attachments(self, vi=None, efficient=False):
+        """Get a mapping from mesh vertices (indices) to mesh cells (indices).
+
+        Input:        vi: a single non-negative integer (vtx index), or
+                          a numpy array (VI,) of vertex indices, or None (default).
+                          If set to None, then vi = a numpy array (NV,) of all
+                          vertex indices that are referenced by the mesh cells.
+               efficient: True or False (default).
+        -if efficient==False, then: 
+        Output: Vtx2Cell: a dict where Vtx2Cell[vi] = numpy array of cell indices that index
+                into self.Cell.vtx[:], where vi is a vertex index referenced by self.Cell.
+        -if efficient==True, then:
+        Output: Vtx2Cell: a numpy array (N,M) where N-1 is the maximum vertex index
+                referenced by self.Cell and M is the maximum number of cells that
+                any vertex is attached to in the mesh.  Thus,
+                Vtx2Cell[vi,:] = numpy array of indices that index into self.Cell.vtx[:].
+                If Vtx2Cell[vi,kk]==NULL_Cell, then that is a dummy cell (to be ignored).
+                If vi is not referenced by self.Cell, then Vtx2Cell[vi,:]==NULL_Cell.
+        """
+        if vi is None:
+            vi = self.Cell.Get_Unique_Vertices()
+
+        if isinstance(vi, np.ndarray):
+            if not ( np.issubdtype(vi.dtype, np.integer) and (np.amin(vi) >= 0) ):
+                print("Error: vi must be a numpy array of non-negative integers!")
+                return
+        elif type(vi) is int:
+            if vi < 0:
+                print("Error: vi must be a non-negative integer!")
+                return
+        else:
+            print("Error: vi must either be a singleton or numpy array of non-negative integers!")
+            return
+
+        if not efficient:
+            # just make a dict!
+            #Vtx2Cell = dict.fromkeys(vi)
+            # NC = self.Num_Cell()
+            # for ci in np.arange(NC, dtype=CellIndType):
+                # for local_vtx in np.arange(self.Cell._cell_dim+1, dtype=SmallIndType):
+                    # current_vi = self.Cell.vtx[ci][local_vtx]
+                    # Vtx2Cell[current_vi] = np.append(Vtx2Cell[current_vi], ci)
+
+            Vtx2Cell = dict.fromkeys(vi)
+            #Vtx2Cell = {vk: np.zeros(0, dtype=CellIndType) for vk in vi}
+            for ii in vi:
+                cell_ind_lv  = np.argwhere(self.Cell.vtx[:][:]==ii)
+                cell_indices = np.reshape(cell_ind_lv[:,0], (cell_ind_lv.shape[0], ))
+                if cell_indices.size > 0:
+                    Vtx2Cell[ii] = cell_indices
+
+        else:
+            # output a full numpy array that is more efficient for
+            # numerical operations later
+
+            min_vi = np.amin(vi)
+            max_vi = np.amax(vi)
+
+            # number of unique vertices referenced by Cell
+            #Num_Vtx = self.Cell.Num_Vtx()
+
+            # figure out the maximum number of cells per vertex
+            Max_Cell_in_Star = 0
+            print("vi:")
+            print(vi)
+            Vtx_Star_temp = dict.fromkeys(vi)
+            #Vtx_Star_temp = {vk: np.zeros(0, dtype=CellIndType) for vk in vi}
+            for ii in vi:
+                cell_ind_lv  = np.argwhere(self.Cell.vtx[:][:]==ii)
+                cell_indices = np.reshape(cell_ind_lv[:,0], (cell_ind_lv.shape[0], ))
+                Max_Cell_in_Star = np.max([Max_Cell_in_Star, cell_indices.size])
+                if cell_indices.size > 0:
+                    Vtx_Star_temp[ii] = cell_indices
+
+            # now remake a more efficient data structure
+            Vtx2Cell = np.full((max_vi+1,Max_Cell_in_Star), NULL_Cell, dtype=CellIndType)
+            for ii in np.arange(max_vi+1, dtype=VtxIndType):
+                Cells_Attached_to_V_ii = Vtx_Star_temp[ii]
+                Num_Cells = Cells_Attached_to_V_ii.size
+                Vtx2Cell[ii,0:Num_Cells] = Cells_Attached_to_V_ii[:]
+
+        return Vtx2Cell
+
+    def Get_Vtx_Edge_Star(self, vi=None, efficient=False):
+        """Get a mapping from mesh vertices (indices) to mesh edges (indices).
+
+        Input:        vi: a single non-negative integer (vtx index), or
+                          a numpy array (VI,) of vertex indices, or None (default).
+                          If set to None, then vi = a numpy array (NV,) of all
+                          vertex indices that are referenced by the mesh cells.
+               efficient: True or False (default).
+        -if efficient==False, then: 
+        Outputs: Mesh_Edges: array of MeshEdgeType (see BasicClasses.Cell.Get_Edges())
+                 Vtx2Edge: a dict where Vtx2Edge[vi] = numpy array of indices that index
+                 into Mesh_Edges, where vi is a vertex index referenced by self.Cell.
+        -if efficient==True, then: 
+        Outputs: Mesh_Edges: numpy array (E+1,2), where Mesh_Edges[ee,:] contains the
+                 vertex indices for a single edge, ee, in the mesh.  Note that edge index
+                 E is a dummy edge index with Mesh_Edges[E,:] = [vv, vv], where
+                 vv is the smallest index of vertex referenced by self.Cell (usually, vv==0).
+                 Vtx2Edge: a numpy array (N,M) where N-1 is the maximum vertex index
+                 referenced by self.Cell and M is the maximum number of edges that
+                 any vertex is connected to in the mesh.  Thus,
+                 Vtx2Edge[vi,:] = numpy array of indices that index into Mesh_Edges.
+                 If Vtx2Edge[vi,kk]==E, then that is a dummy edge that should be ignored.
+                 If vi is not referenced by self.Cell, then Vtx2Edge[vi,:]==E.
+        """
+        if vi is None:
+            vi = self.Cell.Get_Unique_Vertices()
+
+        if isinstance(vi, np.ndarray):
+            if not ( np.issubdtype(vi.dtype, np.integer) and (np.amin(vi) >= 0) ):
+                print("Error: vi must be a numpy array of non-negative integers!")
+                return
+        elif type(vi) is int:
+            if vi < 0:
+                print("Error: vi must be a non-negative integer!")
+                return
+        else:
+            print("Error: vi must either be a singleton or numpy array of non-negative integers!")
+            return
+
+        if not efficient:
+            # get all mesh edges (array of MeshEdgeType)
+            Mesh_Edges = self.Cell.Get_Edges()
+
+            # just make a dict!
+            Vtx2Edge = dict.fromkeys(vi)
+            for ii in vi:
+                edge_indices_0 = np.argwhere(Mesh_Edges[:]['v0']==ii)
+                edge_indices_1 = np.argwhere(Mesh_Edges[:]['v1']==ii)
+                edge_ind = np.vstack((edge_indices_0,edge_indices_1))
+                if edge_ind.size > 0:
+                    Vtx2Edge[ii] = edge_ind[:,0]
+
+        else:
+            # output a full numpy array that is more efficient for
+            # numerical operations later
+
+            min_vi = np.amin(vi)
+            max_vi = np.amax(vi)
+
+            # number of unique vertices referenced by Cell
+            #Num_Vtx = self.Cell.Num_Vtx()
+
+            # get all mesh edges (array of MeshEdgeType)
+            EE = self.Cell.Get_Edges()
+
+            # figure out the maximum number of edges per vertex
+            Max_Edge_in_Star = 0
+            Vtx_Star_temp = dict.fromkeys(vi)
+            for ii in vi:
+                edge_indices_0 = np.argwhere(EE[:]['v0']==ii)
+                edge_indices_1 = np.argwhere(EE[:]['v1']==ii)
+                edge_ind = np.vstack((edge_indices_0,edge_indices_1))
+                Max_Edge_in_Star = np.max([Max_Edge_in_Star, edge_ind.size])
+                if edge_ind.size > 0:
+                    Vtx_Star_temp[ii] = edge_ind[:,0]
+
+            # make a pure numpy version of Mesh_Edges that has a dummy edge
+            Mesh_Edges = np.zeros((EE.size+1,2), dtype=VtxIndType)
+            Mesh_Edges[:-1,0] = EE[:]['v0']
+            Mesh_Edges[:-1,1] = EE[:]['v1']
+
+            # set the dummy edge (the last edge)
+            Mesh_Edges[-1,0] = min_vi
+            Mesh_Edges[-1,1] = min_vi
+            dummy_edge_index = Mesh_Edges.shape[0]-1
+
+            # now remake a more efficient data structure
+            Vtx2Edge = np.full((max_vi+1,Max_Edge_in_Star), dummy_edge_index, dtype=VtxIndType)
+            for ii in np.arange(max_vi+1, dtype=VtxIndType):
+                Edges_Attached_to_V_ii = Vtx_Star_temp[ii]
+                Num_Edges = Edges_Attached_to_V_ii.size
+                Vtx2Edge[ii,0:Num_Edges] = Edges_Attached_to_V_ii[:]
+
+        return Mesh_Edges, Vtx2Edge
+
     def Get_Nonmanifold_HalfFacets(self):
         """Get a unique set of non-manifold half-facets. This returns a numpy array
         of half-facets, each defining a *distinct* non-manifold half-facet.

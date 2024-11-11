@@ -27,7 +27,7 @@ import ahf.fem.Formulation as FEM
 
 MF = MeshFactory()
 print(MF)
-VC, Mesh = MF.Simplex_Mesh_Of_Rectangle(Pll=[0.0, 0.0], Pur=[2.0, 1.0], N0=10, N1=10)
+VC, Mesh = MF.Simplex_Mesh_Of_Rectangle(Pll=[0.0, 0.0], Pur=[2.0, 1.0], N0=30, N1=15, UseBCC=True)
 VC.Open()
 VC.Change_Dimension(3)
 GD = VC.Dim()
@@ -53,9 +53,10 @@ ax.plot_trisurf(VC.coord[0:Num_Vtx,0], VC.coord[0:Num_Vtx,1], VC.coord[0:Num_Vtx
 ax.set_xlabel('X')
 ax.set_ylabel('Y')
 ax.set_zlabel('Z')
+ax.set_aspect('equal')
 plt.title('Triangulated Surface Mesh')
 plt.show()
-input("Press Enter to continue...")
+#input("Press Enter to continue...")
 
 FES = FEM.Lagrange(Mesh,degree=1)
 
@@ -156,6 +157,14 @@ print(Vtx2Edge)
 #TD = Mesh.Top_Dim()
 
 
+# uv = Mesh.Cell.Get_Unique_Vertices()
+# print("uv:")
+# print(uv)
+
+Vtx2Cell = Mesh.Get_Vtx_Cell_Attachments(None, efficient=True)
+
+print("Vtx2Cell:")
+print(Vtx2Cell)
 
 # init the star tangent vector variable
 
@@ -182,6 +191,31 @@ print(Edge_Vec)
 print("Tangent_Star:")
 print(Tangent_Star)
 
+Ortho_ALT, CB_Star = Mesh.Get_Vtx_Based_Orthogonal_Frame_ALT(Vtx2Cell, frame_type="all", svd_with="tangent", debug=True)
+
+print("CB_Star:")
+print(CB_Star)
+
+print("Ortho:")
+print(Ortho)
+
+print("Ortho_ALT:")
+print(Ortho_ALT)
+
+normal_vecs = Mesh.Get_Vtx_Averaged_Normal_Vector(Vtx2Cell)
+
+print("normal_vecs:")
+print(normal_vecs)
+
+DP_NV     = np.abs( np.sum(Ortho[:,2,:] * normal_vecs[:,:], axis=1) )
+DP_NV_ALT = np.abs( np.sum(Ortho_ALT[:,2,:] * normal_vecs[:,:], axis=1) )
+#DP_NV_ALT = np.abs(np.dot(Ortho_ALT[:,2,:],normal_vecs[:,:]))
+
+print("DP_NV:")
+print(DP_NV)
+
+print("DP_NV_ALT:")
+print(DP_NV_ALT)
 
 
 VI_chk = 17
@@ -212,11 +246,11 @@ print(DIFF)
 
 # the first TD cols of Ortho is the tangent space
 
-Tangent_Star_tr = np.transpose(Tangent_Star, (0, 2, 1))
+Tangent_Star_tp = np.transpose(Tangent_Star, (0, 2, 1))
 
 test_vi = 3
-print("Tangent_Star_tr[test_vi,:,:]:")
-print(Tangent_Star_tr[test_vi,:,:])
+print("Tangent_Star_tp[test_vi,:,:]:")
+print(Tangent_Star_tp[test_vi,:,:])
 
 # print("U[0,:,:]:")
 # print(U[0,:,:])
@@ -225,11 +259,18 @@ print(Tangent_Star_tr[test_vi,:,:])
 print("Ortho[test_vi,:,:]")
 print(Ortho[test_vi,:,:])
 
-print("Tangent_Star_tr[test_vi,:,0:6] DPs with Ortho[test_vi,[0,1,2],:]:")
+print("Tangent_Star_tp[test_vi,:,0:6] DPs with Ortho[test_vi,[0,1,2],:]:")
 for kk in range(6):
-    DP_0 = np.dot(Tangent_Star_tr[test_vi,:,kk],Ortho[test_vi,0,:]).item(0)
-    DP_1 = np.dot(Tangent_Star_tr[test_vi,:,kk],Ortho[test_vi,1,:]).item(0)
-    DP_2 = np.dot(Tangent_Star_tr[test_vi,:,kk],Ortho[test_vi,2,:]).item(0)
+    DP_0 = np.dot(Tangent_Star_tp[test_vi,:,kk],Ortho[test_vi,0,:]).item(0)
+    DP_1 = np.dot(Tangent_Star_tp[test_vi,:,kk],Ortho[test_vi,1,:]).item(0)
+    DP_2 = np.dot(Tangent_Star_tp[test_vi,:,kk],Ortho[test_vi,2,:]).item(0)
+    print([DP_0, DP_1, DP_2])
+
+print("Tangent_Star_tp[test_vi,:,0:6] DPs with Ortho_ALT[test_vi,[0,1,2],:]:")
+for kk in range(6):
+    DP_0 = np.dot(Tangent_Star_tp[test_vi,:,kk],Ortho_ALT[test_vi,0,:]).item(0)
+    DP_1 = np.dot(Tangent_Star_tp[test_vi,:,kk],Ortho_ALT[test_vi,1,:]).item(0)
+    DP_2 = np.dot(Tangent_Star_tp[test_vi,:,kk],Ortho_ALT[test_vi,2,:]).item(0)
     print([DP_0, DP_1, DP_2])
 
 # print(np.sum(Vh[0,0,:]**2))
@@ -302,6 +343,9 @@ print(Proj_Sparse)
 sM = FE_mat.Lumped_Mass_Matrix()
 sK = FE_mat.Stiffness_Matrix()
 
+# print("M:")
+# print(sM)
+
 sK_tilde = sK.copy()
 sK_diag = sK.diagonal()
 
@@ -336,9 +380,9 @@ RHS = np.concatenate((R1_vec,R2_vec))
 # [\tilde{vK},       vM*vP] [\delta X] = [-vK*X_old]
 # [vP*vM, -\tau * vP*vM*vP] [ \kappa ] = [0]
 
-tau0 = 0.001
+tau = 0.001
 C = Proj_Sparse * vM * Proj_Sparse
-MAT = sp.sparse.bmat([[vK_tilde, vM * Proj_Sparse], [Proj_Sparse * vM, -tau0 * C]], format='csr')
+MAT = sp.sparse.bmat([[vK_tilde, vM * Proj_Sparse], [Proj_Sparse * vM, -tau * C]], format='csr')
 
 
 # flatten the coordinate vector
@@ -368,7 +412,7 @@ print(kappa)
 
 # alternative way
 # [\tilde{vK} + (1/\tau) * vP*vM*vP] [\delta X] = [-vK*X_old]
-MAT_alt = vK_tilde + (1/tau0) * C
+MAT_alt = vK_tilde + (1/tau) * C
 
 delta_X_vec_alt = sp.sparse.linalg.spsolve(MAT_alt, R1_vec)
 delta_X_alt = np.reshape(delta_X_vec_alt, (Num_Vtx,GD), order='F', copy=True)
@@ -382,11 +426,32 @@ print(delta_X_DIFF)
 # update coordinates...
 
 
-# start the time-stepping loop here
-tau0 = 0.001
-for ti in range(50):
+# define time interval and number of time-steps
+Final_t = 4*0.5
+Num_Steps = 4*20
+# compute time-step
+tau = Final_t / Num_Steps
 
-    Ortho, Edge_Vec, Tangent_Star = Mesh.Get_Vtx_Based_Orthogonal_Frame((Mesh_Edges, Vtx2Edge), frame_type="all", debug=True)
+Num_Steps = 80*25
+Num_Steps = 950
+tau = 0.001
+# 0.025
+
+# start the time-stepping loop here
+for ti in range(Num_Steps):
+    print("\rti = {:2G}".format(ti), end='')
+
+    #Ortho, Edge_Vec, Tangent_Star = Mesh.Get_Vtx_Based_Orthogonal_Frame((Mesh_Edges, Vtx2Edge), frame_type="all", debug=True)
+
+    Ortho, CB_Star = Mesh.Get_Vtx_Based_Orthogonal_Frame_ALT(Vtx2Cell, frame_type="all", svd_with="tangent", debug=True)
+
+    normal_vecs_array = Mesh.Get_Vtx_Averaged_Normal_Vector(Vtx2Cell)
+    # (NV,GD)
+    normal_vec = np.reshape(normal_vecs_array, (Num_Vtx, GD, 1))
+    normal_vec_tp = np.transpose(normal_vec, (0, 2, 1))
+    
+    # Normal_Proj = np.matmul(normal_vec, normal_vec_tp)
+    # # shape is [Num_Vtx, GD, GD]
 
     NumBasis = 2
     TanBasis = Ortho[:,0:NumBasis,:]
@@ -423,7 +488,10 @@ for ti in range(50):
 
     # this is the projection onto the normal space
     Proj_Sparse = sp.sparse.csr_matrix((s_val, (i_vec, j_vec)), shape=(GD*Num_Vtx, GD*Num_Vtx))
-
+    
+    #print("Proj_Sparse:")
+    #print(Proj_Sparse)
+    
     # now assemble the diagonal lumped mass matrix, and repeat it GD (block) times
     # assemble the stiffness matrix, and repeat it GD (block) times
 
@@ -439,6 +507,7 @@ for ti in range(50):
     II = sp.sparse.identity(GD, format='csr')
     vM = sp.sparse.kron(II, sM, format='csr')
     vK_tilde = sp.sparse.kron(II, sK_tilde, format='csr')
+    vK = sp.sparse.kron(II, sK, format='csr')
 
     R1_array = -sK*VC.coord[0:Num_Vtx,:]
     R1_array[Fixed_DoFs,:] = 0.0
@@ -448,14 +517,18 @@ for ti in range(50):
 
     # alternative way
     # [\tilde{vK} + (1/\tau) * vP*vM*vP] [\delta X] = [-vK*X_old]
-    MAT_alt = vK_tilde + (1/tau0) * C
+    C = Proj_Sparse * vM * Proj_Sparse
+    MAT_alt = vK_tilde + (1/tau) * C
+    
+    # print("MAT:")
+    # print(MAT_alt)
 
     delta_X_vec = sp.sparse.linalg.spsolve(MAT_alt, R1_vec)
     delta_X = np.reshape(delta_X_vec, (Num_Vtx,GD), order='F', copy=True)
 
     # compute the curvature vector??
     # \kappa_vec = -(1/\tau)*vP*delta_X_vec
-    kappa_vec = -(1/tau0) * Proj_Sparse * delta_X_vec
+    kappa_vec = -(1/tau) * Proj_Sparse * delta_X_vec
     kappa = np.reshape(kappa_vec, (Num_Vtx,GD), order='F', copy=True)
 
     # update coordinates
@@ -464,6 +537,7 @@ for ti in range(50):
     VC.Close()
 
 #
+print(' ')
 
 # Create a figure and an axes object.
 fig2 = plt.figure()
@@ -474,6 +548,7 @@ ax2.plot_trisurf(VC.coord[0:Num_Vtx,0], VC.coord[0:Num_Vtx,1], VC.coord[0:Num_Vt
 ax2.set_xlabel('X')
 ax2.set_ylabel('Y')
 ax2.set_zlabel('Z')
+ax2.set_aspect('equal')
 plt.title('surface at later time')
 plt.show()
 

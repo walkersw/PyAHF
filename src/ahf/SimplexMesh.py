@@ -785,101 +785,6 @@ class SimplexMesh(BaseSimplexMesh):
 
     # Perimeter? (get the free boundary...)
 
-    def Get_Vtx_Edge_Star(self, vi=None, efficient=False):
-        """Get a mapping from mesh vertices (indices) to mesh edges (indices).
-
-        Input:        vi: a single non-negative integer (vtx index), or
-                          a numpy array (VI,) of vertex indices, or None (default).
-                          If set to None, then vi = a numpy array (VI,) of all
-                          vertex indices that are referenced by the mesh cells.
-               efficient: True or False (default).
-        -if efficient==False, then: 
-        Outputs: Mesh_Edges: array of MeshEdgeType (see BasicClasses.Cell.Get_Edges())
-                 Vtx2Edge: a dict where Vtx2Edge[vi] = numpy array of indices that index
-                 into Mesh_Edges, where vi is a vertex index referenced by self.Cell.
-        -if efficient==True, then: 
-        Outputs: Mesh_Edges: numpy array (E+1,2), where Mesh_Edges[ee,:] contains the
-                 vertex indices for a single edge, ee, in the mesh.  Note that edge index
-                 E is a dummy edge index with Mesh_Edges[E,:] = [vv, vv], where
-                 vv is the smallest index of vertex referenced by self.Cell (usually, vv==0).
-                 Vtx2Edge: a numpy array (N,M) where N-1 is the maximum vertex index
-                 referenced by self.Cell and M is the maximum number of edges that
-                 any vertex is connected to in the mesh.  Thus,
-                 Vtx2Edge[vi,:] = numpy array of indices that index into Mesh_Edges.
-                 If Vtx2Edge[vi,kk]==E, then that is a dummy edge that should be ignored.
-                 If vi is not referenced by self.Cell, then Vtx2Edge[vi,:]==E.
-        """
-        if vi is None:
-            vi = self.Cell.Get_Unique_Vertices()
-
-        if isinstance(vi, np.ndarray):
-            if not ( np.issubdtype(vi.dtype, np.integer) and (np.amin(vi) >= 0) ):
-                print("Error: vi must be a numpy array of non-negative integers!")
-                return
-        elif type(vi) is int:
-            if vi < 0:
-                print("Error: vi must be a non-negative integer!")
-                return
-        else:
-            print("Error: vi must either be a singleton or numpy array of non-negative integers!")
-            return
-
-        if not efficient:
-            # get all mesh edges (array of MeshEdgeType)
-            Mesh_Edges = self.Cell.Get_Edges()
-
-            # figure out the maximum number of edges per vertex
-            Vtx2Edge = dict.fromkeys(vi)
-            for ii in vi:
-                edge_indices_0 = np.argwhere(Mesh_Edges[:]['v0']==ii)
-                edge_indices_1 = np.argwhere(Mesh_Edges[:]['v1']==ii)
-                edge_ind = np.vstack((edge_indices_0,edge_indices_1))
-                if edge_ind.size > 0:
-                    Vtx2Edge[ii] = edge_ind[:,0]
-
-        else:
-            # output a full numpy array that is more efficient for
-            # numerical operations later
-
-            min_vi = np.amin(vi)
-            max_vi = np.amax(vi)
-
-            # number of unique vertices referenced by Cell
-            #Num_Vtx = self.Cell.Num_Vtx()
-
-            # get all mesh edges (array of MeshEdgeType)
-            EE = self.Cell.Get_Edges()
-
-            # figure out the maximum number of edges per vertex
-            Max_Edge_in_Star = 0
-            Vtx_Star_temp = dict.fromkeys(vi)
-            for ii in vi:
-                edge_indices_0 = np.argwhere(EE[:]['v0']==ii)
-                edge_indices_1 = np.argwhere(EE[:]['v1']==ii)
-                edge_ind = np.vstack((edge_indices_0,edge_indices_1))
-                Max_Edge_in_Star = np.max([Max_Edge_in_Star, edge_ind.size])
-                if edge_ind.size > 0:
-                    Vtx_Star_temp[ii] = edge_ind[:,0]
-
-            # make a pure numpy version of Mesh_Edges that has a dummy edge
-            Mesh_Edges = np.zeros((EE.size+1,2), dtype=VtxIndType)
-            Mesh_Edges[:-1,0] = EE[:]['v0']
-            Mesh_Edges[:-1,1] = EE[:]['v1']
-
-            # set the dummy edge (the last edge)
-            Mesh_Edges[-1,0] = min_vi
-            Mesh_Edges[-1,1] = min_vi
-            dummy_edge_index = Mesh_Edges.shape[0]-1
-
-            # now remake a more efficient data structure
-            Vtx2Edge = np.full((max_vi+1,Max_Edge_in_Star), dummy_edge_index, dtype=VtxIndType)
-            for ii in np.arange(max_vi+1, dtype=VtxIndType):
-                Edges_Attached_to_V_ii = Vtx_Star_temp[ii]
-                Num_Edges = Edges_Attached_to_V_ii.size
-                Vtx2Edge[ii,0:Num_Edges] = Edges_Attached_to_V_ii[:]
-
-        return Mesh_Edges, Vtx2Edge
-
     def Get_Vtx_Based_Orthogonal_Frame(self, arg1=None, frame_type="all", debug=False):
         """Get orthonormal column vectors that describe a frame for a set of given
         vertices.  If the keyword "all" is given, then the orthonormal vectors
@@ -925,7 +830,7 @@ class SimplexMesh(BaseSimplexMesh):
             Vtx2Edge = arg1[1]
             
             if isinstance(Vtx2Edge, dict):
-                keys = dict.keys()
+                keys = Vtx2Edge.keys()
                 num_keys = len(keys)
                 if num_keys > 1:
                     print("Error: if Vtx2Edge is a dict, then it should only contain 1 key!")
@@ -954,12 +859,14 @@ class SimplexMesh(BaseSimplexMesh):
                 return
             Mesh_Edges, Vtx2Edge = self.Get_Vtx_Edge_Star(vi, efficient=is_array)
 
+        TD = self.Top_Dim()
+        GD = self._Vtx.Dim()
+
         if not is_array:
             #
             # compute edge vectors (Num_Edges,GD)
             Edge_Vec = self._Vtx.coord[Mesh_Edges[:]['v1']][:] - self._Vtx.coord[Mesh_Edges[:]['v0']][:]
             Max_Edge_in_Star = Vtx2Edge[vi].size
-            GD = self._Vtx.Dim()
             Tangent_Star = np.zeros((Max_Edge_in_Star,GD), dtype=CoordType)
             Tangent_Star[:,:] = Edge_Vec[Vtx2Edge[vi][:],:]
 
@@ -981,7 +888,6 @@ class SimplexMesh(BaseSimplexMesh):
             Edge_Vec = self._Vtx.coord[Mesh_Edges[:,1]][:] - self._Vtx.coord[Mesh_Edges[:,0]][:]
             Max_Vtx = Vtx2Edge.shape[0]
             Max_Edge_in_Star = Vtx2Edge.shape[1]
-            GD = self._Vtx.Dim()
             Tangent_Star = np.zeros((Max_Vtx,Max_Edge_in_Star,GD), dtype=CoordType)
             Tangent_Star[:,:,:] = Edge_Vec[Vtx2Edge[:,:],:]
 
@@ -1001,6 +907,405 @@ class SimplexMesh(BaseSimplexMesh):
             return Ortho, Edge_Vec, Tangent_Star
         else:
             return Ortho
+
+    def Get_Vtx_Based_Orthogonal_Frame_ALT(self, arg1=None, frame_type="all", svd_with="tangent", debug=False):
+        """Get orthonormal column vectors that describe a frame for a set of given
+        vertices.  If the keyword "all" is given, then the orthonormal vectors
+        span all of \R^{GD}, where the first TD vectors span an (approximate)
+        *tangent* space of the mesh (at each vertex), and the last (GD - TD) vectors
+        span the space *orthogonal* to the tangent space (i.e. called the *normal*
+        space). The keyword "tangent" only gives the vectors in the tangent space;
+        the keyword "normal" only gives the vectors in the normal space.
+        Note: TD = topological dimension, GD = ambient dimension.
+
+        Description of the method: this is a "vertex-based" tangent/normal space. For each
+        vertex, we find the cells attached to that vertex.  We then compute the tangent
+        basis, or normal basis depending on user choice, for each of those cells.  Next,
+        we weight the basis on each cell by the TD-dim volume of that cell.  Then, for
+        each vertex, we collect all those weighted basis vectors into one matrix.  We then
+        SVD that matrix and extract the first qD (see below) orthogonal, unit basis vectors
+        that effectively approximates the tangent (or normal) space of the mesh at that vertex.
+        If the whole frame ("all") is desired, then if the SVD was done with the tangent space,
+        then the normal basis is exactly orthogonal to the tangent basis (and vice-versa).
+        
+        There are three ways to call this function:
+        Inputs:         vi: non-negative integer being a specific vertex index.
+                frame_type: a string = "all", "tangent", or "normal".  If omitted, then
+                            default is "all".  "all" gives a complete frame of \R^{GD},
+                           "tangent" gives the tangent space, and "normal" gives
+                            the normal space.
+                  svd_with: a string = "tangent" or "normal".  If omitted, then
+                            default is "tangent".  "tangent" ("normal") means to use the
+                            tangent (normal) spaces of the local cells when applying the SVD.
+        Output: Ortho: numpy matrix (qD,GD), whose rows are the (unit) basis vectors
+                       of the frame.
+                Note: "all" ==> qD==GD; ordered with the tangent basis vectors first.
+                      "tangent" ==> qD==TD; "normal" ==> qD==GD-TD.
+        OR
+        Inputs:         vi: numpy array (N,) of vertex indices.  If set to None,
+                            or omitted, then defaults to vi = [0, 1, 2, ..., N-1],
+                            where N is the total number of vertices.
+                frame_type: same as above.
+                  svd_with: same as above.
+        Output: Ortho: numpy array (N,qD,GD), which is a stack of N matrices, each
+                of whose rows are the (unit) basis vectors of the frame.
+                Note: see above for qD.
+        OR
+        Inputs:   Vtx2Cell: as generated from 'Get_Vtx_Cell_Attachments'
+                frame_type: same as above.
+                  svd_with: same as above.
+        Output: Ortho: either a numpy matrix (qD,GD) or a numpy array (N,qD,GD),
+                which is described above; it depends on whether vi was an array or not.
+        """
+        if isinstance(arg1, dict):
+            Vtx2Cell = arg1
+            
+            keys = Vtx2Cell.keys()
+            num_keys = len(keys)
+            if num_keys > 1:
+                print("Error: if Vtx2Cell is a dict, then it should only contain 1 key!")
+                return
+            is_array = False
+            vi = keys[0]
+        elif isinstance(arg1, np.ndarray):
+            arg1_shape = arg1.shape
+            if len(arg1_shape)==1:
+                # must be an array of vertex indices
+                vi = arg1
+                is_array = True
+                if not ( np.issubdtype(vi.dtype, np.integer) and (np.amin(vi) >= 0) ):
+                    print("Error: vi must be a numpy array of non-negative integers!")
+                    return
+            elif len(arg1_shape)==2:
+                # must be a pre-computed Vtx2Cell (efficiently)
+                Vtx2Cell = arg1
+                is_array = True
+            else:
+                print("Error: first input argument is invalid!")
+                return
+        else:
+            is_array = False
+            
+            vi = arg1
+            if vi is None:
+                vi = self.Cell.Get_Unique_Vertices()
+                is_array = True
+            elif type(vi) is int:
+                if vi < 0:
+                    print("Error: vi must be a non-negative integer!")
+                    return
+            else:
+                print("Error: vi must either be a singleton or numpy array of non-negative integers!")
+                return
+            Vtx2Cell = self.Get_Vtx_Cell_Attachments(vi, efficient=is_array)
+
+        TD = self.Top_Dim()
+        GD = self._Vtx.Dim()
+
+        if not is_array:
+            # get the cells attached to the given vertex...
+            ci_attached = Vtx2Cell[vi]
+            
+            vtx_ind = self.Cell.vtx[ci_attached,:]
+            vtx_coord = self._Vtx.coord[vtx_ind,:]
+            # vtx_coord: a (M,TD+1,GD)
+            
+            if svd_with.lower() == "tangent":
+                # use the tangent basis to SVD
+                
+                # compute the tangent basis on each cell
+                CellBasis = sm.Tangent_Space(vtx_coord)
+                qD = TD
+                # (M,GD,TD)
+            else:
+                # use the normal basis to SVD
+                
+                # compute the tangent basis on each cell
+                CellBasis = sm.Normal_Space(vtx_coord)
+                qD = GD-TD
+                # (M,GD,GD-TD)
+            
+            # weight the basis functions on each cell by the volume of cell
+            # (no need to normalize because it does not affect the SVD...)
+            Vol = sm.Volume(vtx_coord)
+            # SWW: could normalize for numerical stability...
+            num_local_cell = CellBasis.shape[0]
+            Vol.shape = [num_local_cell, 1, 1]
+            W_CellBasis = Vol*CellBasis
+            
+            # stack these vectors into a matrix and SVD it
+            W_CellBasis_tp = np.transpose(W_CellBasis, (0, 2, 1))
+            # (M,qD,GD)
+            CB_Star = numpy.reshape(W_CellBasis_tp, (num_local_cell*qD, GD))
+            # (M*qD,GD)
+            
+            # extract the orthogonal frame
+            U, S, Vh = np.linalg.svd(CB_Star, full_matrices=False)
+
+            if svd_with.lower() == "tangent":
+                if frame_type.lower() == "tangent":
+                    # the first TD rows of Vh span the tangent space
+                    Ortho = Vh[0:TD,:]
+                elif frame_type.lower() == "normal":
+                    # the remaining GD-TD rows of Vh span the normal space
+                    Ortho = Vh[TD:,:]
+                else:
+                    Ortho = Vh
+            else:
+                # we used the normal space to do the SVD
+                if frame_type.lower() == "normal":
+                    # the first qD rows of Vh span the normal space
+                    Ortho = Vh[0:qD,:]
+                elif frame_type.lower() == "tangent":
+                    # the remaining GD-qD rows of Vh span the tangent space
+                    Ortho = Vh[qD:,:]
+                else:
+                    # swap the order so that tangent basis appears first
+                    reorder_ind = np.concatenate(np.arange(qD, GD), np.arange(0, qD))
+                    Ortho = Vh[reorder_ind,:]
+
+        else:
+            # we have an array of vertex indices
+            NC = self.Num_Cell()
+            all_cell_coord = self._Vtx.coord[self.Cell.vtx[0:NC,:],:]
+
+            if svd_with.lower() == "tangent":
+                # use the tangent basis to SVD
+                
+                # compute the tangent basis on each cell
+                CellBasis = sm.Tangent_Space(all_cell_coord)
+                qD = TD
+                # (NC,GD,TD)
+            else:
+                # use the normal basis to SVD
+                
+                # compute the tangent basis on each cell
+                CellBasis = sm.Normal_Space(all_cell_coord)
+                qD = GD-TD
+                # (NC,GD,GD-TD)
+
+            CellBasis_tp = np.transpose(CellBasis, (0, 2, 1))
+            # (NC,qD,GD)
+            # print("CellBasis_tp")
+            # print(CellBasis_tp)
+
+            # weight the tangent basis functions on each cell by the volume of cell
+            # (no need to normalize because it does not affect the SVD...)
+            Vol = sm.Volume(all_cell_coord)
+            Vol.shape = [NC, 1, 1]
+            W_CellBasis_tp = np.zeros((NC+1, qD, GD), dtype=CoordType)
+            W_CellBasis_tp[0:NC,:,:] = Vol*CellBasis_tp
+            # print("W_CellBasis_tp")
+            # print(W_CellBasis_tp)
+
+            # replace NULL_Cell with NC in Vtx2Cell
+            # print("NC: " + str(NC))
+            # print("Vtx2Cell:")
+            # print(Vtx2Cell)
+            NULL_indices = np.argwhere(Vtx2Cell==NULL_Cell)
+            # print("NULL_indices:")
+            # print(NULL_indices)
+            Vtx2Cell[NULL_indices[:,0],NULL_indices[:,1]] = NC
+            # print("Vtx2Cell:")
+            # print(Vtx2Cell)
+            
+            Max_Vtx = Vtx2Cell.shape[0]
+            Max_Cell_in_Star = Vtx2Cell.shape[1]
+            CB_Star_temp = np.zeros((Max_Vtx,Max_Cell_in_Star,qD,GD), dtype=CoordType)
+            
+            CB_Star_temp[:,:,:,:] = W_CellBasis_tp[Vtx2Cell[:,:],:,:]
+            # (NV,num_local_cell,qD,GD)
+            
+            # stack these vectors into a matrix and SVD it
+            CB_Star = np.reshape(CB_Star_temp, (Max_Vtx,Max_Cell_in_Star*qD, GD))
+            # (NV,num_local_cell*qD,GD)
+
+            # SWW: could normalize for numerical stability...
+
+            # stack of SVDs
+            U, S, Vh = np.linalg.svd(CB_Star, full_matrices=False)
+
+            if svd_with.lower() == "tangent":
+                # the first TD rows of Vh[ii,:,:] span the tangent space (for each ii)
+                # the remaining GD-TD rows of Vh[ii,:,:] span the normal space (for each ii)
+                if frame_type.lower() == "tangent":
+                    Ortho = Vh[:,0:TD,:]
+                elif frame_type.lower() == "normal":
+                    Ortho = Vh[:,TD:,:]
+                else:
+                    Ortho = Vh
+            else:
+                # we used the normal space to do the SVD
+                
+                # the first qD rows of Vh[ii,:,:] span the normal space (for each ii)
+                # the remaining GD-qD rows of Vh[ii,:,:] span the tangent space (for each ii)
+                if frame_type.lower() == "normal":
+                    Ortho = Vh[:,0:qD,:]
+                elif frame_type.lower() == "tangent":
+                    Ortho = Vh[:,qD:,:]
+                else:
+                    # swap the order so that tangent basis appears first
+                    reorder_ind = np.concatenate(np.arange(qD, GD), np.arange(0, qD))
+                    Ortho = Vh[:,reorder_ind,:]
+
+        if debug:
+            return Ortho, CB_Star
+        else:
+            return Ortho
+
+    def Get_Vtx_Averaged_Normal_Vector(self, arg1=None):
+        """Get an averaged unit normal vector at a set of given vertices.
+        Note: TD = topological dimension, GD = ambient dimension.  In order to use
+              this routine, GD==TD+1 (i.e. the co-dimension must be 1).
+
+        Description of the method: this is a "vertex-based" normal vector. For each
+        vertex, we find the cells attached to that vertex.  We then compute the oriented
+        normal vector for each of those cells.  Then, we compute a weighted average of
+        those normal vectors to get an approximate vertex normal, where the weights are
+        the TD-dim volumes of the cells.  Lastly, we perform a normalization step to
+        make the vertex normal vector unit length.
+        
+        There are three ways to call this function:
+        Input:          vi: non-negative integer being a specific vertex index.
+        Output: normal_vec: numpy array (GD,), representing the components of the normal.
+        OR
+        Inputs:         vi: numpy array (N,) of vertex indices.  If set to None,
+                            or omitted, then defaults to vi = [0, 1, 2, ..., N-1],
+                            where N is the total number of vertices.
+        Output: normal_vec: numpy array (N,GD), where the ith row is the normal vector
+                            of the ith vertex.
+        OR
+        Inputs:   Vtx2Cell: as generated from 'Get_Vtx_Cell_Attachments'
+        Output: normal_vec: a numpy array of shape (GD,) or (N,GD), which is described
+                            above; it depends on whether vi was an array or not.
+        """
+        if isinstance(arg1, dict):
+            Vtx2Cell = arg1
+            
+            keys = Vtx2Cell.keys()
+            num_keys = len(keys)
+            if num_keys > 1:
+                print("Error: if Vtx2Cell is a dict, then it should only contain 1 key!")
+                return
+            is_array = False
+            vi = keys[0]
+        elif isinstance(arg1, np.ndarray):
+            arg1_shape = arg1.shape
+            if len(arg1_shape)==1:
+                # must be an array of vertex indices
+                vi = arg1
+                is_array = True
+                if not ( np.issubdtype(vi.dtype, np.integer) and (np.amin(vi) >= 0) ):
+                    print("Error: vi must be a numpy array of non-negative integers!")
+                    return
+            elif len(arg1_shape)==2:
+                # must be a pre-computed Vtx2Cell (efficiently)
+                Vtx2Cell = arg1
+                is_array = True
+            else:
+                print("Error: first input argument is invalid!")
+                return
+        else:
+            is_array = False
+            
+            vi = arg1
+            if vi is None:
+                vi = self.Cell.Get_Unique_Vertices()
+                is_array = True
+            elif type(vi) is int:
+                if vi < 0:
+                    print("Error: vi must be a non-negative integer!")
+                    return
+            else:
+                print("Error: vi must either be a singleton or numpy array of non-negative integers!")
+                return
+            Vtx2Cell = self.Get_Vtx_Cell_Attachments(vi, efficient=is_array)
+
+        TD = self.Top_Dim()
+        GD = self._Vtx.Dim()
+        if not (GD==TD+1):
+            print("Error: this routine requires GD==TD+1!")
+            return
+
+        if not is_array:
+            # get the cells attached to the given vertex...
+            ci_attached = Vtx2Cell[vi]
+            
+            vtx_ind = self.Cell.vtx[ci_attached,:]
+            vtx_coord = self._Vtx.coord[vtx_ind,:]
+            # vtx_coord: a (M,TD+1,GD)
+            
+            # get the cell normal vectors
+            NS = sm.Normal_Space(vtx_coord)
+            # (M,GD,1)
+            
+            # weight the normal vectors on each cell by the volume of cell
+            Vol = sm.Volume(vtx_coord)
+            sum_Vol = np.sum(Vol)
+            normed_Vol = Vol / sum_Vol
+            num_local_cell = NS.shape[0]
+            normed_Vol.shape = [num_local_cell, 1, 1]
+            W_NS = normed_Vol*NS
+            W_NS.shape = [num_local_cell, GD]
+            
+            # compute the weighted average
+            normal_vec_tilde = np.sum(W_NS, axis=0)
+            normal_vec_tilde.shape = [GD]
+            MAG = np.linalg.norm(normal_vec_tilde).item(0)
+            normal_vec = normal_vec_tilde / MAG
+
+        else:
+            # we have an array of vertex indices
+
+            NC = self.Num_Cell()
+            all_cell_coord = self._Vtx.coord[self.Cell.vtx[0:NC,:],:]
+
+            # get the cell normal vectors
+            NS = np.zeros((NC+1,GD,1), dtype=CoordType)
+            NS[0:NC,:,:] = sm.Normal_Space(all_cell_coord)
+            # (NC+1,GD,1)
+
+            # replace NULL_Cell with NC in Vtx2Cell
+            NULL_indices = np.argwhere(Vtx2Cell==NULL_Cell)
+            Vtx2Cell[NULL_indices[:,0],NULL_indices[:,1]] = NC
+
+            # weight the normal vectors on each cell by the volume of cell
+            Vol = sm.Volume(all_cell_coord)
+            Vol = np.append(Vol, 0.0)
+            Vtx2Cell_Vol = Vol[Vtx2Cell[:,:]]
+            # print("Vtx2Cell_Vol.shape:")
+            # print(Vtx2Cell_Vol.shape)
+            # (NV,num_local_cell)
+            Vtx_Star_Vol = np.sum(Vtx2Cell_Vol, axis=1)
+            # print("Vtx_Star_Vol.shape:")
+            # print(Vtx_Star_Vol.shape)
+            Vtx_Star_Vol.shape = [Vtx2Cell.shape[0], 1]
+            # print("Vtx_Star_Vol.shape:")
+            # print(Vtx_Star_Vol.shape)
+            
+            #np.set_printoptions(precision=18)
+            #print("Vtx_Star_Vol:")
+            #print(Vtx_Star_Vol)
+            
+            Vtx2Cell_Vol_normed = Vtx2Cell_Vol / Vtx_Star_Vol
+            # print("Vtx2Cell_Vol_normed.shape:")
+            # print(Vtx2Cell_Vol_normed.shape)
+
+            Vtx2Cell_Vol_normed.shape = [Vtx2Cell.shape[0], Vtx2Cell.shape[1], 1, 1]
+            
+            Vtx_Star_NS = NS[Vtx2Cell[:,:],:,:]
+            # (NV,num_local_cell,GD,1)
+            
+            W_NS = Vtx2Cell_Vol_normed*Vtx_Star_NS
+            normal_vec_tilde = np.sum(W_NS, axis=1)
+            normal_vec_tilde = np.reshape(normal_vec_tilde, (Vtx2Cell.shape[0], GD))
+            
+            MAG = np.linalg.norm(normal_vec_tilde, axis=1)
+            MAG.shape = [Vtx2Cell.shape[0], 1]
+            normal_vec = normal_vec_tilde / MAG
+            
+        return normal_vec
+
 
 
     def Export_For_VTKwrite(self):
