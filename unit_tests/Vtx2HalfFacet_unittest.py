@@ -43,6 +43,7 @@ class TestVtx2HalfFacet(unittest.TestCase):
         self.V2HF.Append(10, hf)
 
         print(self.V2HF)
+        #print(self.V2HF.VtxMap)
 
         self.assertEqual(self.V2HF.VtxMap[2]==NULL_VtxHalfFacet, True, "Should be Null.")
 

@@ -600,8 +600,8 @@ class BaseSimplexMesh:
 
             # figure out the maximum number of cells per vertex
             Max_Cell_in_Star = 0
-            print("vi:")
-            print(vi)
+            #print("vi:")
+            #print(vi)
             Vtx_Star_temp = dict.fromkeys(vi)
             #Vtx_Star_temp = {vk: np.zeros(0, dtype=CellIndType) for vk in vi}
             for ii in vi:

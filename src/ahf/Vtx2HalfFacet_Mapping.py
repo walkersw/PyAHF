@@ -111,8 +111,6 @@ class Vtx2HalfFacetMap:
             self.VtxMap = np.full(Desired_Size.astype(VtxIndType), NULL_VtxHalfFacet, dtype=VtxHalfFacetType)
         elif self.VtxMap.size < Desired_Size:
             old_size = self.VtxMap.size
-            print(self.VtxMap)
-            print(Desired_Size)
             self.VtxMap = np.resize(self.VtxMap,Desired_Size)
             # put in NULL values
             self.VtxMap[old_size:Desired_Size] = NULL_VtxHalfFacet

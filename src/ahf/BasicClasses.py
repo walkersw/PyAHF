@@ -143,11 +143,17 @@ class CellSimplexType:
         Desired_Size = np.rint(np.ceil((1.0 + self._reserve_buffer) * num_cl)).astype(CellIndType)
         if dimvtx[0] < Desired_Size:
             old_size = dimvtx[0]
-            self.vtx.resize((Desired_Size, self._cell_dim+1))
-            self.halffacet.resize((Desired_Size, self._cell_dim+1))
+            NEW_vtx = np.resize(self.vtx, (Desired_Size, self._cell_dim+1))
+            NEW_halffacet = np.resize(self.halffacet, (Desired_Size, self._cell_dim+1))
             # put in NULL values
-            self.vtx[old_size:Desired_Size][:]       = NULL_Vtx
-            self.halffacet[old_size:Desired_Size][:] = NULL_HalfFacet
+            NEW_vtx[old_size:Desired_Size][:]       = NULL_Vtx
+            NEW_halffacet[old_size:Desired_Size][:] = NULL_HalfFacet
+            # clear the old
+            del self.vtx
+            del self.halffacet
+            # pass the new
+            self.vtx = NEW_vtx
+            self.halffacet = NEW_halffacet
         else:
             pass
 
@@ -978,9 +984,13 @@ class VtxCoordType:
         Desired_Size = np.rint(np.ceil((1.0 + self._reserve_buffer) * num_vtx)).astype(VtxIndType)
         if dimcoord[0] < Desired_Size:
             old_size = dimcoord[0]
-            self.coord.resize((Desired_Size, self._geo_dim))
+            NEW_coord = np.resize(self.coord, (Desired_Size, self._geo_dim))
             # put in ZERO values
-            self.coord[old_size:Desired_Size][:] = 0.0
+            NEW_coord[old_size:Desired_Size][:] = 0.0
+            # clear the old
+            del self.coord
+            # pass the new
+            self.coord = NEW_coord
         else:
             pass
 

@@ -386,7 +386,7 @@ class FEmatrix:
         Sparse_Mass = CM.tocsr()
         return Sparse_Mass
 
-    def Lumped_Mass_Matrix(self):
+    def Lumped_Mass_Matrix(self, Vtx2Cell=None):
         """This outputs a sparse (diagonal) matrix that is a lumped mass matrix."""
 
         TD = self.test_space.mesh.Top_Dim()
@@ -395,11 +395,30 @@ class FEmatrix:
         Vol = self.test_space.mesh.Volume()
         
         Num_Vtx = self.test_space.mesh._Vtx.Size()
-        Vtx_Star_Vol = np.zeros(Num_Vtx)
-        for kk in range(Num_Vtx):
-            vertexAttachments = self.test_space.mesh.Get_Cells_Attached_To_Vertex(kk)
-            star_vols = Vol[vertexAttachments]
-            Vtx_Star_Vol[kk] = np.sum(star_vols)
+
+        if Vtx2Cell is None:
+            # then compute star vols directly (this is inefficient if you do it repeatedly)
+            Vtx_Star_Vol = np.zeros(Num_Vtx)
+            for kk in range(Num_Vtx):
+                vertexAttachments = self.test_space.mesh.Get_Cells_Attached_To_Vertex(kk)
+                star_vols = Vol[vertexAttachments]
+                Vtx_Star_Vol[kk] = np.sum(star_vols)
+        else:
+            # use the efficient data structure
+            
+            # num cells
+            NC = Vol.size
+            
+            # replace NULL_Cell with NC in Vtx2Cell
+            NULL_indices = np.argwhere(Vtx2Cell==NULL_Cell)
+            Vtx2Cell[NULL_indices[:,0],NULL_indices[:,1]] = NC
+
+            # append a "NULL" value (i.e. cell index==NC has zero volume)
+            Vol = np.append(Vol, 0.0)
+            Vtx2Cell_Vol = Vol[Vtx2Cell[:,:]]
+            # (NV,num_local_cell)
+            Vtx_Star_Vol = np.sum(Vtx2Cell_Vol, axis=1)
+            Vtx_Star_Vol.shape = [Vtx2Cell.shape[0],]
 
         Sparse_LM = sp.sparse.diags((1/(TD+1))*Vtx_Star_Vol, 0, shape=(Num_Vtx,Num_Vtx))
         return Sparse_LM

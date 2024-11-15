@@ -785,7 +785,7 @@ class SimplexMesh(BaseSimplexMesh):
 
     # Perimeter? (get the free boundary...)
 
-    def Get_Vtx_Based_Orthogonal_Frame(self, arg1=None, frame_type="all", debug=False):
+    def Get_Vtx_Based_Orthogonal_Frame_Edge(self, arg1=None, frame_type="all", debug=False):
         """Get orthonormal column vectors that describe a frame for a set of given
         vertices.  If the keyword "all" is given, then the orthonormal vectors
         span all of \R^{GD}, where the first TD vectors span an (approximate)
@@ -908,7 +908,7 @@ class SimplexMesh(BaseSimplexMesh):
         else:
             return Ortho
 
-    def Get_Vtx_Based_Orthogonal_Frame_ALT(self, arg1=None, frame_type="all", svd_with="tangent", debug=False):
+    def Get_Vtx_Based_Orthogonal_Frame(self, arg1=None, frame_type="all", svd_with="tangent", debug=False):
         """Get orthonormal column vectors that describe a frame for a set of given
         vertices.  If the keyword "all" is given, then the orthonormal vectors
         span all of \R^{GD}, where the first TD vectors span an (approximate)
@@ -918,15 +918,16 @@ class SimplexMesh(BaseSimplexMesh):
         the keyword "normal" only gives the vectors in the normal space.
         Note: TD = topological dimension, GD = ambient dimension.
 
-        Description of the method: this is a "vertex-based" tangent/normal space. For each
-        vertex, we find the cells attached to that vertex.  We then compute the tangent
-        basis, or normal basis depending on user choice, for each of those cells.  Next,
-        we weight the basis on each cell by the TD-dim volume of that cell.  Then, for
-        each vertex, we collect all those weighted basis vectors into one matrix.  We then
-        SVD that matrix and extract the first qD (see below) orthogonal, unit basis vectors
-        that effectively approximates the tangent (or normal) space of the mesh at that vertex.
-        If the whole frame ("all") is desired, then if the SVD was done with the tangent space,
-        then the normal basis is exactly orthogonal to the tangent basis (and vice-versa).
+        Description of the method: this is a "vertex-based" tangent/normal space.
+        For each vertex, we find the cells attached to that vertex.  We then compute
+        the tangent basis, or normal basis depending on user choice, for each of
+        those cells.  Next, we weight the basis on each cell by the TD-dim volume
+        of that cell.  Then, for each vertex, we collect all those weighted basis
+        vectors into one matrix.  We then SVD that matrix and extract the first qD
+        (see below) orthogonal, unit basis vectors that effectively approximates the
+        tangent (or normal) space of the mesh at that vertex.  If the whole frame
+        ("all") is desired, then if the SVD was done with the tangent space, then
+        the normal basis is exactly orthogonal to the tangent basis (and vice-versa).
         
         There are three ways to call this function:
         Inputs:         vi: non-negative integer being a specific vertex index.
@@ -936,7 +937,7 @@ class SimplexMesh(BaseSimplexMesh):
                             the normal space.
                   svd_with: a string = "tangent" or "normal".  If omitted, then
                             default is "tangent".  "tangent" ("normal") means to use the
-                            tangent (normal) spaces of the local cells when applying the SVD.
+                            tangent (normal) spaces of the local cells when doing the SVD.
         Output: Ortho: numpy matrix (qD,GD), whose rows are the (unit) basis vectors
                        of the frame.
                 Note: "all" ==> qD==GD; ordered with the tangent basis vectors first.
@@ -1153,34 +1154,43 @@ class SimplexMesh(BaseSimplexMesh):
         else:
             return Ortho
 
-    def Get_Vtx_Averaged_Normal_Vector(self, arg1=None):
-        """Get an averaged unit normal vector at a set of given vertices.
-        Note: TD = topological dimension, GD = ambient dimension.  In order to use
-              this routine, GD==TD+1 (i.e. the co-dimension must be 1).
+    def Compute_Vtx_Star_Average(self, cell_quant, arg2=None):
+        """Compute a local, weighted vertex average of a given cell-wise quantity.
+        Note: TD = topological dimension, GD = ambient dimension.
 
-        Description of the method: this is a "vertex-based" normal vector. For each
-        vertex, we find the cells attached to that vertex.  We then compute the oriented
-        normal vector for each of those cells.  Then, we compute a weighted average of
-        those normal vectors to get an approximate vertex normal, where the weights are
-        the TD-dim volumes of the cells.  Lastly, we perform a normalization step to
-        make the vertex normal vector unit length.
+        Description of the method: this is a "vertex-based" quantity. For each vertex,
+        we find the cells attached to that vertex.  Next, we get the "quantity" on
+        each of those cells.  Then, we compute a weighted average of the cell
+        quantities to get an approximate vertex quantity, where the weights are the
+        TD-dim volumes of the cells.
         
         There are three ways to call this function:
-        Input:          vi: non-negative integer being a specific vertex index.
-        Output: normal_vec: numpy array (GD,), representing the components of the normal.
+        Inputs: cell_quant: numpy array (W,) for scalars, or (W,R) for R-dim vectors,
+                            or (W,R,C) for RxC matrices, and W==number of cells in the
+                            mesh.
+                        vi: non-negative integer being a specific vertex index.
+        Output:  vtx_quant: numpy array (1,), or (R,), or (R,C), representing the
+                            vertex averaged quantity.
         OR
-        Inputs:         vi: numpy array (N,) of vertex indices.  If set to None,
+        Inputs: cell_quant: see above.
+                        vi: numpy array (N,) of vertex indices.  If set to None,
                             or omitted, then defaults to vi = [0, 1, 2, ..., N-1],
                             where N is the total number of vertices.
-        Output: normal_vec: numpy array (N,GD), where the ith row is the normal vector
-                            of the ith vertex.
+        Output:  vtx_quant: numpy array (N,), or (N,R), or (N,R,C), representing the
+                            vertex averaged quantity.
         OR
-        Inputs:   Vtx2Cell: as generated from 'Get_Vtx_Cell_Attachments'
-        Output: normal_vec: a numpy array of shape (GD,) or (N,GD), which is described
-                            above; it depends on whether vi was an array or not.
+        Inputs: cell_quant: see above.
+                  Vtx2Cell: as generated from 'Get_Vtx_Cell_Attachments'
+        Output:  vtx_quant: a numpy array of shape (N,), or (N,R), or (N,R,C), which
+                            is described above; it depends on whether vi was an array
+                            or not.
         """
-        if isinstance(arg1, dict):
-            Vtx2Cell = arg1
+        if not isinstance(cell_quant, np.ndarray):
+            print("Error: cell_quant must be a numpy array!")
+            return
+
+        if isinstance(arg2, dict):
+            Vtx2Cell = arg2
             
             keys = Vtx2Cell.keys()
             num_keys = len(keys)
@@ -1189,18 +1199,18 @@ class SimplexMesh(BaseSimplexMesh):
                 return
             is_array = False
             vi = keys[0]
-        elif isinstance(arg1, np.ndarray):
-            arg1_shape = arg1.shape
-            if len(arg1_shape)==1:
+        elif isinstance(arg2, np.ndarray):
+            arg2_shape = arg2.shape
+            if len(arg2_shape)==1:
                 # must be an array of vertex indices
-                vi = arg1
+                vi = arg2
                 is_array = True
                 if not ( np.issubdtype(vi.dtype, np.integer) and (np.amin(vi) >= 0) ):
                     print("Error: vi must be a numpy array of non-negative integers!")
                     return
-            elif len(arg1_shape)==2:
+            elif len(arg2_shape)==2:
                 # must be a pre-computed Vtx2Cell (efficiently)
-                Vtx2Cell = arg1
+                Vtx2Cell = arg2
                 is_array = True
             else:
                 print("Error: first input argument is invalid!")
@@ -1208,7 +1218,7 @@ class SimplexMesh(BaseSimplexMesh):
         else:
             is_array = False
             
-            vi = arg1
+            vi = arg2
             if vi is None:
                 vi = self.Cell.Get_Unique_Vertices()
                 is_array = True
@@ -1223,9 +1233,26 @@ class SimplexMesh(BaseSimplexMesh):
 
         TD = self.Top_Dim()
         GD = self._Vtx.Dim()
-        if not (GD==TD+1):
-            print("Error: this routine requires GD==TD+1!")
+        
+        # reshape the cell_quant (if necessary)
+        q_orig_shape = cell_quant.shape
+        if len(q_orig_shape)==1:
+            W = q_orig_shape[0]
+            R = 1
+            C = 1
+        elif len(q_orig_shape)==2:
+            W = q_orig_shape[0]
+            R = q_orig_shape[1]
+            C = 1
+        elif len(q_orig_shape)==3:
+            W = q_orig_shape[0]
+            R = q_orig_shape[1]
+            C = q_orig_shape[2]
+        else:
+            print("Error: cell_quant must be a numpy array of size (W,), or (W, R), or (W, R, C)!")
             return
+        # reshape it
+        cell_quant.shape = [W, R, C]
 
         if not is_array:
             # get the cells attached to the given vertex...
@@ -1235,42 +1262,55 @@ class SimplexMesh(BaseSimplexMesh):
             vtx_coord = self._Vtx.coord[vtx_ind,:]
             # vtx_coord: a (M,TD+1,GD)
             
-            # get the cell normal vectors
-            NS = sm.Normal_Space(vtx_coord)
-            # (M,GD,1)
+            # get the cell quantities
+            CQ = cell_quant[ci_attached,:,:]
+            # (M,R,C)
             
-            # weight the normal vectors on each cell by the volume of cell
+            # reshape it back
+            cell_quant.shape = q_orig_shape
+            
+            # weight the quantities on each cell by the volume of cell
             Vol = sm.Volume(vtx_coord)
             sum_Vol = np.sum(Vol)
             normed_Vol = Vol / sum_Vol
-            num_local_cell = NS.shape[0]
+            num_local_cell = CQ.shape[0]
             normed_Vol.shape = [num_local_cell, 1, 1]
-            W_NS = normed_Vol*NS
-            W_NS.shape = [num_local_cell, GD]
+            W_CQ = normed_Vol*CQ
+            #W_CQ.shape = [num_local_cell, R, C]
             
             # compute the weighted average
-            normal_vec_tilde = np.sum(W_NS, axis=0)
-            normal_vec_tilde.shape = [GD]
-            MAG = np.linalg.norm(normal_vec_tilde).item(0)
-            normal_vec = normal_vec_tilde / MAG
+            vtx_quant = np.sum(W_CQ, axis=0)
+            if len(q_orig_shape)==1:
+                vtx_quant.shape = [1]
+            elif len(q_orig_shape)==2:
+                vtx_quant.shape = [R]
+            else:
+                vtx_quant.shape = [R, C]
 
         else:
             # we have an array of vertex indices
 
             NC = self.Num_Cell()
-            all_cell_coord = self._Vtx.coord[self.Cell.vtx[0:NC,:],:]
+            #all_cell_coord = self._Vtx.coord[self.Cell.vtx[0:NC,:],:]
 
-            # get the cell normal vectors
-            NS = np.zeros((NC+1,GD,1), dtype=CoordType)
-            NS[0:NC,:,:] = sm.Normal_Space(all_cell_coord)
-            # (NC+1,GD,1)
+            # note: we already have cell_quant
+            # (NC,R,C)
+
+            # get the cell quantities
+            CQ = np.zeros((NC+1,R,C), dtype=CoordType)
+            CQ[0:NC,:,:] = cell_quant[:,:,:]
+            # (NC+1,R,C)
+
+            # reshape it back
+            cell_quant.shape = q_orig_shape
 
             # replace NULL_Cell with NC in Vtx2Cell
             NULL_indices = np.argwhere(Vtx2Cell==NULL_Cell)
             Vtx2Cell[NULL_indices[:,0],NULL_indices[:,1]] = NC
 
             # weight the normal vectors on each cell by the volume of cell
-            Vol = sm.Volume(all_cell_coord)
+            #Vol = sm.Volume(all_cell_coord)
+            Vol = self.Volume()
             Vol = np.append(Vol, 0.0)
             Vtx2Cell_Vol = Vol[Vtx2Cell[:,:]]
             # print("Vtx2Cell_Vol.shape:")
@@ -1293,16 +1333,59 @@ class SimplexMesh(BaseSimplexMesh):
 
             Vtx2Cell_Vol_normed.shape = [Vtx2Cell.shape[0], Vtx2Cell.shape[1], 1, 1]
             
-            Vtx_Star_NS = NS[Vtx2Cell[:,:],:,:]
-            # (NV,num_local_cell,GD,1)
+            Vtx_Star_CQ = CQ[Vtx2Cell[:,:],:,:]
+            # (NV,num_local_cell,R,C)
             
-            W_NS = Vtx2Cell_Vol_normed*Vtx_Star_NS
-            normal_vec_tilde = np.sum(W_NS, axis=1)
-            normal_vec_tilde = np.reshape(normal_vec_tilde, (Vtx2Cell.shape[0], GD))
-            
-            MAG = np.linalg.norm(normal_vec_tilde, axis=1)
-            MAG.shape = [Vtx2Cell.shape[0], 1]
-            normal_vec = normal_vec_tilde / MAG
+            W_CQ = Vtx2Cell_Vol_normed*Vtx_Star_CQ
+            vtx_quant = np.sum(W_CQ, axis=1)
+            if len(q_orig_shape)==1:
+                vtx_quant = np.reshape(vtx_quant, (Vtx2Cell.shape[0], ))
+            elif len(q_orig_shape)==2:
+                vtx_quant = np.reshape(vtx_quant, (Vtx2Cell.shape[0], R))
+            else:
+                vtx_quant = np.reshape(vtx_quant, (Vtx2Cell.shape[0], R, C))
+        
+        return vtx_quant
+
+    def Get_Vtx_Averaged_Normal_Vector(self, arg1=None):
+        """Get an averaged unit normal vector at a set of given vertices.
+        Note: TD = topological dimension, GD = ambient dimension.  In order to use
+              this routine, GD==TD+1 (i.e. the co-dimension must be 1).
+
+        Description of the method: this is a "vertex-based" normal vector. For each
+        vertex, we find the cells attached to that vertex.  We then compute the oriented
+        normal vector for each of those cells.  Then, we compute a weighted average of
+        those normal vectors to get an approximate vertex normal, where the weights are
+        the TD-dim volumes of the cells.  Lastly, we perform a normalization step to
+        make the vertex normal vector unit length.
+        
+        There are three ways to call this function:
+        Input:          vi: non-negative integer being a specific vertex index.
+        Output: normal_vec: numpy array (GD,), representing the components of the normal.
+        OR
+        Input:          vi: numpy array (N,) of vertex indices.  If set to None,
+                            or omitted, then defaults to vi = [0, 1, 2, ..., N-1],
+                            where N is the total number of vertices.
+        Output: normal_vec: numpy array (N,GD), where the ith row is the normal vector
+                            of the ith vertex.
+        OR
+        Input:    Vtx2Cell: as generated from 'Get_Vtx_Cell_Attachments'
+        Output: normal_vec: a numpy array of shape (GD,) or (N,GD), which is described
+                            above; it depends on whether vi was an array or not.
+        """
+        TD = self.Top_Dim()
+        GD = self._Vtx.Dim()
+        if not (GD==TD+1):
+            print("Error: this routine requires GD==TD+1!")
+            return
+
+        NC = self.Num_Cell()
+        all_cell_coord = self._Vtx.coord[self.Cell.vtx[0:NC,:],:]
+
+        Normal_Vec_on_Cells = sm.Normal_Space(all_cell_coord)
+        
+        normal_vec = self.Compute_Vtx_Star_Average(Normal_Vec_on_Cells, arg2=arg1)
+        normal_vec.shape = [normal_vec.shape[0], GD]
             
         return normal_vec
 
