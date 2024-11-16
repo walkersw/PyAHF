@@ -24,3 +24,4 @@ build/lib/PyAHF/BasicClasses.py
 build/lib/PyAHF/SimplexMath.py
 build/lib/PyAHF/SimplexMesh.py
 /src/PyAHF.egg-info
+/experiment
